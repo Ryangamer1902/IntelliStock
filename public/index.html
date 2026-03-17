@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gerenciamento de Estoque</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #f093fb;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e07de5;
+            transform: translateY(-2px);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .status-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        thead {
+            background-color: #667eea;
+            color: white;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #ddd;
+        }
+
+        td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background-color: #e8eef7;
+            transition: background-color 0.3s;
+        }
+
+        .quantity-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .btn-sm {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            font-size: 16px;
+            border-radius: 3px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-decrease {
+            background-color: #ff6b6b;
+            color: white;
+        }
+
+        .btn-decrease:hover {
+            background-color: #ee5a52;
+        }
+
+        .btn-increase {
+            background-color: #51cf66;
+            color: white;
+        }
+
+        .btn-increase:hover {
+            background-color: #37b24d;
+        }
+
+        .quantity-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .btn-delete {
+            background-color: #ee5a52;
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .btn-delete:hover {
+            background-color: #c92a2a;
+        }
+
+        .alert-low-stock {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 16px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+
+            .quantity-controls {
+                flex-direction: column;
+                gap: 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 Gerenciador de Estoque</h1>
+        <p class="subtitle">Sistema de controle de materiais e produtos</p>
+
+        <!-- Mensagem de Status -->
+        <div id="statusMessage" class="status-message"></div>
+
+        <!-- Controles -->
+        <div class="controls">
+            <button class="btn btn-primary" onclick="abrirModalNovoMaterial()">+ Adicionar Material</button>
+            <button class="btn btn-secondary" onclick="atualizarLista()">🔄 Atualizar</button>
+        </div>
+
+        <!-- Busca -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Buscar por nome ou código de barras...">
+        </div>
+
+        <!-- Tabela de Materiais -->
+        <div class="table-responsive">
+            <table id="materiaisTable">
+                <thead>
+                    <tr>
+                        <th>Código de Barras</th>
+                        <th>Nome</th>
+                        <th>Quantidade Atual</th>
+                        <th>Mínimo</th>
+                        <th>Preço</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="materiaisTableBody">
+                    <tr>
+                        <td colspan="7" class="no-data">Carregando materiais...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Sistema de Gerenciamento de Estoque © 2024 | Versão 1.0.0</p>
+        </div>
+    </div>
+
+    <!-- Modal para Novo Material -->
+    <div id="modalNovoMaterial" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Novo Material</h2>
+                <button class="close" onclick="fecharModal('modalNovoMaterial')">&times;</button>
+            </div>
+            <form onsubmit="adicionarMaterial(event)">
+                <div class="form-group">
+                    <label>Código de Barras:</label>
+                    <input type="text" id="codigoBarras" required>
+                </div>
+                <div class="form-group">
+                    <label>Nome do Material:</label>
+                    <input type="text" id="nomeMaterial" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantidade Inicial:</label>
+                    <input type="number" id="quantidadeInicial" min="0" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantidade Mínima:</label>
+                    <input type="number" id="quantidadeMinima" min="1" value="10" required>
+                </div>
+                <div class="form-group">
+                    <label>Preço (R$):</label>
+                    <input type="number" id="preco" min="0" step="0.01" value="0.00" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="fecharModal('modalNovoMaterial')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+
+        // ==================== FUNÇÕES DE MODAL ====================
+        function abrirModalNovoMaterial() {
+            document.getElementById('modalNovoMaterial').style.display = 'block';
+        }
+
+        function fecharModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            // Limpar formulário
+            if (modalId === 'modalNovoMaterial') {
+                document.querySelector('#modalNovoMaterial form').reset();
+            }
+        }
+
+        // Fechar modal ao clicar fora dele
+        window.onclick = function(event) {
+            const modal = event.target;
+            if (modal.classList.contains('modal')) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // ==================== FUNÇÕES DE API ====================
+        async function atualizarLista() {
+            try {
+                console.log('Buscando materiais...');
+                const response = await fetch(`${API_BASE_URL}/materiais`);
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar materiais');
+                }
+
+                const data = await response.json();
+                const materiais = data.data || [];
+                
+                renderizarTabela(materiais);
+                mostrarMensagem('Lista atualizada com sucesso!', 'success');
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarMensagem('Erro ao carregar materiais. Verifique a conexão.', 'error');
+                renderizarTabela([]);
+            }
+        }
+
+        async function adicionarMaterial(event) {
+            event.preventDefault();
+
+            const novoMaterial = {
+                codigo_barras: document.getElementById('codigoBarras').value,
+                nome: document.getElementById('nomeMaterial').value,
+                quantidade_atual: parseInt(document.getElementById('quantidadeInicial').value),
+                quantidade_minima: parseInt(document.getElementById('quantidadeMinima').value),
+                preco_manual: parseFloat(document.getElementById('preco').value)
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/materiais`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(novoMaterial)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao criar material');
+                }
+
+                mostrarMensagem('Material adicionado com sucesso!', 'success');
+                fecharModal('modalNovoMaterial');
+                atualizarLista();
+            } catch (error) {
+                mostrarMensagem('Erro ao adicionar material: ' + error.message, 'error');
+            }
+        }
+
+        async function aumentarQuantidade(materialId) {
+            await atualizarQuantidade(materialId, 1);
+        }
+
+        async function diminuirQuantidade(materialId) {
+            await atualizarQuantidade(materialId, -1);
+        }
+
+        async function atualizarQuantidade(materialId, diferenca) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/materiais/${materialId}/quantidade`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ diferenca: diferenca })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao atualizar quantidade');
+                }
+
+                atualizarLista();
+            } catch (error) {
+                mostrarMensagem('Erro ao atualizar quantidade: ' + error.message, 'error');
+            }
+        }
+
+        async function deletarMaterial(materialId) {
+            if (!confirm('Tem certeza que deseja deletar este material?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/materiais/${materialId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao deletar material');
+                }
+
+                mostrarMensagem('Material deletado com sucesso!', 'success');
+                atualizarLista();
+            } catch (error) {
+                mostrarMensagem('Erro ao deletar material: ' + error.message, 'error');
+            }
+        }
+
+        // ==================== FUNÇÕES DE RENDERIZAÇÃO ====================
+        function renderizarTabela(materiais) {
+            const tbody = document.getElementById('materiaisTableBody');
+            
+            if (!materiais || materiais.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">Nenhum material cadastrado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = materiais.map(material => {
+                const emEstoque = material.quantidade_atual >= material.quantidade_minima;
+                const statusClass = emEstoque ? '' : 'alert-low-stock';
+                const statusTexto = emEstoque ? '✓ OK' : '⚠️ BAIXO';
+
+                return `
+                    <tr>
+                        <td>${material.codigo_barras}</td>
+                        <td>${material.nome}</td>
+                        <td>${material.quantidade_atual}</td>
+                        <td>${material.quantidade_minima}</td>
+                        <td>R$ ${parseFloat(material.preco_manual).toFixed(2)}</td>
+                        <td><span class="${statusClass}">${statusTexto}</span></td>
+                        <td>
+                            <div class="quantity-controls">
+                                <button class="btn-sm btn-decrease" onclick="diminuirQuantidade(${material.id})">−</button>
+                                <span class="quantity-value">${material.quantidade_atual}</span>
+                                <button class="btn-sm btn-increase" onclick="aumentarQuantidade(${material.id})">+</button>
+                                <button class="btn-sm btn-delete" onclick="deletarMaterial(${material.id})">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function mostrarMensagem(mensagem, tipo) {
+            const elemento = document.getElementById('statusMessage');
+            elemento.textContent = mensagem;
+            elemento.className = `status-message ${tipo}`;
+            
+            setTimeout(() => {
+                elemento.style.display = 'none';
+            }, 3000);
+        }
+
+        // ==================== INICIALIZAÇÃO ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            atualizarLista();
+
+            // Implementar busca
+            document.getElementById('searchInput').addEventListener('keyup', async (e) => {
+                const termo = e.target.value.toLowerCase();
+                if (termo.length === 0) {
+                    atualizarLista();
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/materiais?busca=${termo}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        renderizarTabela(data.data || []);
+                    }
+                } catch (error) {
+                    console.error('Erro na busca:', error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
