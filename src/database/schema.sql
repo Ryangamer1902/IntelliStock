@@ -49,3 +49,29 @@ CREATE TABLE IF NOT EXISTS alertas_estoque (
   FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE,
   INDEX idx_material_id (material_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ==================== AUTENTICAÇÃO ====================
+
+-- Tabela de usuários do sistema
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  senha_hash VARCHAR(255) NOT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela de códigos de verificação em duas etapas (2FA)
+CREATE TABLE IF NOT EXISTS codigos_verificacao (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  token_temp VARCHAR(64) NOT NULL UNIQUE,
+  codigo VARCHAR(6) NOT NULL,
+  expira_em TIMESTAMP NOT NULL,
+  usado TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+  INDEX idx_token_temp (token_temp)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

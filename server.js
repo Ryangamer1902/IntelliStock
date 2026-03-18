@@ -43,6 +43,7 @@ const initializeDatabase = async () => {
     
     dbConnected = true;
     global.db = pool;
+    await seedAdmin(pool);
     return true;
   } catch (error) {
     console.warn('⚠️ Banco de dados não conectado. Execute: npm run setup-db');
@@ -58,7 +59,11 @@ initializeDatabase();
 // ==================== ROTAS ====================
 // Importar rotas
 const materiaisRoutes = require('./src/routes/materiais.routes');
+const authRoutes = require('./src/routes/auth.routes');
+const seedAdmin = require('./src/utils/seedAdmin');
+
 app.use('/api/materiais', materiaisRoutes);
+app.use('/api/auth', authRoutes);
 
 // Rota padrão para teste
 app.get('/api/health', (req, res) => {

@@ -1,299 +1,168 @@
 # 📦 Sistema de Gerenciamento de Estoque
 
-Sistema robusto e escalável de gerenciamento de estoque desenvolvido com **Node.js**, **Express** e **MySQL**, seguindo a arquitetura **MVC**.
+API e interface web para controle de materiais, construída com **Node.js**, **Express** e **MySQL**.
 
-## 🎯 Estrutura do Projeto
+---
 
-```
-BarberControl/
-├── src/
-│   ├── controllers/
-│   │   └── materiaisController.js      # Lógica de negócio para materiais
-│   ├── models/
-│   │   └── Material.js                 # Modelo de dados para a tabela materiais
-│   ├── routes/
-│   │   └── materiais.routes.js         # Definição de rotas da API
-│   └── database/
-│       └── schema.sql                  # Script DDL para criar tabelas
-├── public/
-│   └── index.html                      # Interface frontend
-├── server.js                           # Servidor Express com middlewares
-├── package.json                        # Dependências do projeto
-├── .env.example                        # Variáveis de ambiente (exemplo)
-└── README.md                           # Este arquivo
-```
+## 📌 Sobre o projeto
 
-## 🚀 Início Rápido
+Este projeto foi criado para facilitar o controle de estoque de materiais em um ambiente simples e prático.  
+Com ele, é possível cadastrar produtos, atualizar quantidades, consultar itens e acompanhar materiais com estoque baixo.
+
+O sistema é composto por:
+- **Backend (API REST)** com Node.js + Express
+- **Banco de dados MySQL** para persistência
+- **Interface web** para operação diária
+
+---
+
+## ⚙️ Como funciona
+
+1. O usuário acessa a interface web.
+2. A interface faz requisições para a API (`/api/materiais`).
+3. A API processa as regras de negócio (cadastro, edição, listagem, remoção).
+4. Os dados são salvos e lidos no MySQL.
+5. O sistema retorna as informações atualizadas para a interface.
+
+Fluxo resumido: **Frontend → API Express → MySQL → API → Frontend**
+
+---
+
+## 🚀 Inicialização Rápida (1 comando)
 
 ### Pré-requisitos
 - Node.js (v14+)
-- MySQL (v5.7+) - *Opcional para iniciar o servidor*
-- npm ou yarn
+- MySQL (v5.7+)
+- npm
 
-### 1. Instalar Dependências
+### Passos
 ```bash
 npm install
+npm run start:tudo
 ```
 
-### 2. Configurar Variáveis de Ambiente
-Opção A: Assistente Interativo (Recomendado)
+O comando `start:tudo` executa:
+1. `npm run setup:db` → assistente para criar/configurar o `.env`
+2. `npm run dev` → inicia o servidor com nodemon
+
+Servidor padrão: `http://localhost:3000`
+
+---
+
+## 🛠️ Scripts disponíveis
+
 ```bash
-npm run setup-db
-```
-Isso vai guiar você através das configurações necessárias.
-
-Opção B: Manual
-```bash
-# Copiar arquivo de exemplo
-cp .env.example .env
-
-# Editar .env com suas credenciais MySQL
+npm start          # Inicia em modo produção
+npm run dev        # Inicia em modo desenvolvimento (nodemon)
+npm run setup:db   # Assistente interativo para gerar .env
+npm run start:tudo # Configura .env + inicia servidor
 ```
 
-### 3. Iniciar o Servidor (ANTES de configurar BD)
-```bash
-npm run dev
+---
+
+## 🔌 Integração Frontend x Backend (Login + 2FA)
+
+As telas de login e verificação já estão preparadas para dois modos:
+
+1. `mock` (padrão): funciona sem banco/API para desenvolvimento de interface.
+2. `api`: usa endpoints reais para autenticação.
+
+Como trocar de modo no navegador (DevTools Console):
+
+```js
+localStorage.setItem('auth_mode', 'mock') // frontend isolado
+localStorage.setItem('auth_mode', 'api')  // conecta no backend real
 ```
 
-Neste ponto, o servidor está rodando e acessível em `http://localhost:3000`, mesmo sem banco de dados conectado.
+Credencial de demonstração no modo `mock`:
 
-### 4. Configurar Banco de Dados (DEPOIS - Responsabilidade de outra pessoa)
+- E-mail: `cliente@intellistock.com`
+- Senha: `123456`
 
-Quando estiver pronto para conectar ao MySQL:
+Contrato esperado no modo `api`:
 
-1. **Criar banco de dados:**
-```bash
-mysql -u root -p
-CREATE DATABASE estoque_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE estoque_db;
-SOURCE src/database/schema.sql;
-EXIT;
+- `POST /api/auth/login` com `{ email, senha }`
+- `POST /api/auth/verificar` com `{ token_temp, codigo }`
+
+---
+
+## ⚙️ Configuração manual do .env (opcional)
+
+Se não quiser usar o assistente:
+
+### Windows (PowerShell/CMD)
+```powershell
+copy .env.example .env
 ```
 
-Ou execute direto:
+Depois edite o `.env` com suas credenciais do MySQL.
+
+---
+
+## 🗄️ Banco de dados
+
+Crie o banco e aplique o schema:
+
 ```bash
 mysql -u root -p < src/database/schema.sql
 ```
 
-2. **Verificar conexão:**
-Quando o servidor tentar conectar ao banco (na próxima inicialização), ele vai avisar se conseguiu ou não.
-
----
-
-## 📋 API Endpoints
-
-### Materiais (CRUD Completo)
-
-#### 1. Listar todos os materiais
-```
-GET /api/materiais
-GET /api/materiais?busca=termo
-```
-
-**Resposta (200):**
-```json
-{
-  "success": true,
-  "message": "Materiais recuperados com sucesso",
-  "data": [
-    {
-      "id": 1,
-      "codigo_barras": "123456789",
-      "nome": "Parafuso M8",
-      "quantidade_atual": 50,
-      "quantidade_minima": 10,
-      "preco_manual": 2.50,
-      "created_at": "2024-03-17T10:30:00Z",
-      "updated_at": "2024-03-17T10:30:00Z"
-    }
-  ]
-}
-```
-
-#### 2. Obter material específico
-```
-GET /api/materiais/{id}
-```
-
-#### 3. Criar novo material
-```
-POST /api/materiais
-Content-Type: application/json
-
-{
-  "codigo_barras": "123456789",
-  "nome": "Parafuso M8",
-  "quantidade_atual": 50,
-  "quantidade_minima": 10,
-  "preco_manual": 2.50
-}
-```
-
-**Resposta (201):**
-```json
-{
-  "success": true,
-  "message": "Material criado com sucesso",
-  "data": { ... }
-}
-```
-
-#### 4. Atualizar material completo
-```
-PUT /api/materiais/{id}
-Content-Type: application/json
-
-{
-  "nome": "Parafuso M10",
-  "quantidade_minima": 15,
-  "preco_manual": 3.00
-}
-```
-
-#### 5. Atualizar quantidade (adicionar/subtrair)
-```
-PUT /api/materiais/{id}/quantidade
-Content-Type: application/json
-
-{
-  "diferenca": 5
-}
-```
-
-**Exemplos:**
-- `"diferenca": 5` → Adiciona 5 unidades
-- `"diferenca": -3` → Remove 3 unidades
-- `"diferenca": 0` → Sem alteração
-
-#### 6. Deletar material
-```
-DELETE /api/materiais/{id}
-```
-
-#### 7. Listar materiais com estoque baixo
-```
-GET /api/materiais/estoque/baixo
-```
-
-Retorna apenas materiais onde `quantidade_atual < quantidade_minima`
-
-## 🗄️ Estrutura do Banco de Dados
-
-### Tabela: `materiais`
-
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `id` | INT | Chave primária (auto-increment) |
-| `codigo_barras` | VARCHAR(50) | Código único do produto (UNIQUE) |
-| `nome` | VARCHAR(150) | Nome do material |
-| `quantidade_atual` | INT | Quantidade em estoque |
-| `quantidade_minima` | INT | Quantidade mínima (gatilho para alertas) |
-| `preco_manual` | DECIMAL(10,2) | Preço unitário |
-| `created_at` | TIMESTAMP | Data de criação |
-| `updated_at` | TIMESTAMP | Data da última atualização |
-
-### Triggers Automáticos
-
-- **`tr_verificar_quantidade_minima_insert`**: Cria alerta ao inserir material abaixo do mínimo
-- **`tr_verificar_quantidade_minima_update`**: Cria alerta ao atualizar quantidade abaixo do mínimo
-
-### Tabela: `alertas_estoque`
-
-Registra automaticamente quando a quantidade de um material fica abaixo do mínimo.
-
-## 🎨 Interface Frontend
-
-A interface HTML em `/public/index.html` oferece:
-
-✅ **Listagem de Materiais**: Visualização em tabela com filtros  
-✅ **Busca**: Busca por nome ou código de barras (tempo real)  
-✅ **Adicionar Material**: Modal para novo registro  
-✅ **Atualizar Quantidade**: Botões +/- para ajuste rápido  
-✅ **Deletar Material**: Remover registros com confirmação  
-✅ **Status Visual**: Indicador de estoque baixo  
-✅ **Responsivo**: Design adaptável para mobile  
-
-## 📝 Próximos Passos para a Equipe
-
-### Setup Inicial (Já Feito ✓)
-- ✓ Estrutura MVC criada
-- ✓ Servidor Express com middlewares configurados
-- ✓ Interface frontend pronta
-- ✓ Documentação de API
-
-### Configuração do Banco de Dados (Próxima Pessoa)
-1. **Criar banco de dados MySQL**:
-   ```bash
-   mysql -u root -p < src/database/schema.sql
-   ```
-
-2. **Atualizar .env**:
-   ```bash
-   npm run setup-db
-   ```
-
-3. **Reiniciar servidor** para conectar ao banco
-
-### Implementar Funcionalidades Específicas
-- Relatórios de movimento de estoque
-- Histórico de alterações
-- Integração com fornecedores
-- Sistema de pedidos de reposição
-- Autenticação e autorização
-
-## 🛠️ Scripts NPM
-
-```bash
-npm start         # Iniciar servidor (modo produção)
-npm run dev       # Iniciar servidor (modo desenvolvimento com nodemon)
-npm run setup-db  # Assistente de configuração interativo
-```
-
-## 📦 Dependências
-
-| Pacote | Versão | Descrição |
-|--------|--------|-----------|
-| `express` | ^4.18.2 | Framework web |
-| `cors` | ^2.8.5 | Middleware CORS |
-| `dotenv` | ^16.0.3 | Carregar variáveis de ambiente |
-| `mysql2` | ^3.6.0 | Driver MySQL com Promises |
-| `nodemon` | ^2.0.22 | Auto-reload em desenvolvimento |
-
-## 🔐 Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz do projeto (ou use `npm run setup-db`):
+Configuração padrão esperada no `.env`:
 
 ```env
-# Configurações do Servidor
-PORT=3000
-NODE_ENV=development
-
-# Configurações do Banco de Dados
-# Deixe em branco até que alguém configure o MySQL
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=estoque_db
 DB_PORT=3306
-
-# CORS
-CORS_ORIGIN=*
+PORT=3000
+NODE_ENV=development
 ```
-
-**Nota**: Você pode iniciar o servidor sem as credenciais do banco. Quando o banco estiver configurado, edite as variáveis e reinicie.
-
-## 📞 Suporte
-
-Para dúvidas sobre a arquitetura ou implementação, consulte:
-- **Models**: Lógica de dados em `src/models/`
-- **Controllers**: Regras de negócio em `src/controllers/`
-- **Routes**: Endpoints disponíveis em `src/routes/`
-
-## 📄 Licença
-
-Este projeto está sob licença ISC.
 
 ---
 
-**Versão**: 1.0.0  
-**Última Atualização**: 17 de Março de 2024
+## 📋 Endpoints principais
+
+Base: `/api/materiais`
+
+- `GET /api/materiais` → listar materiais
+- `GET /api/materiais/:id` → buscar por id
+- `POST /api/materiais` → criar material
+- `PUT /api/materiais/:id` → atualizar material
+- `PUT /api/materiais/:id/quantidade` → ajustar quantidade
+- `DELETE /api/materiais/:id` → remover material
+- `GET /api/materiais/estoque/baixo` → listar estoque baixo
+
+---
+
+## 📁 Estrutura resumida
+
+```text
+BarberControl/
+├── src/
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   └── database/schema.sql
+├── public/index.html
+├── server.js
+├── setup-db.js
+├── .env.example
+└── package.json
+```
+
+---
+
+## 📦 Dependências
+
+- express
+- cors
+- dotenv
+- mysql2
+- nodemon (dev)
+
+---
+
+## 📄 Licença
+
+ISC

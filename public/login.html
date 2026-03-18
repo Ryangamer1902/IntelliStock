@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | IntelliStock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f3f7f7;
+      --ink: #122127;
+      --muted: #5d6b70;
+      --brand: #0e8f83;
+      --brand-strong: #096b62;
+      --accent: #ee7f3b;
+      --line: rgba(18, 33, 39, 0.1);
+      --shadow: 0 20px 45px rgba(9, 41, 49, 0.12);
+      --card: #ffffff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 5%, rgba(14, 143, 131, 0.18), transparent 28%),
+        radial-gradient(circle at 95% 10%, rgba(238, 127, 59, 0.16), transparent 24%),
+        linear-gradient(180deg, #f8fbfb 0%, var(--bg) 75%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .shell {
+      width: min(1140px, 94%);
+      margin: 0 auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      background: rgba(248, 251, 251, 0.78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .brand-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, var(--brand), #0fb8a9);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: var(--ink);
+      padding: 9px 13px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    nav a:hover,
+    nav a.active {
+      background: rgba(14, 143, 131, 0.13);
+      color: var(--brand-strong);
+    }
+
+    main {
+      padding: 54px 0 68px;
+    }
+
+    .wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .info,
+    .login-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #ffffff, #f7fbfb);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(14, 143, 131, 0.26);
+      color: var(--brand-strong);
+      background: rgba(14, 143, 131, 0.08);
+      font-weight: 700;
+      font-size: 0.84rem;
+      margin-bottom: 12px;
+    }
+
+    h1,
+    h2 {
+      font-family: 'Sora', sans-serif;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      margin-bottom: 10px;
+    }
+
+    .info p {
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 12px;
+    }
+
+    .check-list {
+      margin-top: 12px;
+      display: grid;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    .check-item {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+
+    .login-card h2 {
+      font-size: 1.45rem;
+      margin-bottom: 6px;
+    }
+
+    .login-card p {
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #1f343a;
+    }
+
+    .field input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 13px;
+      font-size: 0.95rem;
+      font-family: 'Manrope', sans-serif;
+      outline: none;
+      background: #fff;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .field input:focus {
+      border-color: rgba(14, 143, 131, 0.55);
+      box-shadow: 0 0 0 4px rgba(14, 143, 131, 0.14);
+    }
+
+    .password-wrap {
+      position: relative;
+    }
+
+    .password-wrap input {
+      padding-right: 95px;
+    }
+
+    .toggle-pass {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      border: 0;
+      background: rgba(14, 143, 131, 0.12);
+      color: var(--brand-strong);
+      font-weight: 700;
+      font-size: 0.78rem;
+      border-radius: 8px;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--brand);
+    }
+
+    .row a {
+      color: var(--brand-strong);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .btn {
+      border: 0;
+      width: 100%;
+      text-decoration: none;
+      padding: 13px 18px;
+      border-radius: 11px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), #0cac9c);
+      box-shadow: 0 12px 26px rgba(14, 143, 131, 0.25);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .small {
+      margin-top: 14px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .small a {
+      color: var(--brand-strong);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+
+    .form-feedback {
+      display: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .form-feedback.error {
+      display: block;
+      color: #8b3a18;
+      background: rgba(238, 127, 59, 0.16);
+      border: 1px solid rgba(238, 127, 59, 0.38);
+    }
+
+    .form-feedback.success {
+      display: block;
+      color: #0f5f55;
+      background: rgba(14, 143, 131, 0.14);
+      border: 1px solid rgba(14, 143, 131, 0.38);
+    }
+
+    .trust-row {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .trust-item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #2a454d;
+      font-weight: 700;
+    }
+
+    .actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .actions .btn {
+      width: auto;
+    }
+
+    .btn-soft {
+      border: 1px solid rgba(14, 143, 131, 0.25);
+      background: rgba(14, 143, 131, 0.1);
+      color: var(--brand-strong);
+    }
+
+    @media (max-width: 920px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      nav {
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+      }
+
+      nav a {
+        white-space: nowrap;
+        flex: 0 0 auto;
+      }
+
+      .wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .info,
+      .login-card {
+        padding: 18px;
+      }
+
+      .trust-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .reveal-section {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+
+    .reveal-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body id="topo">
+  <header>
+    <div class="shell topbar">
+      <a class="brand" href="/index.html">
+        <span class="brand-badge">IS</span>
+        <span>IntelliStock</span>
+      </a>
+      <nav>
+        <a href="/index.html">Início</a>
+        <a href="/produtos.html">Produtos</a>
+        <a href="/login.html" class="active">Login</a>
+        <a href="/relatorios.html">Relatórios</a>
+        <a href="/historico.html">Histórico</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="wrap reveal-section">
+      <article class="info">
+        <span class="pill">Acesso seguro</span>
+        <h1>Entre na sua conta IntelliStock</h1>
+        <p>
+          Faça login para acompanhar produtos, analisar relatórios e gerenciar seu estoque em tempo real,
+          com uma experiência simples para a equipe e completa para a gestão.
+        </p>
+        <div class="check-list">
+          <div class="check-item">Controle centralizado de entradas e saídas</div>
+          <div class="check-item">Painel com dados atualizados para decisões rápidas</div>
+          <div class="check-item">Histórico completo para auditoria de estoque</div>
+        </div>
+        <div class="trust-row">
+          <div class="trust-item">Criptografia de dados</div>
+          <div class="trust-item">Acesso rápido e seguro</div>
+          <div class="trust-item">Suporte especializado</div>
+        </div>
+      </article>
+
+      <article class="login-card">
+        <h2>Login</h2>
+        <p>Use seu e-mail corporativo para acessar a plataforma.</p>
+        <form id="loginForm" novalidate>
+          <div id="formFeedback" class="form-feedback"></div>
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" type="email" placeholder="seuemail@empresa.com" required>
+          </div>
+
+          <div class="field">
+            <label for="senha">Senha</label>
+            <div class="password-wrap">
+              <input id="senha" type="password" placeholder="Digite sua senha" minlength="6" required>
+              <button id="togglePass" class="toggle-pass" type="button">Mostrar</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <label><input id="remember" type="checkbox"> Manter conectado</label>
+            <a href="#">Esqueci minha senha</a>
+          </div>
+
+          <button id="submitBtn" class="btn" type="submit">Entrar no IntelliStock</button>
+        </form>
+        <p class="small">Ainda não tem acesso? <a href="#">Fale com o administrador</a></p>
+      </article>
+    </section>
+
+    <div class="actions">
+      <a class="btn btn-soft" href="/index.html">Voltar ao início</a>
+    </div>
+  </main>
+
+  <script src="./js/auth-service.js"></script>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('senha');
+    const submitBtn = document.getElementById('submitBtn');
+    const togglePass = document.getElementById('togglePass');
+    const formFeedback = document.getElementById('formFeedback');
+
+    togglePass.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      togglePass.textContent = isPassword ? 'Ocultar' : 'Mostrar';
+    });
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      const emailOk = /\S+@\S+\.\S+/.test(email);
+
+      formFeedback.className = 'form-feedback';
+
+      if (!emailOk) {
+        formFeedback.textContent = 'Informe um e-mail válido para continuar.';
+        formFeedback.classList.add('error');
+        emailInput.focus();
+        return;
+      }
+
+      if (password.length < 6) {
+        formFeedback.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+        formFeedback.classList.add('error');
+        passwordInput.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Entrando...';
+
+      try {
+        const data = await window.AuthService.login({ email, senha: password });
+
+        if (data.success) {
+          sessionStorage.setItem('is_2fa_session', JSON.stringify({
+            token_temp: data.token_temp,
+            nome: data.nome,
+            codigo_demo: data.codigo_demo || null
+          }));
+          window.location.href = '/verificacao.html';
+        } else {
+          formFeedback.textContent = data.message || 'Credenciais inválidas.';
+          formFeedback.classList.add('error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Entrar no IntelliStock';
+        }
+      } catch (err) {
+        formFeedback.textContent = 'Falha ao processar login. Verifique se o modo API está disponível.';
+        formFeedback.classList.add('error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Entrar no IntelliStock';
+      }
+    });
+  </script>
+
+  <script>
+    const revealEls = document.querySelectorAll('.reveal-section');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), index * 80);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    revealEls.forEach((el) => revealObserver.observe(el));
+  </script>
+</body>
+</html>

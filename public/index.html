@@ -1,614 +1,500 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gerenciamento de Estoque</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IntelliStock | Gerenciador de Estoque</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f3f7f7;
+      --ink: #122127;
+      --muted: #5d6b70;
+      --brand: #0e8f83;
+      --brand-strong: #096b62;
+      --accent: #ee7f3b;
+      --card: #ffffff;
+      --line: rgba(18, 33, 39, 0.1);
+      --shadow: 0 20px 45px rgba(9, 41, 49, 0.12);
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 30px;
-        }
+    body {
+      font-family: 'Manrope', sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 5%, rgba(14, 143, 131, 0.18), transparent 28%),
+        radial-gradient(circle at 95% 10%, rgba(238, 127, 59, 0.16), transparent 24%),
+        linear-gradient(180deg, #f8fbfb 0%, var(--bg) 75%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            text-align: center;
-        }
+    .shell {
+      width: min(1140px, 94%);
+      margin: 0 auto;
+    }
 
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      background: rgba(248, 251, 251, 0.78);
+      border-bottom: 1px solid var(--line);
+    }
 
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      gap: 20px;
+    }
 
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
 
-        .btn-primary {
-            background-color: #667eea;
-            color: white;
-        }
+    .brand-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, var(--brand), #0fb8a9);
+      color: #fff;
+      font-weight: 800;
+    }
 
-        .btn-primary:hover {
-            background-color: #5568d3;
-            transform: translateY(-2px);
-        }
+    nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
 
-        .btn-secondary {
-            background-color: #f093fb;
-            color: white;
-        }
+    nav a {
+      text-decoration: none;
+      color: var(--ink);
+      padding: 9px 13px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
 
-        .btn-secondary:hover {
-            background-color: #e07de5;
-            transform: translateY(-2px);
-        }
+    nav a:hover {
+      background: rgba(14, 143, 131, 0.13);
+      color: var(--brand-strong);
+    }
 
-        .search-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
+    .hero {
+      padding: 72px 0 54px;
+      display: grid;
+      gap: 26px;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: center;
+    }
 
-        .search-box input {
-            flex: 1;
-            padding: 10px 15px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(14, 143, 131, 0.26);
+      color: var(--brand-strong);
+      background: rgba(14, 143, 131, 0.08);
+      font-weight: 700;
+      font-size: 0.84rem;
+      margin-bottom: 14px;
+    }
 
-        .search-box input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+    .hero h1 {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(2rem, 4vw, 3.35rem);
+      line-height: 1.08;
+      letter-spacing: -0.8px;
+      max-width: 17ch;
+      margin-bottom: 16px;
+    }
 
-        .status-message {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
-            font-size: 14px;
-        }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      max-width: 54ch;
+    }
 
-        .status-message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
+    .cta-row {
+      margin-top: 28px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-        .status-message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
+    .btn {
+      border: 0;
+      text-decoration: none;
+      padding: 12px 18px;
+      border-radius: 11px;
+      font-weight: 800;
+      font-size: 0.92rem;
+      letter-spacing: 0.2px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
 
-        .table-responsive {
-            overflow-x: auto;
-        }
+    .btn-main {
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), #0cac9c);
+      box-shadow: 0 12px 26px rgba(14, 143, 131, 0.25);
+    }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+    .btn-main:hover {
+      transform: translateY(-2px);
+    }
 
-        thead {
-            background-color: #667eea;
-            color: white;
-        }
+    .btn-soft {
+      color: var(--brand-strong);
+      background: rgba(14, 143, 131, 0.1);
+      border: 1px solid rgba(14, 143, 131, 0.25);
+    }
 
-        th {
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-            border: 1px solid #ddd;
-        }
+    .btn-soft:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 22px rgba(14, 143, 131, 0.14);
+    }
 
-        td {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            font-size: 14px;
-        }
+    .showcase {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 22px;
+      background: linear-gradient(180deg, #ffffff, #f7fbfb);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 14px;
+    }
 
-        tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
+    .showcase-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
 
-        tbody tr:hover {
-            background-color: #e8eef7;
-            transition: background-color 0.3s;
-        }
+    .kpis {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
 
-        .quantity-controls {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-        }
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      padding: 14px;
+    }
 
-        .btn-sm {
-            width: 30px;
-            height: 30px;
-            padding: 0;
-            font-size: 16px;
-            border-radius: 3px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
+    .kpi strong {
+      font-family: 'Sora', sans-serif;
+      display: block;
+      font-size: 1.4rem;
+      margin-bottom: 2px;
+    }
 
-        .btn-decrease {
-            background-color: #ff6b6b;
-            color: white;
-        }
+    .kpi span {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
 
-        .btn-decrease:hover {
-            background-color: #ee5a52;
-        }
+    .timeline {
+      border: 1px dashed rgba(9, 107, 98, 0.3);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(14, 143, 131, 0.06);
+      color: #1a5851;
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
 
-        .btn-increase {
-            background-color: #51cf66;
-            color: white;
-        }
+    .benefits {
+      padding: 24px 0 62px;
+    }
 
-        .btn-increase:hover {
-            background-color: #37b24d;
-        }
+    .benefits h2 {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(1.5rem, 3vw, 2.15rem);
+      margin-bottom: 22px;
+    }
 
-        .quantity-value {
-            min-width: 50px;
-            text-align: center;
-            font-weight: 600;
-        }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
 
-        .btn-delete {
-            background-color: #ee5a52;
-            color: white;
-            padding: 5px 10px;
-            font-size: 12px;
-        }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      padding: 18px;
+      box-shadow: 0 8px 20px rgba(8, 37, 44, 0.06);
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
 
-        .btn-delete:hover {
-            background-color: #c92a2a;
-        }
+    .card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-        .alert-low-stock {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 8px;
-            border-radius: 3px;
-            font-size: 12px;
-            font-weight: 600;
-        }
+    .card h3 {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.02rem;
+      margin-bottom: 9px;
+    }
 
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-            font-size: 16px;
-        }
+    .card p {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
+    .sales-cta {
+      margin: 16px 0 62px;
+      border-radius: 18px;
+      padding: 26px;
+      background: linear-gradient(120deg, #123f4a 0%, #0b6b64 60%, #0f8e80 100%);
+      color: #f5ffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
 
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-        }
+    .sales-cta h3 {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.4rem;
+      margin-bottom: 6px;
+    }
 
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
+    .sales-cta p {
+      max-width: 56ch;
+      color: rgba(245, 255, 255, 0.88);
+      line-height: 1.6;
+    }
 
-        .modal-header h2 {
-            color: #333;
-        }
+    .sales-cta .btn-main {
+      background: linear-gradient(130deg, var(--accent), #f69b63);
+      box-shadow: 0 12px 28px rgba(220, 99, 24, 0.32);
+      color: #fff;
+    }
 
-        .close {
-            font-size: 28px;
-            font-weight: bold;
-            color: #aaa;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 0;
-        }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 24px 0 30px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+    }
 
-        .close:hover {
-            color: #000;
-        }
+    @media (max-width: 980px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 48px;
+      }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
+      .showcase {
+        max-width: 620px;
+      }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 600;
-            font-size: 14px;
-        }
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
 
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
+    @media (max-width: 640px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+      }
 
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+      nav {
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+      }
 
-        .modal-footer {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
+      nav a {
+        font-size: 0.9rem;
+        padding: 8px 11px;
+        white-space: nowrap;
+        flex: 0 0 auto;
+      }
 
-        .footer {
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-        }
+      .hero {
+        padding-top: 36px;
+      }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
+      .showcase,
+      .sales-cta {
+        padding: 18px;
+      }
 
-            .controls {
-                flex-direction: column;
-            }
+      .grid {
+        grid-template-columns: 1fr;
+      }
 
-            table {
-                font-size: 12px;
-            }
-
-            th, td {
-                padding: 8px 10px;
-            }
-
-            .quantity-controls {
-                flex-direction: column;
-                gap: 3px;
-            }
-        }
-    </style>
+      .kpis {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <h1>📦 Gerenciador de Estoque</h1>
-        <p class="subtitle">Sistema de controle de materiais e produtos</p>
-
-        <!-- Mensagem de Status -->
-        <div id="statusMessage" class="status-message"></div>
-
-        <!-- Controles -->
-        <div class="controls">
-            <button class="btn btn-primary" onclick="abrirModalNovoMaterial()">+ Adicionar Material</button>
-            <button class="btn btn-secondary" onclick="atualizarLista()">🔄 Atualizar</button>
-        </div>
-
-        <!-- Busca -->
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Buscar por nome ou código de barras...">
-        </div>
-
-        <!-- Tabela de Materiais -->
-        <div class="table-responsive">
-            <table id="materiaisTable">
-                <thead>
-                    <tr>
-                        <th>Código de Barras</th>
-                        <th>Nome</th>
-                        <th>Quantidade Atual</th>
-                        <th>Mínimo</th>
-                        <th>Preço</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="materiaisTableBody">
-                    <tr>
-                        <td colspan="7" class="no-data">Carregando materiais...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="footer">
-            <p>Sistema de Gerenciamento de Estoque © 2024 | Versão 1.0.0</p>
-        </div>
+<body id="topo">
+  <header>
+    <div class="shell topbar">
+      <a class="brand" href="/index.html">
+        <span class="brand-badge">IS</span>
+        <span>IntelliStock</span>
+      </a>
+      <nav>
+        <a href="/index.html">Início</a>
+        <a href="/produtos.html">Produtos</a>
+        <a href="/login.html">Login</a>
+        <a href="/relatorios.html">Relatórios</a>
+        <a href="/historico.html">Histórico</a>
+      </nav>
     </div>
+  </header>
 
-    <!-- Modal para Novo Material -->
-    <div id="modalNovoMaterial" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Novo Material</h2>
-                <button class="close" onclick="fecharModal('modalNovoMaterial')">&times;</button>
-            </div>
-            <form onsubmit="adicionarMaterial(event)">
-                <div class="form-group">
-                    <label>Código de Barras:</label>
-                    <input type="text" id="codigoBarras" required>
-                </div>
-                <div class="form-group">
-                    <label>Nome do Material:</label>
-                    <input type="text" id="nomeMaterial" required>
-                </div>
-                <div class="form-group">
-                    <label>Quantidade Inicial:</label>
-                    <input type="number" id="quantidadeInicial" min="0" value="0" required>
-                </div>
-                <div class="form-group">
-                    <label>Quantidade Mínima:</label>
-                    <input type="number" id="quantidadeMinima" min="1" value="10" required>
-                </div>
-                <div class="form-group">
-                    <label>Preço (R$):</label>
-                    <input type="number" id="preco" min="0" step="0.01" value="0.00" required>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="fecharModal('modalNovoMaterial')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Material</button>
-                </div>
-            </form>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <span class="pill">Gestão de estoque para quem quer crescer</span>
+        <h1>Seu estoque sob controle para vender mais e perder menos.</h1>
+        <p>
+          O IntelliStock ajuda empresas a organizar entradas e saídas, acompanhar produtos críticos
+          e agir rápido com dados claros. Uma plataforma simples para sua equipe e forte para o seu negócio.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-main" href="/produtos.html">Começar agora</a>
+          <a class="btn btn-soft" href="/relatorios.html">Ver relatórios</a>
+          <a class="btn btn-soft" href="/historico.html">Histórico de movimentos</a>
         </div>
-    </div>
+      </div>
 
-    <script>
-        const API_BASE_URL = '/api';
+      <aside class="showcase">
+        <h2 class="showcase-title">Resultados que você enxerga no dia a dia</h2>
+        <div class="kpis">
+          <div class="kpi">
+            <strong>-31%</strong>
+            <span>redução de perdas por falta de reposição</span>
+          </div>
+          <div class="kpi">
+            <strong>+48%</strong>
+            <span>mais agilidade nas operações de estoque</span>
+          </div>
+          <div class="kpi">
+            <strong>24h</strong>
+            <span>visão completa de entradas e saídas</span>
+          </div>
+          <div class="kpi">
+            <strong>100%</strong>
+            <span>dados centralizados em um único painel</span>
+          </div>
+        </div>
+        <div class="timeline">
+          Com poucos cliques, sua equipe registra produtos, monitora estoque mínimo e acompanha o histórico.
+          Isso evita rupturas, reduz desperdícios e melhora a experiência de compra dos seus clientes.
+        </div>
+      </aside>
+    </section>
 
-        // ==================== FUNÇÕES DE MODAL ====================
-        function abrirModalNovoMaterial() {
-            document.getElementById('modalNovoMaterial').style.display = 'block';
+    <section class="benefits">
+      <h2>Por que escolher o IntelliStock?</h2>
+      <div class="grid">
+        <article class="card reveal-card">
+          <h3>Operação mais simples</h3>
+          <p>Interface direta para registrar produtos e movimentações sem depender de planilhas complexas.</p>
+        </article>
+        <article class="card reveal-card">
+          <h3>Decisão baseada em dados</h3>
+          <p>Relatórios objetivos para entender giro, reposição e performance dos itens mais importantes.</p>
+        </article>
+        <article class="card reveal-card">
+          <h3>Menos ruptura de estoque</h3>
+          <p>Controle de quantidade mínima para agir antes da falta de produto impactar suas vendas.</p>
+        </article>
+        <article class="card reveal-card">
+          <h3>Escalável para o seu crescimento</h3>
+          <p>Use hoje no ritmo atual e mantenha a mesma base quando seu volume de operações aumentar.</p>
+        </article>
+        <article class="card reveal-card">
+          <h3>Visão para gestores</h3>
+          <p>Panorama rápido para identificar gargalos e alinhar compras, vendas e atendimento.</p>
+        </article>
+        <article class="card reveal-card">
+          <h3>Mais confiança para vender</h3>
+          <p>Com estoque organizado, seu time atende com segurança e fecha mais vendas sem improviso.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="sales-cta">
+      <div>
+        <h3>Transforme seu estoque em vantagem competitiva</h3>
+        <p>
+          Mostre profissionalismo, reduza custos operacionais e ofereça uma experiência melhor para seus clientes.
+          O IntelliStock foi pensado para vender mais com controle de verdade.
+        </p>
+      </div>
+      <a class="btn btn-main" href="/produtos.html">Quero conhecer a plataforma</a>
+    </section>
+
+  </main>
+
+  <footer>
+    IntelliStock - Gerenciador de Estoque | Versão 1.0
+  </footer>
+
+  <script>
+    const cards = document.querySelectorAll('.reveal-card');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, index * 80);
+          observer.unobserve(entry.target);
         }
+      });
+    }, { threshold: 0.18 });
 
-        function fecharModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            // Limpar formulário
-            if (modalId === 'modalNovoMaterial') {
-                document.querySelector('#modalNovoMaterial form').reset();
-            }
-        }
-
-        // Fechar modal ao clicar fora dele
-        window.onclick = function(event) {
-            const modal = event.target;
-            if (modal.classList.contains('modal')) {
-                modal.style.display = 'none';
-            }
-        }
-
-        // ==================== FUNÇÕES DE API ====================
-        async function atualizarLista() {
-            try {
-                console.log('Buscando materiais...');
-                const response = await fetch(`${API_BASE_URL}/materiais`);
-                
-                if (!response.ok) {
-                    throw new Error('Erro ao buscar materiais');
-                }
-
-                const data = await response.json();
-                const materiais = data.data || [];
-                
-                renderizarTabela(materiais);
-                mostrarMensagem('Lista atualizada com sucesso!', 'success');
-            } catch (error) {
-                console.error('Erro:', error);
-                mostrarMensagem('Erro ao carregar materiais. Verifique a conexão.', 'error');
-                renderizarTabela([]);
-            }
-        }
-
-        async function adicionarMaterial(event) {
-            event.preventDefault();
-
-            const novoMaterial = {
-                codigo_barras: document.getElementById('codigoBarras').value,
-                nome: document.getElementById('nomeMaterial').value,
-                quantidade_atual: parseInt(document.getElementById('quantidadeInicial').value),
-                quantidade_minima: parseInt(document.getElementById('quantidadeMinima').value),
-                preco_manual: parseFloat(document.getElementById('preco').value)
-            };
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/materiais`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(novoMaterial)
-                });
-
-                if (!response.ok) {
-                    throw new Error('Erro ao criar material');
-                }
-
-                mostrarMensagem('Material adicionado com sucesso!', 'success');
-                fecharModal('modalNovoMaterial');
-                atualizarLista();
-            } catch (error) {
-                mostrarMensagem('Erro ao adicionar material: ' + error.message, 'error');
-            }
-        }
-
-        async function aumentarQuantidade(materialId) {
-            await atualizarQuantidade(materialId, 1);
-        }
-
-        async function diminuirQuantidade(materialId) {
-            await atualizarQuantidade(materialId, -1);
-        }
-
-        async function atualizarQuantidade(materialId, diferenca) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/materiais/${materialId}/quantidade`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ diferenca: diferenca })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Erro ao atualizar quantidade');
-                }
-
-                atualizarLista();
-            } catch (error) {
-                mostrarMensagem('Erro ao atualizar quantidade: ' + error.message, 'error');
-            }
-        }
-
-        async function deletarMaterial(materialId) {
-            if (!confirm('Tem certeza que deseja deletar este material?')) return;
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/materiais/${materialId}`, {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    throw new Error('Erro ao deletar material');
-                }
-
-                mostrarMensagem('Material deletado com sucesso!', 'success');
-                atualizarLista();
-            } catch (error) {
-                mostrarMensagem('Erro ao deletar material: ' + error.message, 'error');
-            }
-        }
-
-        // ==================== FUNÇÕES DE RENDERIZAÇÃO ====================
-        function renderizarTabela(materiais) {
-            const tbody = document.getElementById('materiaisTableBody');
-            
-            if (!materiais || materiais.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="no-data">Nenhum material cadastrado</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = materiais.map(material => {
-                const emEstoque = material.quantidade_atual >= material.quantidade_minima;
-                const statusClass = emEstoque ? '' : 'alert-low-stock';
-                const statusTexto = emEstoque ? '✓ OK' : '⚠️ BAIXO';
-
-                return `
-                    <tr>
-                        <td>${material.codigo_barras}</td>
-                        <td>${material.nome}</td>
-                        <td>${material.quantidade_atual}</td>
-                        <td>${material.quantidade_minima}</td>
-                        <td>R$ ${parseFloat(material.preco_manual).toFixed(2)}</td>
-                        <td><span class="${statusClass}">${statusTexto}</span></td>
-                        <td>
-                            <div class="quantity-controls">
-                                <button class="btn-sm btn-decrease" onclick="diminuirQuantidade(${material.id})">−</button>
-                                <span class="quantity-value">${material.quantidade_atual}</span>
-                                <button class="btn-sm btn-increase" onclick="aumentarQuantidade(${material.id})">+</button>
-                                <button class="btn-sm btn-delete" onclick="deletarMaterial(${material.id})">🗑️</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function mostrarMensagem(mensagem, tipo) {
-            const elemento = document.getElementById('statusMessage');
-            elemento.textContent = mensagem;
-            elemento.className = `status-message ${tipo}`;
-            
-            setTimeout(() => {
-                elemento.style.display = 'none';
-            }, 3000);
-        }
-
-        // ==================== INICIALIZAÇÃO ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            atualizarLista();
-
-            // Implementar busca
-            document.getElementById('searchInput').addEventListener('keyup', async (e) => {
-                const termo = e.target.value.toLowerCase();
-                if (termo.length === 0) {
-                    atualizarLista();
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/materiais?busca=${termo}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        renderizarTabela(data.data || []);
-                    }
-                } catch (error) {
-                    console.error('Erro na busca:', error);
-                }
-            });
-        });
-    </script>
+    cards.forEach((card) => observer.observe(card));
+  </script>
 </body>
 </html>
