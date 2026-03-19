@@ -555,13 +555,14 @@
 <body id="topo">
   <header>
     <div class="shell topbar">
-      <a class="brand" href="/dashboard.html">
+      <a class="brand" href="/index.html">
         <span class="brand-badge">IS</span>
         <span>IntelliStock</span>
       </a>
       <nav>
         <a href="/dashboard.html">Estoque</a>
         <a href="/relatorios.html" class="active">Relatórios</a>
+        <a href="/historico.html">Históricos</a>
       </nav>
       <div class="user-area" id="userArea" style="display:none;flex-shrink:0;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:8px;border:1px solid rgba(18,33,39,0.1);border-radius:999px;padding:7px 13px 7px 9px;background:#fff;font-size:0.85rem;font-weight:700;color:#1f3840">
@@ -675,19 +676,21 @@
           Com visão clara do que mais gira, do que está parado e do que exige reposição, a decisão comercial fica muito mais simples.
         </p>
       </div>
-      <a class="btn btn-main" href="/dashboard.html">Voltar para o estoque</a>
+      <a class="btn btn-main" href="/historico.html">Ver históricos</a>
     </section>
-
-    <div class="back-to-top">
-      <a class="btn btn-soft" href="/index.html">Voltar ao início</a>
-    </div>
   </main>
 
   <script>
-    // Auth guard
+    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    if (__menuUser) {
+      document.querySelectorAll('.nav-auth-link').forEach((link) => {
+        link.style.display = '';
+      });
+    }
+
+    // Sessão opcional: a página pode ser acessada sem login.
     const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
-    if (!_usuario) { window.location.href = '/login.html'; }
-    else {
+    if (_usuario) {
       const area = document.getElementById('userArea');
       area.style.display = 'flex';
       document.getElementById('userName').textContent = _usuario.nome || 'Usuário';

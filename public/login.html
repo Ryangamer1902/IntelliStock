@@ -367,12 +367,16 @@
         flex-wrap: nowrap;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
         padding-bottom: 4px;
       }
 
       nav a {
+        font-size: 0.9rem;
+        padding: 8px 11px;
         white-space: nowrap;
         flex: 0 0 auto;
+        scroll-snap-align: start;
       }
 
       .wrap {
@@ -442,10 +446,11 @@
       </a>
       <nav>
         <a href="/index.html">Início</a>
-        <a href="/produtos.html">Produtos</a>
         <a href="/login.html" class="active">Login</a>
-        <a href="/relatorios.html">Relatórios</a>
-        <a href="/historico.html">Histórico</a>
+        <a href="/relatorios.html" class="nav-auth-link" style="display:none">Relatórios</a>
+        <a href="/historico.html" class="nav-auth-link" style="display:none">Históricos</a>
+        <a href="/index.html#histSection" onclick="sessionStorage.setItem('scrollToHist','1')">Veja na prática</a>
+        <a href="/produtos.html">Planos</a>
       </nav>
     </div>
   </header>
@@ -459,16 +464,6 @@
           Faça login para acompanhar produtos, analisar relatórios e gerenciar seu estoque em tempo real,
           com uma experiência simples para a equipe e completa para a gestão.
         </p>
-        <div class="check-list">
-          <div class="check-item">Controle centralizado de entradas e saídas</div>
-          <div class="check-item">Painel com dados atualizados para decisões rápidas</div>
-          <div class="check-item">Histórico completo para auditoria de estoque</div>
-        </div>
-        <div class="trust-row">
-          <div class="trust-item">Criptografia de dados</div>
-          <div class="trust-item">Acesso rápido e seguro</div>
-          <div class="trust-item">Suporte especializado</div>
-        </div>
       </article>
 
       <article class="login-card">
@@ -506,8 +501,14 @@
   </main>
 
   <script src="./js/auth-service.js"></script>
-
   <script>
+    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    if (__menuUser) {
+      document.querySelectorAll('.nav-auth-link').forEach((link) => {
+        link.style.display = '';
+      });
+    }
+
     const loginForm = document.getElementById('loginForm');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('senha');
