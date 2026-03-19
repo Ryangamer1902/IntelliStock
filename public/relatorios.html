@@ -560,14 +560,13 @@
         <span>IntelliStock</span>
       </a>
       <nav>
-        <a href="/dashboard.html">Estoque</a>
+        <a href="/dashboard.html" class="nav-auth-link" style="display:none">Estoque</a>
         <a href="/relatorios.html" class="active">Relatórios</a>
-        <a href="/historico.html">Históricos</a>
       </nav>
       <div class="user-area" id="userArea" style="display:none;flex-shrink:0;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:8px;border:1px solid rgba(18,33,39,0.1);border-radius:999px;padding:7px 13px 7px 9px;background:#fff;font-size:0.85rem;font-weight:700;color:#1f3840">
           <div id="avatarInitial" style="width:26px;height:26px;border-radius:50%;background:linear-gradient(145deg,#0e8f83,#0fb8a9);display:grid;place-items:center;color:#fff;font-size:0.75rem;font-weight:800">?</div>
-          <span id="userName"></span>
+          Olá, <strong id="userName">...</strong>
         </div>
         <button id="btnLogout" style="border:1px solid rgba(192,57,43,0.3);background:rgba(192,57,43,0.08);color:#c0392b;border-radius:999px;padding:7px 13px;font-size:0.82rem;font-weight:700;cursor:pointer">Sair</button>
       </div>
@@ -669,15 +668,8 @@
       </div>
     </section>
 
-    <section class="cta reveal-section">
-      <div>
-        <h3>Leitura visual pronta para apresentar ao cliente</h3>
-        <p id="ctaSummary">
-          Com visão clara do que mais gira, do que está parado e do que exige reposição, a decisão comercial fica muito mais simples.
-        </p>
-      </div>
-      <a class="btn btn-main" href="/historico.html">Ver históricos</a>
-    </section>
+    <span id="ctaSummary" style="display:none"></span>
+
   </main>
 
   <script>
