@@ -30,14 +30,14 @@ router.get('/:id', MateriaisController.obter);
 /**
  * POST /api/materiais
  * Criar novo material
- * Body: { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_manual }
+ * Body: { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual }
  */
 router.post('/', MateriaisController.criar);
 
 /**
  * PUT /api/materiais/:id
  * Atualizar dados de um material
- * Body: { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_manual }
+ * Body: { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual }
  */
 router.put('/:id', MateriaisController.atualizar);
 

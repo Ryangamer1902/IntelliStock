@@ -294,6 +294,13 @@
       .otp-box { width: 44px; height: 52px; font-size: 1.25rem; gap: 7px; }
       .otp-wrap { gap: 7px; }
     }
+
+    @media (max-width: 380px) {
+      .card { padding: 20px 12px; }
+      .otp-box { width: 38px; height: 46px; font-size: 1.1rem; }
+      .otp-wrap { gap: 5px; }
+      h1 { font-size: 1.35rem; }
+    }
   </style>
 </head>
 <body id="topo">
@@ -465,7 +472,7 @@
           feedback.classList.add('success');
           sessionStorage.setItem('is_usuario', JSON.stringify(data.usuario));
           sessionStorage.removeItem('is_2fa_session');
-          setTimeout(() => { window.location.href = '/index.html'; }, 1400);
+          setTimeout(() => { window.location.href = '/dashboard.html'; }, 1400);
         } else {
           feedback.textContent = data.message || 'Código incorreto.';
           feedback.classList.add('error');

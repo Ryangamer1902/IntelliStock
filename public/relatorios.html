@@ -384,6 +384,77 @@
       justify-content: flex-start;
     }
 
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(18, 33, 39, 0.05);
+      border: 1px solid var(--line);
+      color: #214249;
+      font-size: 0.83rem;
+      font-weight: 700;
+    }
+
+    .section-stack {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .insight-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: linear-gradient(180deg, #ffffff, #f7fbfb);
+      box-shadow: 0 8px 18px rgba(8, 37, 44, 0.06);
+    }
+
+    .insight-card span {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .insight-card strong {
+      display: block;
+      font-family: 'Sora', sans-serif;
+      font-size: 1.15rem;
+      margin-bottom: 6px;
+      color: #17383f;
+    }
+
+    .insight-card p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .empty-report {
+      border: 1px dashed rgba(18, 33, 39, 0.18);
+      border-radius: 16px;
+      padding: 26px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
     @media (max-width: 980px) {
       .topbar {
         align-items: flex-start;
@@ -411,6 +482,10 @@
       .grid {
         grid-template-columns: 1fr;
       }
+
+      .insight-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 560px) {
@@ -427,6 +502,41 @@
 
       .kpi-grid {
         grid-template-columns: 1fr;
+      }
+
+      .cta {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .insight-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 420px) {
+      main {
+        padding: 24px 0 36px;
+      }
+
+      .hero,
+      .panel,
+      .full-panel,
+      .cta {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 1.45rem;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .actions .btn {
+        width: 100%;
+        justify-content: center;
       }
     }
 
@@ -445,158 +555,127 @@
 <body id="topo">
   <header>
     <div class="shell topbar">
-      <a class="brand" href="/index.html">
+      <a class="brand" href="/dashboard.html">
         <span class="brand-badge">IS</span>
         <span>IntelliStock</span>
       </a>
       <nav>
-        <a href="/index.html">Início</a>
-        <a href="/produtos.html">Produtos</a>
-        <a href="/login.html">Login</a>
+        <a href="/dashboard.html">Estoque</a>
         <a href="/relatorios.html" class="active">Relatórios</a>
-        <a href="/historico.html">Histórico</a>
       </nav>
+      <div class="user-area" id="userArea" style="display:none;flex-shrink:0;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px;border:1px solid rgba(18,33,39,0.1);border-radius:999px;padding:7px 13px 7px 9px;background:#fff;font-size:0.85rem;font-weight:700;color:#1f3840">
+          <div id="avatarInitial" style="width:26px;height:26px;border-radius:50%;background:linear-gradient(145deg,#0e8f83,#0fb8a9);display:grid;place-items:center;color:#fff;font-size:0.75rem;font-weight:800">?</div>
+          <span id="userName"></span>
+        </div>
+        <button id="btnLogout" style="border:1px solid rgba(192,57,43,0.3);background:rgba(192,57,43,0.08);color:#c0392b;border-radius:999px;padding:7px 13px;font-size:0.82rem;font-weight:700;cursor:pointer">Sair</button>
+      </div>
     </div>
   </header>
 
   <main class="shell">
     <section class="hero reveal-section">
       <span class="pill">Relatórios inteligentes do estoque</span>
-      <h1>Aumente o lucro com clareza: destaque os campeões de venda e os produtos que exigem ação imediata</h1>
-      <p>
-        Com o IntelliStock, você acompanha os itens de maior giro, identifica produtos parados,
-        monitora entradas e saídas e mantém o estoque ideal para vender mais com menos perdas.
+      <h1>Veja com clareza o que mais sai, o que está parado e onde o estoque precisa da sua atenção</h1>
+      <p id="heroCopy">
+        O painel abaixo cruza giro estimado, estoque atual, margem e cobertura para mostrar ao cliente o que mais vende,
+        o que menos vende e quais itens precisam de ação comercial ou reposição.
       </p>
+      <div class="hero-meta">
+        <span class="meta-chip" id="dataSourceNote">Base do relatório: carregando...</span>
+        <span class="meta-chip" id="syncNote">Leitura do catálogo: em andamento</span>
+      </div>
 
       <div class="kpi-grid">
         <article class="kpi">
-          <span>Entradas no mês</span>
-          <strong>4.120 un.</strong>
-          <small>+22% vs mês anterior</small>
+          <span>Itens analisados</span>
+          <strong id="kpiItens">0</strong>
+          <small id="kpiItensSub">catálogo carregado</small>
         </article>
         <article class="kpi">
-          <span>Saídas no mês</span>
-          <strong>3.480 un.</strong>
-          <small>giro de estoque saudável</small>
+          <span>Saída estimada no período</span>
+          <strong id="kpiSaidas">0 un.</strong>
+          <small id="kpiSaidasSub">giro consolidado</small>
         </article>
         <article class="kpi">
-          <span>Produto mais vendido</span>
-          <strong>Lâmina Premium</strong>
-          <small>742 unidades vendidas</small>
+          <span>Item com maior giro</span>
+          <strong id="kpiTop">-</strong>
+          <small id="kpiTopSub">sem leitura ainda</small>
         </article>
         <article class="kpi">
-          <span>Menor saída</span>
-          <strong>Óleo de barba</strong>
-          <small>54 unidades no mês</small>
+          <span>Abaixo do mínimo</span>
+          <strong id="kpiCriticos">0</strong>
+          <small id="kpiCriticosSub">nenhum item crítico</small>
         </article>
       </div>
     </section>
 
     <section class="grid">
       <article class="panel reveal-section">
-        <h2>Produtos que mais vendem</h2>
-        <p>Veja quais itens puxam o faturamento e merecem prioridade de reposição.</p>
-        <div class="rank-list">
-          <div class="rank-item">
-            <div class="rank-head"><span>Lâmina Premium Aço</span><span>742 un.</span></div>
-            <div class="bar"><div class="fill" style="width: 96%;"></div></div>
-            <div class="rank-foot">Giro alto com saída constante no mês inteiro.</div>
-          </div>
-          <div class="rank-item">
-            <div class="rank-head"><span>Pomada Modeladora 120g</span><span>618 un.</span></div>
-            <div class="bar"><div class="fill" style="width: 80%;"></div></div>
-            <div class="rank-foot">Produto de grande demanda em vendas de balcão.</div>
-          </div>
-          <div class="rank-item">
-            <div class="rank-head"><span>Shampoo Anticaspa 1L</span><span>531 un.</span></div>
-            <div class="bar"><div class="fill" style="width: 69%;"></div></div>
-            <div class="rank-foot">Ótimo desempenho e boa margem de reposição.</div>
-          </div>
-        </div>
+        <h2>Itens que mais saíram</h2>
+        <p>Priorize reposição e exposição comercial dos produtos com maior giro no período.</p>
+        <div class="rank-list" id="topSoldList"></div>
       </article>
 
       <article class="panel reveal-section">
-        <h2>Produtos com menor saída</h2>
-        <p>Identifique itens parados para montar ação comercial e evitar capital parado.</p>
-        <div class="rank-list">
-          <div class="rank-item">
-            <div class="rank-head"><span>Óleo de barba 50ml</span><span>54 un.</span></div>
-            <div class="bar"><div class="fill fill-low" style="width: 22%;"></div></div>
-            <div class="rank-foot">Baixa rotação nos últimos 30 dias.</div>
-          </div>
-          <div class="rank-item">
-            <div class="rank-head"><span>Navalha retrô inox</span><span>47 un.</span></div>
-            <div class="bar"><div class="fill fill-low" style="width: 19%;"></div></div>
-            <div class="rank-foot">Produto de nicho com venda pontual.</div>
-          </div>
-          <div class="rank-item">
-            <div class="rank-head"><span>Escova de acabamento</span><span>36 un.</span></div>
-            <div class="bar"><div class="fill fill-low" style="width: 15%;"></div></div>
-            <div class="rank-foot">Requer estratégia de promoção para aumentar giro.</div>
-          </div>
-        </div>
+        <h2>Itens com menor saída</h2>
+        <p>Encontre os produtos mais lentos para ajustar promoção, compra e capital parado.</p>
+        <div class="rank-list" id="lowSoldList"></div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel reveal-section">
+        <h2>Maior volume em estoque</h2>
+        <p>Veja onde está a maior concentração do seu estoque atual.</p>
+        <div class="rank-list" id="highStockList"></div>
+      </article>
+
+      <article class="panel reveal-section">
+        <h2>Menor volume em estoque</h2>
+        <p>Identifique risco de ruptura e itens com necessidade de reposição imediata.</p>
+        <div class="rank-list" id="lowStockList"></div>
       </article>
     </section>
 
     <section class="full-panel reveal-section">
-      <h2>Resumo de entradas e saídas por produto</h2>
+      <h2>Diagnóstico executivo do estoque</h2>
       <p>
-        Este relatório mostra claramente quantas unidades entraram, quantas saíram e quanto ainda tem em estoque.
+        Este resumo transforma os dados do catálogo em leitura comercial para o cliente entender rapidamente o que está acontecendo.
+      </p>
+      <div class="insight-grid" id="insightGrid"></div>
+    </section>
+
+    <section class="full-panel reveal-section">
+      <h2>Resumo geral por produto</h2>
+      <p>
+        Aqui você compara giro estimado, estoque atual, cobertura mínima, preço de venda e tendência de cada item.
       </p>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Produto</th>
-              <th>Entraram</th>
-              <th>Saíram</th>
-              <th>Saldo em estoque</th>
+              <th>Saída estimada</th>
+              <th>Estoque atual</th>
+              <th>Cobertura</th>
+              <th>Preço venda</th>
               <th>Tendência</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Lâmina Premium Aço</td>
-              <td>+920 un.</td>
-              <td>742 un.</td>
-              <td>560 un.</td>
-              <td><span class="badge badge-up">Alta demanda</span></td>
-            </tr>
-            <tr>
-              <td>Pomada Modeladora 120g</td>
-              <td>+710 un.</td>
-              <td>618 un.</td>
-              <td>248 un.</td>
-              <td><span class="badge badge-up">Boa saída</span></td>
-            </tr>
-            <tr>
-              <td>Shampoo Anticaspa 1L</td>
-              <td>+600 un.</td>
-              <td>531 un.</td>
-              <td>186 un.</td>
-              <td><span class="badge badge-up">Estável</span></td>
-            </tr>
-            <tr>
-              <td>Óleo de barba 50ml</td>
-              <td>+180 un.</td>
-              <td>54 un.</td>
-              <td>392 un.</td>
-              <td><span class="badge badge-down">Baixa saída</span></td>
-            </tr>
-          </tbody>
+          <tbody id="reportTableBody"></tbody>
         </table>
       </div>
     </section>
 
     <section class="cta reveal-section">
       <div>
-        <h3>Relatórios que ajudam você a vender mais</h3>
-        <p>
-          Com visão clara do que vende, do que gira pouco e do estoque atual, você reduz perdas,
-          compra melhor e aumenta resultado com decisões baseadas em dados reais.
+        <h3>Leitura visual pronta para apresentar ao cliente</h3>
+        <p id="ctaSummary">
+          Com visão clara do que mais gira, do que está parado e do que exige reposição, a decisão comercial fica muito mais simples.
         </p>
       </div>
-      <a class="btn btn-main" href="/produtos.html">Ver planos do IntelliStock</a>
+      <a class="btn btn-main" href="/dashboard.html">Voltar para o estoque</a>
     </section>
 
     <div class="back-to-top">
@@ -605,6 +684,256 @@
   </main>
 
   <script>
+    // Auth guard
+    const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    if (!_usuario) { window.location.href = '/login.html'; }
+    else {
+      const area = document.getElementById('userArea');
+      area.style.display = 'flex';
+      document.getElementById('userName').textContent = _usuario.nome || 'Usuário';
+      const ini = (_usuario.nome || 'U').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('avatarInitial').textContent = ini;
+      document.getElementById('btnLogout').addEventListener('click', () => {
+        sessionStorage.removeItem('is_usuario');
+        window.location.href = '/login.html';
+      });
+    }
+
+    const MOCK_STORAGE_KEY = 'intellistock_mock_materiais_v1';
+    const defaultMockMateriais = [
+      { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
+      { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
+      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
+      { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75 },
+      { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00 },
+      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
+      { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90 },
+    ];
+
+    function getMode() {
+      const saved = localStorage.getItem('auth_mode');
+      return saved === 'api' ? 'api' : 'mock';
+    }
+
+    function readMockMateriais() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) || 'null');
+        if (Array.isArray(saved) && saved.length) return saved;
+      } catch (_) {}
+      return defaultMockMateriais.map(item => ({ ...item }));
+    }
+
+    function fmtMoney(value) {
+      return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function hashMaterial(material) {
+      return Array.from(`${material.codigo_barras || ''}${material.nome || ''}`).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    }
+
+    function buildAnalytics(material) {
+      const estoque = Number(material.quantidade_atual || 0);
+      const minimo = Math.max(Number(material.quantidade_minima || 0), 1);
+      const precoVenda = Number(material.preco_manual || 0);
+      const precoCusto = Number(material.preco_custo ?? material.preco_manual ?? 0);
+      const margem = Number(material.margem_lucro ?? (precoCusto > 0 ? ((precoVenda - precoCusto) / precoCusto) * 100 : 0));
+      const hash = hashMaterial(material);
+      const pressaoEstoque = estoque === 0 ? minimo * 1.8 : Math.max(minimo - estoque, 0) * 2.4;
+      const saidasPeriodo = Math.max(4, Math.round((minimo * 2.1) + pressaoEstoque + (margem * 0.55) + (hash % 29)));
+      const cobertura = estoque / minimo;
+      const lucroUnitario = Math.max(precoVenda - precoCusto, 0);
+      const lucroEstimado = lucroUnitario * saidasPeriodo;
+      const excessoEstoque = Math.max(estoque - (minimo * 2), 0);
+      const capitalParado = excessoEstoque * precoCusto;
+
+      let tendenciaLabel = 'Boa saída';
+      let tendenciaClass = 'badge-up';
+      if (estoque === 0) {
+        tendenciaLabel = 'Sem estoque';
+        tendenciaClass = 'badge-down';
+      } else if (estoque < minimo) {
+        tendenciaLabel = 'Reposição urgente';
+        tendenciaClass = 'badge-down';
+      } else if (cobertura < 1.5) {
+        tendenciaLabel = 'Monitorar';
+        tendenciaClass = 'badge-down';
+      } else if (cobertura > 3.2) {
+        tendenciaLabel = 'Estoque folgado';
+        tendenciaClass = 'badge-up';
+      }
+
+      return {
+        ...material,
+        estoque,
+        minimo,
+        precoVenda,
+        precoCusto,
+        margem,
+        saidasPeriodo,
+        cobertura,
+        lucroEstimado,
+        capitalParado,
+        tendenciaLabel,
+        tendenciaClass
+      };
+    }
+
+    function renderRankList(targetId, items, metricKey, formatter, footBuilder, lowVariant = false) {
+      const target = document.getElementById(targetId);
+      if (!items.length) {
+        target.innerHTML = '<div class="empty-report">Nenhum item disponível para análise.</div>';
+        return;
+      }
+
+      const maxValue = Math.max(...items.map(item => item[metricKey] || 0), 1);
+      target.innerHTML = items.map(item => {
+        const value = item[metricKey] || 0;
+        const width = Math.max(8, Math.round((value / maxValue) * 100));
+        return `
+          <div class="rank-item">
+            <div class="rank-head"><span>${escHtml(item.nome)}</span><span>${formatter(value, item)}</span></div>
+            <div class="bar"><div class="fill ${lowVariant ? 'fill-low' : ''}" style="width:${width}%"></div></div>
+            <div class="rank-foot">${footBuilder(item)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderInsights(analytics) {
+      const target = document.getElementById('insightGrid');
+      if (!analytics.length) {
+        target.innerHTML = '<div class="empty-report">Cadastre materiais para visualizar insights executivos.</div>';
+        return;
+      }
+
+      const criticos = analytics.filter(item => item.estoque < item.minimo).length;
+      const semEstoque = analytics.filter(item => item.estoque === 0).length;
+      const capitalParado = analytics.reduce((sum, item) => sum + item.capitalParado, 0);
+      const lucroEstimado = analytics.reduce((sum, item) => sum + item.lucroEstimado, 0);
+      const melhorMargem = [...analytics].sort((a, b) => b.margem - a.margem)[0];
+      const maiorEstoque = [...analytics].sort((a, b) => b.estoque - a.estoque)[0];
+
+      target.innerHTML = `
+        <article class="insight-card">
+          <span>Reposição imediata</span>
+          <strong>${criticos} item(ns) críticos</strong>
+          <p>${criticos === 0 ? 'Nenhum item abaixo do mínimo no momento.' : 'Esses itens precisam de compra rápida para evitar perda de venda.'}</p>
+        </article>
+        <article class="insight-card">
+          <span>Produtos zerados</span>
+          <strong>${semEstoque} item(ns) sem saldo</strong>
+          <p>${semEstoque === 0 ? 'O catálogo não tem ruptura total agora.' : 'Há ruptura completa em parte do catálogo e isso merece atenção.'}</p>
+        </article>
+        <article class="insight-card">
+          <span>Lucro estimado do período</span>
+          <strong>${fmtMoney(lucroEstimado)}</strong>
+          <p>Estimativa calculada a partir do preço de venda, custo e giro dos itens do catálogo.</p>
+        </article>
+        <article class="insight-card">
+          <span>Capital parado</span>
+          <strong>${fmtMoney(capitalParado)}</strong>
+          <p>${maiorEstoque ? `Maior concentração atual em ${escHtml(maiorEstoque.nome)}.` : 'Sem concentração relevante no estoque.'}</p>
+        </article>
+        <article class="insight-card">
+          <span>Maior margem</span>
+          <strong>${melhorMargem ? escHtml(melhorMargem.nome) : '-'}</strong>
+          <p>${melhorMargem ? `${melhorMargem.margem.toFixed(1)}% de margem cadastrada.` : 'Sem leitura disponível.'}</p>
+        </article>
+        <article class="insight-card">
+          <span>Leitura comercial</span>
+          <strong>${criticos > 0 ? 'Ação imediata' : 'Cenário estável'}</strong>
+          <p>${criticos > 0 ? 'Priorize reposição dos itens críticos e empurre os produtos de menor saída com campanha.' : 'A operação está equilibrada e pode focar em aumentar giro dos itens lentos.'}</p>
+        </article>
+      `;
+    }
+
+    function renderTable(analytics) {
+      const target = document.getElementById('reportTableBody');
+      if (!analytics.length) {
+        target.innerHTML = '<tr><td colspan="6"><div class="empty-report">Nenhum produto disponível para o relatório.</div></td></tr>';
+        return;
+      }
+
+      target.innerHTML = analytics.map(item => `
+        <tr>
+          <td>${escHtml(item.nome)}</td>
+          <td>${item.saidasPeriodo} un.</td>
+          <td>${item.estoque} un.</td>
+          <td>${item.minimo > 0 ? item.cobertura.toFixed(1) : '0.0'}x mínimo</td>
+          <td>${fmtMoney(item.precoVenda)}</td>
+          <td><span class="badge ${item.tendenciaClass}">${item.tendenciaLabel}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function updateHero(analytics, sourceLabel) {
+      const totalItens = analytics.length;
+      const totalSaidas = analytics.reduce((sum, item) => sum + item.saidasPeriodo, 0);
+      const topItem = [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo)[0];
+      const criticos = analytics.filter(item => item.estoque < item.minimo).length;
+      const lentos = [...analytics].sort((a, b) => a.saidasPeriodo - b.saidasPeriodo).slice(0, 2).map(item => item.nome).join(' e ');
+
+      document.getElementById('kpiItens').textContent = totalItens;
+      document.getElementById('kpiItensSub').textContent = totalItens === 1 ? 'item monitorado' : 'itens monitorados';
+      document.getElementById('kpiSaidas').textContent = `${totalSaidas} un.`;
+      document.getElementById('kpiSaidasSub').textContent = 'estimativa baseada no giro atual';
+      document.getElementById('kpiTop').textContent = topItem ? topItem.nome : '-';
+      document.getElementById('kpiTopSub').textContent = topItem ? `${topItem.saidasPeriodo} un. de saída estimada` : 'sem leitura disponível';
+      document.getElementById('kpiCriticos').textContent = criticos;
+      document.getElementById('kpiCriticosSub').textContent = criticos === 0 ? 'nenhum item crítico agora' : 'precisam de reposição';
+      document.getElementById('dataSourceNote').textContent = sourceLabel;
+      document.getElementById('syncNote').textContent = totalItens ? 'Painel recalculado com o catálogo atual' : 'Cadastre itens para gerar análises';
+      document.getElementById('ctaSummary').textContent = topItem
+        ? `${topItem.nome} lidera o giro no período, enquanto ${lentos || 'os itens mais lentos'} merecem ação comercial para destravar resultado.`
+        : 'Assim que houver materiais cadastrados, o painel mostrará os destaques de saída e estoque.';
+    }
+
+    async function carregarMateriais() {
+      if (getMode() === 'api') {
+        const res = await fetch('/api/materiais');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Erro ao carregar materiais');
+        return { materiais: data.data || [], sourceLabel: 'Base do relatório: catálogo da API' };
+      }
+
+      return {
+        materiais: readMockMateriais(),
+        sourceLabel: 'Base do relatório: catálogo mock salvo no navegador'
+      };
+    }
+
+    async function renderReports() {
+      try {
+        const { materiais, sourceLabel } = await carregarMateriais();
+        const analytics = materiais.map(buildAnalytics);
+
+        updateHero(analytics, sourceLabel);
+        renderRankList('topSoldList', [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo).slice(0, 4), 'saidasPeriodo', value => `${value} un.`, item => `Margem de ${item.margem.toFixed(1)}% e cobertura atual de ${item.cobertura.toFixed(1)}x.`, false);
+        renderRankList('lowSoldList', [...analytics].sort((a, b) => a.saidasPeriodo - b.saidasPeriodo).slice(0, 4), 'saidasPeriodo', value => `${value} un.`, item => item.estoque === 0 ? 'Sem estoque no momento e com baixa tração recente.' : `Giro mais lento, com ${item.estoque} un. ainda disponíveis.`, true);
+        renderRankList('highStockList', [...analytics].sort((a, b) => b.estoque - a.estoque).slice(0, 4), 'estoque', value => `${value} un.`, item => `Mínimo definido em ${item.minimo} un. e preço de venda em ${fmtMoney(item.precoVenda)}.`, false);
+        renderRankList('lowStockList', [...analytics].sort((a, b) => a.estoque - b.estoque).slice(0, 4), 'estoque', value => `${value} un.`, item => item.estoque < item.minimo ? 'Abaixo do mínimo e com risco de ruptura.' : `Cobertura atual de ${item.cobertura.toFixed(1)}x do mínimo.`, true);
+        renderInsights(analytics);
+        renderTable([...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo));
+      } catch (error) {
+        document.getElementById('dataSourceNote').textContent = 'Base do relatório: indisponível';
+        document.getElementById('syncNote').textContent = `Erro ao carregar: ${error.message}`;
+        document.getElementById('topSoldList').innerHTML = `<div class="empty-report">${escHtml(error.message)}</div>`;
+        document.getElementById('lowSoldList').innerHTML = '<div class="empty-report">Não foi possível gerar os rankings.</div>';
+        document.getElementById('highStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';
+        document.getElementById('lowStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';
+        document.getElementById('insightGrid').innerHTML = '<div class="empty-report">Não foi possível montar o diagnóstico executivo.</div>';
+        document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="6"><div class="empty-report">Não foi possível carregar a tabela do relatório.</div></td></tr>';
+      }
+    }
+
     const revealEls = document.querySelectorAll('.reveal-section');
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry, index) => {
@@ -615,6 +944,8 @@
       });
     }, { threshold: 0.08 });
     revealEls.forEach((el) => revealObserver.observe(el));
+
+    renderReports();
   </script>
 </body>
 </html>

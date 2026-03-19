@@ -107,6 +107,8 @@ Crie o banco e aplique o schema:
 mysql -u root -p < src/database/schema.sql
 ```
 
+Se o banco já existia antes dessa atualização, recrie a tabela materiais ou adicione manualmente as colunas novas: `preco_custo` e `margem_lucro`.
+
 Configuração padrão esperada no `.env`:
 
 ```env
@@ -127,8 +129,8 @@ Base: `/api/materiais`
 
 - `GET /api/materiais` → listar materiais
 - `GET /api/materiais/:id` → buscar por id
-- `POST /api/materiais` → criar material
-- `PUT /api/materiais/:id` → atualizar material
+- `POST /api/materiais` → criar material com `preco_custo`, `margem_lucro` e `preco_manual` (preço de venda)
+- `PUT /api/materiais/:id` → atualizar material e recalcular o preço de venda
 - `PUT /api/materiais/:id/quantidade` → ajustar quantidade
 - `DELETE /api/materiais/:id` → remover material
 - `GET /api/materiais/estoque/baixo` → listar estoque baixo

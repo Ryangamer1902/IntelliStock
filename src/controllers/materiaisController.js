@@ -3,6 +3,12 @@
 
 const Material = require('../models/Material');
 
+function calcularPrecoVenda(precoCusto, margemLucro) {
+  const custo = Number(precoCusto) || 0;
+  const margem = Number(margemLucro) || 0;
+  return Number((custo * (1 + margem / 100)).toFixed(2));
+}
+
 class MateriaisController {
   /**
    * GET /api/materiais
@@ -69,7 +75,8 @@ class MateriaisController {
    */
   static async criar(req, res) {
     try {
-      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_manual } = req.body;
+      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
+      const precoVenda = preco_manual !== undefined ? Number(preco_manual) : calcularPrecoVenda(preco_custo, margem_lucro);
 
       // Validação básica
       if (!codigo_barras || !nome) {
@@ -94,7 +101,9 @@ class MateriaisController {
         nome,
         quantidade_atual: quantidade_atual || 0,
         quantidade_minima: quantidade_minima || 10,
-        preco_manual: preco_manual || 0
+        preco_custo: preco_custo || 0,
+        margem_lucro: margem_lucro || 0,
+        preco_manual: precoVenda
       });
 
       const novoMaterial = await Material.findById(novoMaterialId);
@@ -120,7 +129,7 @@ class MateriaisController {
   static async atualizar(req, res) {
     try {
       const { id } = req.params;
-      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_manual } = req.body;
+      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
 
       // Verificar se material existe
       const material = await Material.findById(id);
@@ -148,7 +157,16 @@ class MateriaisController {
       if (nome !== undefined) dadosAtualizacao.nome = nome;
       if (quantidade_atual !== undefined) dadosAtualizacao.quantidade_atual = quantidade_atual;
       if (quantidade_minima !== undefined) dadosAtualizacao.quantidade_minima = quantidade_minima;
-      if (preco_manual !== undefined) dadosAtualizacao.preco_manual = preco_manual;
+      if (preco_custo !== undefined) dadosAtualizacao.preco_custo = preco_custo;
+      if (margem_lucro !== undefined) dadosAtualizacao.margem_lucro = margem_lucro;
+      if (preco_manual !== undefined) {
+        dadosAtualizacao.preco_manual = preco_manual;
+      } else if (preco_custo !== undefined || margem_lucro !== undefined) {
+        dadosAtualizacao.preco_manual = calcularPrecoVenda(
+          preco_custo !== undefined ? preco_custo : material.preco_custo,
+          margem_lucro !== undefined ? margem_lucro : material.margem_lucro
+        );
+      }
 
       // Atualizar
       await Material.update(id, dadosAtualizacao);

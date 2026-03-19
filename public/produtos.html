@@ -500,6 +500,38 @@
       .compare table {
         min-width: 680px;
       }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 420px) {
+      main {
+        padding: 24px 0 36px;
+      }
+
+      .hero,
+      .compare {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 1.45rem;
+      }
+
+      .plan-card {
+        padding: 14px;
+      }
+
+      .price strong {
+        font-size: 1.65rem;
+      }
     }
 
     .reveal-section {
@@ -517,17 +549,23 @@
 <body id="topo">
   <header>
     <div class="shell topbar">
-      <a class="brand" href="/index.html">
+      <a class="brand" href="/dashboard.html">
         <span class="brand-badge">IS</span>
         <span>IntelliStock</span>
       </a>
       <nav>
-        <a href="/index.html">Início</a>
-        <a href="/produtos.html" class="active">Produtos</a>
-        <a href="/login.html">Login</a>
+        <a href="/dashboard.html">Estoque</a>
         <a href="/relatorios.html">Relatórios</a>
         <a href="/historico.html">Histórico</a>
+        <a href="/produtos.html" class="active">Planos</a>
       </nav>
+      <div id="userArea" style="display:none;flex-shrink:0;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px;border:1px solid rgba(18,33,39,0.1);border-radius:999px;padding:7px 13px 7px 9px;background:#fff;font-size:0.85rem;font-weight:700;color:#1f3840">
+          <div id="avatarInitial" style="width:26px;height:26px;border-radius:50%;background:linear-gradient(145deg,#0e8f83,#0fb8a9);display:grid;place-items:center;color:#fff;font-size:0.75rem;font-weight:800">?</div>
+          <span id="userName"></span>
+        </div>
+        <button id="btnLogout" style="border:1px solid rgba(192,57,43,0.3);background:rgba(192,57,43,0.08);color:#c0392b;border-radius:999px;padding:7px 13px;font-size:0.82rem;font-weight:700;cursor:pointer">Sair</button>
+      </div>
     </div>
   </header>
 
@@ -684,6 +722,21 @@
   </main>
 
   <script>
+    // Auth guard
+    const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    if (!_usuario) { window.location.href = '/login.html'; }
+    else {
+      const area = document.getElementById('userArea');
+      area.style.display = 'flex';
+      document.getElementById('userName').textContent = _usuario.nome || 'Usuário';
+      const ini = (_usuario.nome || 'U').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('avatarInitial').textContent = ini;
+      document.getElementById('btnLogout').addEventListener('click', () => {
+        sessionStorage.removeItem('is_usuario');
+        window.location.href = '/login.html';
+      });
+    }
+
     const revealEls = document.querySelectorAll('.reveal-section');
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry, index) => {

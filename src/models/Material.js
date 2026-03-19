@@ -72,17 +72,17 @@ class Material {
    */
   static async create(dados) {
     try {
-      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_manual } = dados;
+      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = dados;
 
       // Validações básicas
-      if (!codigo_barras || !nome || quantidade_minima === undefined || preco_manual === undefined) {
+      if (!codigo_barras || !nome || quantidade_minima === undefined || preco_custo === undefined || preco_manual === undefined) {
         throw new Error('Campos obrigatórios faltando');
       }
 
       const connection = await global.db.getConnection();
       const [result] = await connection.query(
-        'INSERT INTO materiais (codigo_barras, nome, quantidade_atual, quantidade_minima, preco_manual) VALUES (?, ?, ?, ?, ?)',
-        [codigo_barras, nome, quantidade_atual || 0, quantidade_minima, preco_manual]
+        'INSERT INTO materiais (codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [codigo_barras, nome, quantidade_atual || 0, quantidade_minima, preco_custo, margem_lucro || 0, preco_manual]
       );
       connection.release();
       return result.insertId;
