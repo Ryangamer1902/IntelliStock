@@ -515,7 +515,7 @@
 
   <script>
     // Página protegida: exige sessão autenticada
-    const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || localStorage.getItem('is_usuario') || 'null');
     if (!usuario) {
       window.location.href = '/login.html';
     }
@@ -529,6 +529,7 @@
 
     document.getElementById('btnLogout').addEventListener('click', () => {
       sessionStorage.removeItem('is_usuario');
+      localStorage.removeItem('is_usuario');
       sessionStorage.removeItem('is_2fa_session');
       window.location.href = '/login.html';
     });

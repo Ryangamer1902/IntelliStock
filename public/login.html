@@ -503,12 +503,13 @@
 
   <script src="./js/auth-service.js"></script>
   <script>
-    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    // Redirect already-authenticated users to dashboard
+    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || localStorage.getItem('is_usuario') || 'null');
     if (__menuUser) {
-      document.querySelectorAll('.nav-auth-link').forEach((link) => {
-        link.style.display = '';
-      });
+      window.location.href = '/dashboard.html';
     }
+
+    const rememberInput = document.getElementById('remember');
 
     const loginForm = document.getElementById('loginForm');
     const emailInput = document.getElementById('email');
@@ -516,6 +517,13 @@
     const submitBtn = document.getElementById('submitBtn');
     const togglePass = document.getElementById('togglePass');
     const formFeedback = document.getElementById('formFeedback');
+
+    // Pre-fill email from localStorage if "remember me" was previously used
+    const rememberedEmail = localStorage.getItem('is_remember_email');
+    if (rememberedEmail) {
+      emailInput.value = rememberedEmail;
+      rememberInput.checked = true;
+    }
 
     togglePass.addEventListener('click', () => {
       const isPassword = passwordInput.type === 'password';
@@ -527,7 +535,7 @@
       event.preventDefault();
 
       const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
+      const password = passwordInput.value;
       const emailOk = /\S+@\S+\.\S+/.test(email);
 
       formFeedback.className = 'form-feedback';
@@ -553,11 +561,18 @@
         const data = await window.AuthService.login({ email, senha: password });
 
         if (data.success) {
+          const remember = rememberInput.checked;
           sessionStorage.setItem('is_2fa_session', JSON.stringify({
             token_temp: data.token_temp,
             nome: data.nome,
-            codigo_demo: data.codigo_demo || null
+            codigo_demo: data.codigo_demo || null,
+            remember
           }));
+          if (remember) {
+            localStorage.setItem('is_remember_email', email);
+          } else {
+            localStorage.removeItem('is_remember_email');
+          }
           window.location.href = '/verificacao.html';
         } else {
           formFeedback.textContent = data.message || 'Credenciais inválidas.';

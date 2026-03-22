@@ -469,7 +469,11 @@
           clearInterval(timerInterval);
           feedback.textContent = `Acesso confirmado! Bem-vindo, ${data.usuario.nome}.`;
           feedback.classList.add('success');
-          sessionStorage.setItem('is_usuario', JSON.stringify(data.usuario));
+          if (session.remember) {
+            localStorage.setItem('is_usuario', JSON.stringify(data.usuario));
+          } else {
+            sessionStorage.setItem('is_usuario', JSON.stringify(data.usuario));
+          }
           sessionStorage.removeItem('is_2fa_session');
           setTimeout(() => { window.location.href = '/dashboard.html'; }, 1400);
         } else {
