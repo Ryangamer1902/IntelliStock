@@ -966,7 +966,7 @@
   </footer>
 
   <script>
-    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || localStorage.getItem('is_usuario') || 'null');
     if (__menuUser) {
       document.querySelectorAll('.nav-auth-link').forEach((link) => {
         link.style.display = '';

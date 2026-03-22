@@ -680,7 +680,7 @@
   </main>
 
   <script>
-    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || localStorage.getItem('is_usuario') || 'null');
     if (__menuUser) {
       document.querySelectorAll('.nav-auth-link').forEach((link) => {
         link.style.display = '';
@@ -688,7 +688,7 @@
     }
 
     // Sessão opcional: a página pode ser acessada sem login.
-    const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || localStorage.getItem('is_usuario') || 'null');
     if (_usuario) {
       const area = document.getElementById('userArea');
       area.style.display = 'flex';
@@ -697,6 +697,7 @@
       document.getElementById('avatarInitial').textContent = ini;
       document.getElementById('btnLogout').addEventListener('click', () => {
         sessionStorage.removeItem('is_usuario');
+        localStorage.removeItem('is_usuario');
         window.location.href = '/login.html';
       });
     }
