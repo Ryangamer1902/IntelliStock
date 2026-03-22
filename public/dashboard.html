@@ -563,6 +563,19 @@
     }
 
     /* ===== RESPONSIVE ===== */
+    @media (max-width: 1180px) {
+      .topbar {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .user-area {
+        margin-left: auto;
+      }
+
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
     @media (max-width: 1024px) {
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
     }
@@ -597,6 +610,10 @@
       .modal { padding: 20px 16px; }
     }
 
+    @media (max-width: 900px) {
+      .user-chip span { display: none; }
+    }
+
     @media (max-width: 380px) {
       .kpi-row { grid-template-columns: 1fr; }
     }
@@ -627,6 +644,7 @@
       <nav>
         <a href="/dashboard.html" class="active">Estoque</a>
         <a href="/relatorios.html">Relatórios</a>
+        <a href="/insumos.html">Insumos</a>
       </nav>
       <div class="user-area">
         <div class="user-chip">

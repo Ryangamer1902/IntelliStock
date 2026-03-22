@@ -37,6 +37,7 @@ Fluxo resumido: **Frontend → API Express → MySQL → API → Frontend**
 
 ### Passos
 ```bash
+cd IntelliStock
 npm install
 npm run start:tudo
 ```
@@ -162,6 +163,31 @@ BarberControl/
 - dotenv
 - mysql2
 - nodemon (dev)
+
+---
+
+## 🌐 Deploy no Render
+
+O projeto já está preparado para deploy no Render com o arquivo [render.yaml](render.yaml).
+
+### Passo a passo
+
+1. Acesse o Render e conecte seu repositório do GitHub.
+2. Escolha o serviço Web usando o arquivo render.yaml.
+3. Faça o deploy.
+4. Ao final, o app ficará online com uma URL pública.
+
+### Isso tem a ver com banco de dados?
+
+Depende do modo usado no frontend:
+
+1. Modo mock: não precisa banco. Login e verificação funcionam com dados de demonstração.
+2. Modo api: precisa banco + variáveis DB_HOST, DB_USER, DB_PASSWORD, DB_NAME e DB_PORT.
+
+Resumo prático:
+
+1. Para demo rápida: pode subir sem banco (modo mock).
+2. Para CRUD real de materiais: precisa banco configurado no Render (ou banco externo).
 
 ---
 

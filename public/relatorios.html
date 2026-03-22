@@ -455,7 +455,7 @@
       background: rgba(255, 255, 255, 0.72);
     }
 
-    @media (max-width: 980px) {
+    @media (max-width: 1180px) {
       .topbar {
         align-items: flex-start;
         flex-direction: column;
@@ -473,6 +473,12 @@
       nav a {
         white-space: nowrap;
         flex: 0 0 auto;
+      }
+
+      .user-area,
+      #userArea {
+        width: 100%;
+        justify-content: flex-end;
       }
 
       .kpi-grid {
@@ -562,6 +568,7 @@
       <nav>
         <a href="/dashboard.html" class="nav-auth-link" style="display:none">Estoque</a>
         <a href="/relatorios.html" class="active">Relatórios</a>
+        <a href="/insumos.html">Insumos</a>
       </nav>
       <div class="user-area" id="userArea" style="display:none;flex-shrink:0;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:8px;border:1px solid rgba(18,33,39,0.1);border-radius:999px;padding:7px 13px 7px 9px;background:#fff;font-size:0.85rem;font-weight:700;color:#1f3840">

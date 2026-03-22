@@ -346,6 +346,30 @@
       }
     }
 
+    @media (max-width: 1180px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      nav {
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        padding-bottom: 4px;
+      }
+
+      nav a,
+      nav button {
+        white-space: nowrap;
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+      }
+    }
+
     @media (max-width: 640px) {
       .topbar {
         align-items: flex-start;
