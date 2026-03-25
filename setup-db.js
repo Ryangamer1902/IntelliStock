@@ -33,7 +33,7 @@ const questions = [
   { key: 'DB_HOST', label: 'Host do banco (padrão: localhost)', default: 'localhost' },
   { key: 'DB_USER', label: 'Usuário do MySQL (padrão: root)', default: 'root' },
   { key: 'DB_PASSWORD', label: 'Senha do MySQL (pressione Enter para vazio)', default: '' },
-  { key: 'DB_NAME', label: 'Nome do banco (padrão: estoque_db)', default: 'estoque_db' },
+  { key: 'DB_NAME', label: 'Nome do banco (padrão: sge_pesca)', default: 'sge_pesca' },
   { key: 'DB_PORT', label: 'Porta do MySQL (padrão: 3306)', default: '3306' },
   { key: 'PORT', label: 'Porta da aplicação (padrão: 3000)', default: '3000' },
   { key: 'NODE_ENV', label: 'Ambiente (development/production)', default: 'development' }
@@ -81,8 +81,8 @@ const saveEnv = () => {
     
     console.log('─'.repeat(50));
     console.log('\n📝 Próximos passos:');
-    console.log('  1. Criar banco de dados MySQL: estoque_db');
-    console.log('  2. Executar script SQL: src/database/schema.sql');
+    console.log(`  1. Criar banco de dados MySQL: ${config.DB_NAME}`);
+    console.log('  2. Executar script SQL: src/database/schema-sge-pesca.sql');
     console.log('  3. Iniciar servidor: npm run dev\n');
     
   } catch (err) {

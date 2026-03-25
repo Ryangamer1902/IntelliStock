@@ -455,7 +455,7 @@
       background: rgba(255, 255, 255, 0.72);
     }
 
-    @media (max-width: 1180px) {
+    @media (max-width: 980px) {
       .topbar {
         align-items: flex-start;
         flex-direction: column;
@@ -473,12 +473,6 @@
       nav a {
         white-space: nowrap;
         flex: 0 0 auto;
-      }
-
-      .user-area,
-      #userArea {
-        width: 100%;
-        justify-content: flex-end;
       }
 
       .kpi-grid {
@@ -568,7 +562,8 @@
       <nav>
         <a href="/dashboard.html" class="nav-auth-link" style="display:none">Estoque</a>
         <a href="/relatorios.html" class="active">Relatórios</a>
-        <a href="/insumos.html">Insumos</a>
+        <a href="/insumos.html" class="nav-auth-link" style="display:none">Insumos</a>
+        <a href="/assinatura.html" class="nav-auth-link" style="display:none">Assinatura</a>
       </nav>
       <div class="user-area" id="userArea" style="display:none;flex-shrink:0;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:8px;border:1px solid rgba(18,33,39,0.1);border-radius:999px;padding:7px 13px 7px 9px;background:#fff;font-size:0.85rem;font-weight:700;color:#1f3840">
@@ -585,7 +580,7 @@
       <span class="pill">Relatórios inteligentes do estoque</span>
       <h1>Veja com clareza o que mais sai, o que está parado e onde o estoque precisa da sua atenção</h1>
       <p id="heroCopy">
-        O painel abaixo cruza giro estimado, estoque atual, margem e cobertura para mostrar ao cliente o que mais vende,
+        O painel abaixo cruza giro estimado, estoque atual, margem e cobertura para mostrar ao gestor o que mais vende,
         o que menos vende e quais itens precisam de ação comercial ou reposição.
       </p>
       <div class="hero-meta">
@@ -648,7 +643,7 @@
     <section class="full-panel reveal-section">
       <h2>Diagnóstico executivo do estoque</h2>
       <p>
-        Este resumo transforma os dados do catálogo em leitura comercial para o cliente entender rapidamente o que está acontecendo.
+        Este resumo transforma os dados do catálogo em leitura comercial para o gestor entender rapidamente o que está acontecendo.
       </p>
       <div class="insight-grid" id="insightGrid"></div>
     </section>

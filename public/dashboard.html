@@ -563,19 +563,6 @@
     }
 
     /* ===== RESPONSIVE ===== */
-    @media (max-width: 1180px) {
-      .topbar {
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .user-area {
-        margin-left: auto;
-      }
-
-      .kpi-row { grid-template-columns: repeat(2, 1fr); }
-    }
-
     @media (max-width: 1024px) {
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
     }
@@ -610,10 +597,6 @@
       .modal { padding: 20px 16px; }
     }
 
-    @media (max-width: 900px) {
-      .user-chip span { display: none; }
-    }
-
     @media (max-width: 380px) {
       .kpi-row { grid-template-columns: 1fr; }
     }
@@ -630,6 +613,22 @@
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
+
+    .reveal-section {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+
+    .reveal-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .kpi.reveal-section:nth-child(1) { transition-delay: 0ms; }
+    .kpi.reveal-section:nth-child(2) { transition-delay: 80ms; }
+    .kpi.reveal-section:nth-child(3) { transition-delay: 160ms; }
+    .kpi.reveal-section:nth-child(4) { transition-delay: 240ms; }
   </style>
 </head>
 <body>
@@ -645,6 +644,7 @@
         <a href="/dashboard.html" class="active">Estoque</a>
         <a href="/relatorios.html">Relatórios</a>
         <a href="/insumos.html">Insumos</a>
+        <a href="/assinatura.html">Assinatura</a>
       </nav>
       <div class="user-area">
         <div class="user-chip">
@@ -661,7 +661,7 @@
     <div class="shell">
 
       <!-- Page header -->
-      <div class="page-head">
+      <div class="page-head reveal-section">
         <div>
           <h1>Gestão de Estoque</h1>
           <p>Bem-vindo, <strong id="greetName"></strong>! Controle e movimentação de materiais em tempo real.</p>
@@ -674,22 +674,22 @@
 
       <!-- KPIs -->
       <div class="kpi-row">
-        <div class="kpi">
+        <div class="kpi reveal-section">
           <div class="kpi-label">Total de itens</div>
           <div class="kpi-value" id="kpiTotal">—</div>
           <div class="kpi-sub" id="kpiTotalSub">materiais cadastrados</div>
         </div>
-        <div class="kpi alert-kpi">
+        <div class="kpi alert-kpi reveal-section">
           <div class="kpi-label">Estoque baixo</div>
           <div class="kpi-value" id="kpiBaixo">—</div>
           <div class="kpi-sub danger" id="kpiBaixoSub">abaixo do mínimo</div>
         </div>
-        <div class="kpi">
+        <div class="kpi reveal-section">
           <div class="kpi-label">Valor total estimado</div>
           <div class="kpi-value" id="kpiValor">—</div>
           <div class="kpi-sub ok">em estoque</div>
         </div>
-        <div class="kpi">
+        <div class="kpi reveal-section">
           <div class="kpi-label">Itens sem estoque</div>
           <div class="kpi-value" id="kpiZero">—</div>
           <div class="kpi-sub danger" id="kpiZeroSub">quantidade zero</div>
@@ -697,7 +697,7 @@
       </div>
 
       <!-- Toolbar -->
-      <div class="toolbar">
+      <div class="toolbar reveal-section">
         <div class="search-wrap">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="searchInput" placeholder="Buscar material por nome...">
@@ -709,7 +709,7 @@
       </div>
 
       <!-- Table -->
-      <div class="table-card">
+      <div class="table-card reveal-section">
         <div class="table-wrap">
           <table>
             <thead>
@@ -1166,6 +1166,18 @@
         showToast('Erro ao excluir: ' + err.message, 'error');
       }
     }
+
+    const revealEls = document.querySelectorAll('.reveal-section');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), index * 80);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+
+    revealEls.forEach((el) => revealObserver.observe(el));
 
     // ===== INICIAR =====
     carregarMateriais();
