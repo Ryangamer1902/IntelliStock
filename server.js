@@ -5,7 +5,7 @@ const path = require('path');
 const mysql = require('mysql2/promise');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // ==================== MIDDLEWARES ====================
 app.use(express.json());

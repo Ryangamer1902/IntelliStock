@@ -46,7 +46,7 @@ O comando `start:tudo` executa:
 1. `npm run setup:db` → assistente para criar/configurar o `.env`
 2. `npm run dev` → inicia o servidor com nodemon
 
-Servidor padrão: `http://localhost:3000`
+Servidor padrão: `http://localhost:3001`
 
 ---
 
@@ -118,7 +118,7 @@ DB_USER=root
 DB_PASSWORD=
 DB_NAME=estoque_db
 DB_PORT=3306
-PORT=3000
+PORT=3001
 NODE_ENV=development
 ```
 

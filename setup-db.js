@@ -35,7 +35,7 @@ const questions = [
   { key: 'DB_PASSWORD', label: 'Senha do MySQL (pressione Enter para vazio)', default: '' },
   { key: 'DB_NAME', label: 'Nome do banco (padrão: sge_pesca)', default: 'sge_pesca' },
   { key: 'DB_PORT', label: 'Porta do MySQL (padrão: 3306)', default: '3306' },
-  { key: 'PORT', label: 'Porta da aplicação (padrão: 3000)', default: '3000' },
+  { key: 'PORT', label: 'Porta da aplicação (padrão: 3001)', default: '3001' },
   { key: 'NODE_ENV', label: 'Ambiente (development/production)', default: 'development' }
 ];
 
