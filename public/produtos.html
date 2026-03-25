@@ -565,9 +565,10 @@
         <a href="/index.html">Início</a>
         <a href="/login.html">Login</a>
         <a href="/relatorios.html" class="nav-auth-link" style="display:none">Relatórios</a>
-        <a href="/historico.html" class="nav-auth-link" style="display:none">Históricos</a>
+        <a href="/insumos.html" class="nav-auth-link" style="display:none">Insumos</a>
+        <a href="/assinatura.html" class="nav-auth-link" style="display:none">Assinatura</a>
         <a href="/index.html#histSection" onclick="sessionStorage.setItem('scrollToHist','1')">Veja na prática</a>
-        <a href="/produtos.html" class="active">Planos</a>
+        <a href="/produtos.html" class="active">Assinaturas</a>
       </nav>
       <div id="userArea" style="display:none;flex-shrink:0;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:8px;border:1px solid rgba(18,33,39,0.1);border-radius:999px;padding:7px 13px 7px 9px;background:#fff;font-size:0.85rem;font-weight:700;color:#1f3840">
@@ -581,16 +582,16 @@
 
   <main class="shell">
     <section class="hero reveal-section">
-      <span class="pill">Planos IntelliStock</span>
-      <h1>Escolha o plano ideal para seu estoque</h1>
+      <span class="pill">Assinaturas IntelliStock</span>
+      <h1>Escolha a assinatura ideal para seu estoque</h1>
       <p>
-        Compare os planos semanal, mensal e anual para decidir o que compensa mais para sua operação.
-        Todos os planos incluem acesso completo ao painel, histórico de movimentações e relatórios.
+        Compare as assinaturas semanal, mensal e anual para decidir o que compensa mais para sua operação.
+        Todas as assinaturas incluem acesso completo ao painel, histórico de movimentações e relatórios.
       </p>
 
       <div class="plans">
         <article class="plan-card reveal-section">
-          <h2 class="plan-name">Plano Semanal</h2>
+          <h2 class="plan-name">Assinatura Semanal</h2>
           <div class="price">
             <strong>R$ 59</strong>
             <span>/semana</span>
@@ -604,19 +605,19 @@
             <li>Suporte por e-mail em horário comercial</li>
           </ul>
           <div class="equivalent">Equivale a R$ 236 por mês</div>
-          <a class="btn btn-soft" href="/login.html">Escolher semanal</a>
+          <a class="btn btn-soft" href="/checkout.html?plano=semanal">Escolher semanal</a>
         </article>
 
         <article class="plan-card reveal-section">
           <span class="tag tag-popular">Mais vendido</span>
-          <h2 class="plan-name">Plano Mensal</h2>
+          <h2 class="plan-name">Assinatura Mensal</h2>
           <div class="price">
             <strong>R$ 179</strong>
             <span>/mês</span>
           </div>
           <p class="plan-note">Melhor para empresas em fase de crescimento constante.</p>
           <ul class="features">
-            <li>Tudo do plano semanal</li>
+            <li>Tudo da assinatura semanal</li>
             <li>Acesso para até 5 usuários</li>
             <li>Cadastro de até 1.000 produtos</li>
             <li>Alertas automáticos de estoque mínimo</li>
@@ -624,19 +625,19 @@
             <li>Suporte prioritário por e-mail e chat</li>
           </ul>
           <div class="equivalent">Economiza R$ 57 por mês vs semanal</div>
-          <a class="btn btn-soft" href="/login.html">Escolher mensal</a>
+          <a class="btn btn-soft" href="/checkout.html?plano=mensal">Escolher mensal</a>
         </article>
 
         <article class="plan-card featured reveal-section">
           <span class="tag">Melhor custo-benefício</span>
-          <h2 class="plan-name">Plano Anual</h2>
+          <h2 class="plan-name">Assinatura Anual</h2>
           <div class="price">
             <strong>R$ 1.690</strong>
             <span>/ano</span>
           </div>
           <p class="plan-note">Perfeito para quem quer previsibilidade e maior economia.</p>
           <ul class="features">
-            <li>Tudo do plano mensal</li>
+            <li>Tudo da assinatura mensal</li>
             <li>Usuários ilimitados</li>
             <li>Produtos ilimitados</li>
             <li>Dashboard executivo com métricas avançadas</li>
@@ -645,7 +646,7 @@
             <li>Suporte VIP com atendimento prioritário</li>
           </ul>
           <div class="equivalent">Equivale a R$ 140,83 por mês</div>
-          <a class="btn btn-main" href="/login.html">Escolher anual</a>
+          <a class="btn btn-main" href="/checkout.html?plano=anual">Escolher anual</a>
         </article>
       </div>
     </section>
@@ -665,14 +666,14 @@
           <span>de economia no anual vs semanal</span>
         </div>
         <div class="metric">
-          <strong>Plano anual</strong>
+          <strong>Assinatura anual</strong>
           <span>melhor custo-benefício para uso contínuo</span>
         </div>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Plano</th>
+            <th>Assinatura</th>
             <th>Preço</th>
             <th>Custo mensal equivalente</th>
             <th>Economia vs semanal</th>
@@ -686,7 +687,7 @@
             <td>R$ 236/mês</td>
             <td>
               <div class="saving-wrap">
-                <span class="saving-text">Plano base</span>
+                <span class="saving-text">Assinatura base</span>
                 <div class="saving-track"><div class="saving-fill" style="width: 0%;"></div></div>
               </div>
             </td>
@@ -719,14 +720,14 @@
         </tbody>
       </table>
       <p class="summary">
-        Para uso contínuo, o plano <strong>anual</strong> compensa mais: menor custo por mês
+        Para uso contínuo, a assinatura <strong>anual</strong> compensa mais: menor custo por mês
         e maior previsibilidade para o seu negócio.
       </p>
     </section>
 
     <div class="actions">
       <a class="btn btn-soft" href="/index.html">Voltar ao início</a>
-      <a class="btn btn-main" href="/login.html">Assinar agora</a>
+      <a class="btn btn-main" href="/checkout.html?plano=anual">Assinar agora</a>
     </div>
 
   </main>

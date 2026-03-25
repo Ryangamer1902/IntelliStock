@@ -37,6 +37,7 @@ Fluxo resumido: **Frontend → API Express → MySQL → API → Frontend**
 
 ### Passos
 ```bash
+cd IntelliStock
 npm install
 npm run start:tudo
 ```

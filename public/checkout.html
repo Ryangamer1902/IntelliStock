@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | IntelliStock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f3f7f7;
+      --ink: #122127;
+      --muted: #5d6b70;
+      --brand: #0e8f83;
+      --brand-strong: #096b62;
+      --accent: #ee7f3b;
+      --line: rgba(18, 33, 39, 0.1);
+      --shadow: 0 20px 45px rgba(9, 41, 49, 0.12);
+      --card: #ffffff;
+      --danger: #c0392b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(14, 143, 131, 0.14), transparent 28%),
+        radial-gradient(circle at 96% 12%, rgba(238, 127, 59, 0.14), transparent 22%),
+        linear-gradient(180deg, #f8fbfb 0%, var(--bg) 75%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .shell { width: min(1180px, 94%); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      background: rgba(248, 251, 251, 0.82);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+    }
+
+    .brand-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, var(--brand), #0fb8a9);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: var(--ink);
+      padding: 9px 13px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    nav a:hover,
+    nav a.active {
+      background: rgba(14, 143, 131, 0.13);
+      color: var(--brand-strong);
+    }
+
+    main { padding: 42px 0 68px; }
+
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(180deg, #ffffff, #f7fbfb);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(14, 143, 131, 0.26);
+      color: var(--brand-strong);
+      background: rgba(14, 143, 131, 0.08);
+      font-weight: 700;
+      font-size: 0.84rem;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 { font-family: 'Sora', sans-serif; }
+
+    h1 {
+      font-size: clamp(1.8rem, 3vw, 2.35rem);
+      margin-bottom: 8px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 72ch;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #ffffff, #f7fbfb);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .panel h2 {
+      font-size: 1.2rem;
+      margin-bottom: 6px;
+    }
+
+    .panel-intro {
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    .step-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .step {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .step strong {
+      display: block;
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      color: var(--brand-strong);
+      margin-bottom: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .step span {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #1f3840;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 12px 13px;
+      font-size: 0.95rem;
+      font-family: 'Manrope', sans-serif;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(14, 143, 131, 0.55);
+      box-shadow: 0 0 0 4px rgba(14, 143, 131, 0.14);
+    }
+
+    .helper {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+      margin-top: -4px;
+      margin-bottom: 10px;
+    }
+
+    .summary {
+      position: sticky;
+      top: 92px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #ffffff, #f7fbfb);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .plan-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 11px;
+      font-weight: 800;
+      font-size: 0.78rem;
+      background: rgba(14, 143, 131, 0.12);
+      color: var(--brand-strong);
+      margin-bottom: 12px;
+    }
+
+    .plan-price {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .plan-price strong {
+      font-family: 'Sora', sans-serif;
+      font-size: 2rem;
+    }
+
+    .plan-price span,
+    .muted {
+      color: var(--muted);
+    }
+
+    .summary-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .summary-list li {
+      padding-left: 18px;
+      position: relative;
+      color: #234047;
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+
+    .summary-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--brand);
+      font-weight: 800;
+    }
+
+    .price-breakdown {
+      margin-top: 16px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.92rem;
+    }
+
+    .price-row.total {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #17343c;
+    }
+
+    .secure-box {
+      border-radius: 16px;
+      border: 1px dashed rgba(14, 143, 131, 0.35);
+      background: rgba(14, 143, 131, 0.07);
+      padding: 14px;
+      color: #0f5f55;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .form-feedback {
+      display: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .form-feedback.error {
+      display: block;
+      color: #8b3a18;
+      background: rgba(238, 127, 59, 0.16);
+      border: 1px solid rgba(238, 127, 59, 0.38);
+    }
+
+    .form-feedback.success {
+      display: block;
+      color: #0f5f55;
+      background: rgba(14, 143, 131, 0.14);
+      border: 1px solid rgba(14, 143, 131, 0.38);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .btn {
+      border: 0;
+      text-decoration: none;
+      padding: 13px 18px;
+      border-radius: 11px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn:hover { transform: translateY(-2px); }
+
+    .btn-main {
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), #0cac9c);
+      box-shadow: 0 12px 26px rgba(14, 143, 131, 0.25);
+      width: 100%;
+    }
+
+    .btn-soft {
+      color: var(--brand-strong);
+      background: rgba(14, 143, 131, 0.1);
+      border: 1px solid rgba(14, 143, 131, 0.25);
+      width: 100%;
+    }
+
+    .reveal-section {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+
+    .reveal-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .summary { position: static; }
+    }
+
+    @media (max-width: 760px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      nav { width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      nav a { white-space: nowrap; flex: 0 0 auto; }
+      .grid-2,
+      .step-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell topbar">
+      <a class="brand" href="/index.html">
+        <span class="brand-badge">IS</span>
+        <span>IntelliStock</span>
+      </a>
+      <nav>
+        <a href="/index.html">Início</a>
+        <a href="/login.html">Login</a>
+        <a href="/index.html#histSection" onclick="sessionStorage.setItem('scrollToHist','1')">Veja na prática</a>
+        <a href="/produtos.html" class="active">Assinaturas</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero reveal-section">
+      <span class="pill">Fechando sua assinatura</span>
+      <h1>Ative sua assinatura em poucos minutos</h1>
+      <p>
+        Escolha a recorrência ideal, informe os dados de cobrança e comece a usar o IntelliStock com
+        um processo simples para o usuário e organizado para sua operação comercial.
+      </p>
+      <div class="step-row">
+        <div class="step">
+          <strong>1. Dados do usuário</strong>
+          <span>Nome, e-mail e documento de cobrança da conta.</span>
+        </div>
+        <div class="step">
+          <strong>2. Cartão</strong>
+          <span>Cadastro do meio de pagamento para renovação automática.</span>
+        </div>
+        <div class="step">
+          <strong>3. Confirmação</strong>
+          <span>Assinatura ativa e área de assinatura pronta para futuras alterações.</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="panel reveal-section">
+        <h2>Dados da assinatura</h2>
+        <p class="panel-intro">Preencha as informações do usuário e do cartão. Neste protótipo, a cobrança é simulada e salva localmente para você avaliar o fluxo.</p>
+
+        <form id="checkoutForm" novalidate>
+          <div id="checkoutFeedback" class="form-feedback"></div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="clienteNome">Nome completo</label>
+              <input id="clienteNome" type="text" placeholder="Nome do responsável" required>
+            </div>
+            <div class="field">
+              <label for="clienteEmail">E-mail</label>
+              <input id="clienteEmail" type="email" placeholder="seuemail@empresa.com" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="clienteDocumento">CPF ou CNPJ</label>
+              <input id="clienteDocumento" type="text" placeholder="000.000.000-00" required>
+            </div>
+            <div class="field">
+              <label for="empresaNome">Empresa</label>
+              <input id="empresaNome" type="text" placeholder="Nome da empresa ou operação">
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="enderecoRua">Rua</label>
+              <input id="enderecoRua" type="text" placeholder="Nome da rua" required>
+            </div>
+            <div class="field">
+              <label for="enderecoNumero">Número</label>
+              <input id="enderecoNumero" type="text" placeholder="123" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="enderecoBairro">Bairro</label>
+              <input id="enderecoBairro" type="text" placeholder="Nome do bairro" required>
+            </div>
+            <div class="field">
+              <label for="enderecoCidade">Cidade</label>
+              <input id="enderecoCidade" type="text" placeholder="Nome da cidade" required>
+            </div>
+          </div>
+
+          <h2 style="margin-top:10px">Cartão de pagamento</h2>
+          <p class="panel-intro">Os dados abaixo ficam mascarados depois da contratação para o usuário gerenciar em sua área de assinatura.</p>
+
+          <div class="field">
+            <label for="cardHolder">Nome impresso no cartão</label>
+            <input id="cardHolder" type="text" placeholder="Nome como está no cartão" required>
+          </div>
+
+          <div class="field">
+            <label for="cardNumber">Número do cartão</label>
+            <input id="cardNumber" type="text" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000" required>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="cardExpiry">Validade</label>
+              <input id="cardExpiry" type="text" inputmode="numeric" maxlength="5" placeholder="MM/AA" required>
+            </div>
+            <div class="field">
+              <label for="cardCvv">CVV</label>
+              <input id="cardCvv" type="password" inputmode="numeric" maxlength="4" placeholder="123" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="billingCycle">Ciclo escolhido</label>
+            <select id="billingCycle">
+              <option value="semanal">Semanal</option>
+              <option value="mensal">Mensal</option>
+              <option value="anual">Anual</option>
+            </select>
+          </div>
+
+          <div class="helper">O usuário poderá trocar o cartão ou revisar a cobrança depois em sua área de assinatura.</div>
+
+          <div class="secure-box">
+            Ambiente demonstrativo: o checkout abaixo não envia dados para um gateway real. O objetivo é validar a experiência visual, o fluxo comercial e a área de gestão da assinatura.
+          </div>
+
+          <div class="btn-row">
+            <button id="confirmBtn" class="btn btn-main" type="submit">Confirmar assinatura</button>
+            <a class="btn btn-soft" href="/produtos.html">Voltar às assinaturas</a>
+          </div>
+        </form>
+      </section>
+
+      <aside class="summary reveal-section">
+        <div class="summary-card">
+          <span class="plan-chip" id="planChip">Assinatura selecionada</span>
+          <h2 id="planTitle">Assinatura Mensal</h2>
+          <div class="plan-price">
+            <strong id="planPrice">R$ 179</strong>
+            <span id="planInterval">/mês</span>
+          </div>
+          <p class="muted" id="planNote">Ideal para empresas em crescimento com operação recorrente.</p>
+          <ul class="summary-list" id="planFeatures"></ul>
+          <div class="price-breakdown">
+            <div class="price-row">
+              <span>Assinatura</span>
+              <strong id="summaryBase">R$ 179,00</strong>
+            </div>
+            <div class="price-row">
+              <span>Taxa de ativação</span>
+              <strong>R$ 0,00</strong>
+            </div>
+            <div class="price-row total">
+              <span>Total da contratação</span>
+              <strong id="summaryTotal">R$ 179,00</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <h3 style="margin-bottom:8px">O que acontece depois?</h3>
+          <ul class="summary-list">
+            <li>A assinatura fica salva na área de assinatura do usuário.</li>
+            <li>O cartão aparece mascarado para troca futura.</li>
+            <li>A próxima cobrança fica agendada automaticamente.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const SUBSCRIPTION_KEY = 'intellistock_subscription_v1';
+    const INVOICES_KEY = 'intellistock_invoices_v1';
+    const plans = {
+      semanal: {
+        id: 'semanal',
+        name: 'Assinatura Semanal',
+        price: 59,
+        intervalLabel: '/semana',
+        note: 'Ideal para testar a operação com acesso rápido e baixa barreira de entrada.',
+        chip: 'Entrada rápida',
+        features: [
+          'Acesso para 1 usuário',
+          'Até 150 produtos cadastrados',
+          'Relatório semanal simplificado'
+        ]
+      },
+      mensal: {
+        id: 'mensal',
+        name: 'Assinatura Mensal',
+        price: 179,
+        intervalLabel: '/mês',
+        note: 'Melhor equilíbrio entre previsibilidade, operação e custo.',
+        chip: 'Mais vendido',
+        features: [
+          'Até 5 usuários',
+          'Até 1.000 produtos',
+          'Alertas automáticos de estoque mínimo'
+        ]
+      },
+      anual: {
+        id: 'anual',
+        name: 'Assinatura Anual',
+        price: 1690,
+        intervalLabel: '/ano',
+        note: 'Melhor custo-benefício para quem quer reduzir churn e estabilizar o caixa.',
+        chip: 'Melhor valor',
+        features: [
+          'Usuários ilimitados',
+          'Produtos ilimitados',
+          'Dashboard executivo e suporte VIP'
+        ]
+      }
+    };
+
+    const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const planParam = new URLSearchParams(window.location.search).get('plano');
+    const billingCycle = document.getElementById('billingCycle');
+    const checkoutFeedback = document.getElementById('checkoutFeedback');
+    const confirmBtn = document.getElementById('confirmBtn');
+
+    if (usuario) {
+      document.getElementById('clienteNome').value = usuario.nome || '';
+      document.getElementById('clienteEmail').value = usuario.email || '';
+      document.getElementById('cardHolder').value = usuario.nome || '';
+    }
+
+    function fmtMoney(value) {
+      return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatCardNumber(value) {
+      return String(value || '').replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+    }
+
+    function formatExpiry(value) {
+      const digits = String(value || '').replace(/\D/g, '').slice(0, 4);
+      if (digits.length < 3) return digits;
+      return digits.slice(0, 2) + '/' + digits.slice(2);
+    }
+
+    function detectBrand(cardNumber) {
+      const digits = String(cardNumber || '').replace(/\D/g, '');
+      if (/^4/.test(digits)) return 'Visa';
+      if (/^(5[1-5]|2[2-7])/.test(digits)) return 'Mastercard';
+      if (/^3[47]/.test(digits)) return 'American Express';
+      if (/^(4011|4312|4389)/.test(digits)) return 'Elo';
+      return 'Cartão';
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function addMonths(date, months) {
+      const next = new Date(date);
+      next.setMonth(next.getMonth() + months);
+      return next;
+    }
+
+    function computeNextCharge(planId) {
+      const now = new Date();
+      if (planId === 'semanal') return addDays(now, 7);
+      if (planId === 'anual') return addMonths(now, 12);
+      return addMonths(now, 1);
+    }
+
+    function renderPlan(planId) {
+      const plan = plans[planId] || plans.mensal;
+      document.getElementById('planChip').textContent = plan.chip;
+      document.getElementById('planTitle').textContent = plan.name;
+      document.getElementById('planPrice').textContent = fmtMoney(plan.price);
+      document.getElementById('planInterval').textContent = plan.intervalLabel;
+      document.getElementById('planNote').textContent = plan.note;
+      document.getElementById('summaryBase').textContent = fmtMoney(plan.price);
+      document.getElementById('summaryTotal').textContent = fmtMoney(plan.price);
+      document.getElementById('planFeatures').innerHTML = plan.features.map((item) => `<li>${item}</li>`).join('');
+      billingCycle.value = plan.id;
+    }
+
+    document.getElementById('cardNumber').addEventListener('input', (event) => {
+      event.target.value = formatCardNumber(event.target.value);
+    });
+
+    document.getElementById('cardExpiry').addEventListener('input', (event) => {
+      event.target.value = formatExpiry(event.target.value);
+    });
+
+    billingCycle.addEventListener('change', () => renderPlan(billingCycle.value));
+
+    checkoutForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      checkoutFeedback.className = 'form-feedback';
+
+      const selectedPlan = plans[billingCycle.value] || plans.mensal;
+      const nome = document.getElementById('clienteNome').value.trim();
+      const email = document.getElementById('clienteEmail').value.trim().toLowerCase();
+      const documento = document.getElementById('clienteDocumento').value.trim();
+      const empresa = document.getElementById('empresaNome').value.trim();
+      const enderecoRua = document.getElementById('enderecoRua').value.trim();
+      const enderecoNumero = document.getElementById('enderecoNumero').value.trim();
+      const enderecoBairro = document.getElementById('enderecoBairro').value.trim();
+      const enderecoCidade = document.getElementById('enderecoCidade').value.trim();
+      const holder = document.getElementById('cardHolder').value.trim();
+      const cardNumber = document.getElementById('cardNumber').value.trim();
+      const cardExpiry = document.getElementById('cardExpiry').value.trim();
+      const cardCvv = document.getElementById('cardCvv').value.trim();
+
+      if (nome.length < 3) {
+        checkoutFeedback.textContent = 'Informe o nome do responsável pela assinatura.';
+        checkoutFeedback.classList.add('error');
+        return;
+      }
+
+      if (!/\S+@\S+\.\S+/.test(email)) {
+        checkoutFeedback.textContent = 'Informe um e-mail válido para a cobrança.';
+        checkoutFeedback.classList.add('error');
+        return;
+      }
+
+      if (documento.replace(/\D/g, '').length < 11) {
+        checkoutFeedback.textContent = 'Informe um CPF ou CNPJ válido.';
+        checkoutFeedback.classList.add('error');
+        return;
+      }
+
+      if (!enderecoRua || !enderecoNumero || !enderecoBairro || !enderecoCidade) {
+        checkoutFeedback.textContent = 'Preencha rua, número, bairro e cidade para cobrança.';
+        checkoutFeedback.classList.add('error');
+        return;
+      }
+
+      if (holder.length < 3 || cardNumber.replace(/\D/g, '').length < 16 || !/^\d{2}\/\d{2}$/.test(cardExpiry) || cardCvv.length < 3) {
+        checkoutFeedback.textContent = 'Preencha corretamente os dados do cartão.';
+        checkoutFeedback.classList.add('error');
+        return;
+      }
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Processando assinatura...';
+
+      const nextCharge = computeNextCharge(selectedPlan.id);
+      const cardLast4 = cardNumber.replace(/\D/g, '').slice(-4);
+      const subscription = {
+        planId: selectedPlan.id,
+        planName: selectedPlan.name,
+        planPrice: selectedPlan.price,
+        intervalLabel: selectedPlan.intervalLabel,
+        customerName: nome,
+        customerEmail: email,
+        customerDocument: documento,
+        companyName: empresa,
+        billingAddress: {
+          rua: enderecoRua,
+          numero: enderecoNumero,
+          bairro: enderecoBairro,
+          cidade: enderecoCidade
+        },
+        billingAddressText: `${enderecoRua}, ${enderecoNumero} - ${enderecoBairro}, ${enderecoCidade}`,
+        cardHolder: holder,
+        cardBrand: detectBrand(cardNumber),
+        cardLast4,
+        cardExpiry,
+        status: 'Ativa',
+        startedAt: new Date().toISOString(),
+        nextChargeAt: nextCharge.toISOString(),
+        autoRenew: true
+      };
+
+      const invoices = [
+        {
+          id: 'INV-' + Date.now(),
+          description: selectedPlan.name + ' - contratação inicial',
+          amount: selectedPlan.price,
+          status: 'Pago',
+          date: new Date().toISOString()
+        }
+      ];
+
+      localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+      localStorage.setItem(INVOICES_KEY, JSON.stringify(invoices));
+
+      if (!usuario) {
+        sessionStorage.setItem('is_usuario', JSON.stringify({
+          id: 'checkout_' + Date.now(),
+          nome,
+          email
+        }));
+      }
+
+      checkoutFeedback.textContent = 'Assinatura simulada com sucesso. Redirecionando para sua área...';
+      checkoutFeedback.classList.add('success');
+
+      setTimeout(() => {
+        window.location.href = '/assinatura.html';
+      }, 1200);
+    });
+
+    renderPlan(plans[planParam] ? planParam : 'mensal');
+
+    const revealEls = document.querySelectorAll('.reveal-section');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), index * 80);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    revealEls.forEach((el) => revealObserver.observe(el));
+  </script>
+</body>
+</html>

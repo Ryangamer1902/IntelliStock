@@ -178,6 +178,40 @@
       margin-bottom: 16px;
     }
 
+    .auth-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 6px;
+      background: rgba(14, 143, 131, 0.08);
+      border: 1px solid rgba(14, 143, 131, 0.14);
+      border-radius: 14px;
+      margin-bottom: 18px;
+    }
+
+    .auth-tab {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 800;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    }
+
+    .auth-tab.active {
+      background: #fff;
+      color: var(--brand-strong);
+      box-shadow: 0 10px 20px rgba(9, 41, 49, 0.08);
+    }
+
+    .auth-panel[hidden] {
+      display: none !important;
+    }
+
     .field {
       display: grid;
       gap: 6px;
@@ -448,9 +482,10 @@
         <a href="/index.html">Início</a>
         <a href="/login.html" class="active">Login</a>
         <a href="/relatorios.html" class="nav-auth-link" style="display:none">Relatórios</a>
-        <a href="/historico.html" class="nav-auth-link" style="display:none">Históricos</a>
+        <a href="/insumos.html" class="nav-auth-link" style="display:none">Insumos</a>
+        <a href="/assinatura.html" class="nav-auth-link" style="display:none">Assinatura</a>
         <a href="/index.html#histSection" onclick="sessionStorage.setItem('scrollToHist','1')">Veja na prática</a>
-        <a href="/produtos.html">Planos</a>
+        <a href="/produtos.html">Assinaturas</a>
       </nav>
     </div>
   </header>
@@ -459,18 +494,24 @@
     <section class="wrap reveal-section">
       <article class="info">
         <span class="pill">Acesso seguro</span>
-        <h1>Entre na sua conta IntelliStock</h1>
+        <h1>Transforme seu estoque em uma operação mais inteligente</h1>
         <p>
-          Faça login para acompanhar produtos, analisar relatórios e gerenciar seu estoque em tempo real,
-          com uma experiência simples para a equipe e completa para a gestão.
+          Centralize entradas, saídas e acompanhamento dos seus materiais em um só lugar,
+          com mais agilidade para a equipe e mais visão para quem decide.
         </p>
       </article>
 
       <article class="login-card">
-        <h2>Login</h2>
-        <p>Use seu e-mail corporativo para acessar a plataforma.</p>
-        <form id="loginForm" novalidate>
-          <div id="formFeedback" class="form-feedback"></div>
+        <h2 id="cardTitle">Login</h2>
+        <p id="cardIntro">Use seu e-mail corporativo para acessar a plataforma.</p>
+
+        <div class="auth-switch" aria-label="Alternar entre login e cadastro">
+          <button class="auth-tab active" type="button" id="tabLogin">Entrar</button>
+          <button class="auth-tab" type="button" id="tabCadastro">Criar cadastro</button>
+        </div>
+
+        <form id="loginForm" class="auth-panel" novalidate>
+          <div id="loginFeedback" class="form-feedback"></div>
           <div class="field">
             <label for="email">E-mail</label>
             <input id="email" type="email" placeholder="seuemail@empresa.com" required>
@@ -491,7 +532,40 @@
 
           <button id="submitBtn" class="btn" type="submit">Entrar no IntelliStock</button>
         </form>
-        <p class="small">Ainda não tem acesso? <a href="#">Fale com o administrador</a></p>
+
+        <form id="registerForm" class="auth-panel" novalidate hidden>
+          <div id="registerFeedback" class="form-feedback"></div>
+
+          <div class="field">
+            <label for="cadastroNome">Nome completo</label>
+            <input id="cadastroNome" type="text" placeholder="Seu nome" minlength="3" required>
+          </div>
+
+          <div class="field">
+            <label for="cadastroEmail">E-mail</label>
+            <input id="cadastroEmail" type="email" placeholder="seuemail@empresa.com" required>
+          </div>
+
+          <div class="field">
+            <label for="cadastroSenha">Senha</label>
+            <div class="password-wrap">
+              <input id="cadastroSenha" type="password" placeholder="Crie uma senha com 6+ caracteres" minlength="6" required>
+              <button id="toggleRegisterPass" class="toggle-pass" type="button">Mostrar</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="cadastroSenhaConfirm">Confirmar senha</label>
+            <div class="password-wrap">
+              <input id="cadastroSenhaConfirm" type="password" placeholder="Repita a senha" minlength="6" required>
+              <button id="toggleRegisterPassConfirm" class="toggle-pass" type="button">Mostrar</button>
+            </div>
+          </div>
+
+          <button id="registerBtn" class="btn" type="submit">Criar conta e continuar</button>
+        </form>
+
+        <p class="small" id="authSmallText">Ainda não tem acesso? <a href="#" id="openCadastroLink">Crie seu cadastro</a></p>
       </article>
     </section>
 
@@ -510,16 +584,77 @@
     }
 
     const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('senha');
     const submitBtn = document.getElementById('submitBtn');
     const togglePass = document.getElementById('togglePass');
-    const formFeedback = document.getElementById('formFeedback');
+    const loginFeedback = document.getElementById('loginFeedback');
+    const registerFeedback = document.getElementById('registerFeedback');
+    const cadastroNomeInput = document.getElementById('cadastroNome');
+    const cadastroEmailInput = document.getElementById('cadastroEmail');
+    const cadastroSenhaInput = document.getElementById('cadastroSenha');
+    const cadastroSenhaConfirmInput = document.getElementById('cadastroSenhaConfirm');
+    const registerBtn = document.getElementById('registerBtn');
+    const toggleRegisterPass = document.getElementById('toggleRegisterPass');
+    const toggleRegisterPassConfirm = document.getElementById('toggleRegisterPassConfirm');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabCadastro = document.getElementById('tabCadastro');
+    const cardTitle = document.getElementById('cardTitle');
+    const cardIntro = document.getElementById('cardIntro');
+    const authSmallText = document.getElementById('authSmallText');
+    const openCadastroLink = document.getElementById('openCadastroLink');
 
-    togglePass.addEventListener('click', () => {
-      const isPassword = passwordInput.type === 'password';
-      passwordInput.type = isPassword ? 'text' : 'password';
-      togglePass.textContent = isPassword ? 'Ocultar' : 'Mostrar';
+    function togglePasswordVisibility(input, button) {
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      button.textContent = isPassword ? 'Ocultar' : 'Mostrar';
+    }
+
+    function handle2faRedirect(data) {
+      sessionStorage.setItem('is_2fa_session', JSON.stringify({
+        token_temp: data.token_temp,
+        nome: data.nome,
+        codigo_demo: data.codigo_demo || null
+      }));
+      window.location.href = '/verificacao.html';
+    }
+
+    function setAuthMode(mode) {
+      const isCadastro = mode === 'cadastro';
+      tabLogin.classList.toggle('active', !isCadastro);
+      tabCadastro.classList.toggle('active', isCadastro);
+      loginForm.hidden = isCadastro;
+      registerForm.hidden = !isCadastro;
+      cardTitle.textContent = isCadastro ? 'Criar conta' : 'Login';
+      cardIntro.textContent = isCadastro
+        ? 'Crie sua conta para acessar a plataforma pela primeira vez.'
+        : 'Use seu e-mail corporativo para acessar a plataforma.';
+      authSmallText.innerHTML = isCadastro
+        ? 'Já possui conta? <a href="#" id="openLoginLink">Entrar agora</a>'
+        : 'Ainda não tem acesso? <a href="#" id="openCadastroLink">Crie seu cadastro</a>';
+
+      const dynamicLink = document.getElementById(isCadastro ? 'openLoginLink' : 'openCadastroLink');
+      dynamicLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        setAuthMode(isCadastro ? 'login' : 'cadastro');
+      });
+
+      if (isCadastro) {
+        cadastroNomeInput.focus();
+      } else {
+        emailInput.focus();
+      }
+    }
+
+    togglePass.addEventListener('click', () => togglePasswordVisibility(passwordInput, togglePass));
+    toggleRegisterPass.addEventListener('click', () => togglePasswordVisibility(cadastroSenhaInput, toggleRegisterPass));
+    toggleRegisterPassConfirm.addEventListener('click', () => togglePasswordVisibility(cadastroSenhaConfirmInput, toggleRegisterPassConfirm));
+    tabLogin.addEventListener('click', () => setAuthMode('login'));
+    tabCadastro.addEventListener('click', () => setAuthMode('cadastro'));
+    openCadastroLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      setAuthMode('cadastro');
     });
 
     loginForm.addEventListener('submit', async (event) => {
@@ -529,18 +664,18 @@
       const password = passwordInput.value.trim();
       const emailOk = /\S+@\S+\.\S+/.test(email);
 
-      formFeedback.className = 'form-feedback';
+      loginFeedback.className = 'form-feedback';
 
       if (!emailOk) {
-        formFeedback.textContent = 'Informe um e-mail válido para continuar.';
-        formFeedback.classList.add('error');
+        loginFeedback.textContent = 'Informe um e-mail válido para continuar.';
+        loginFeedback.classList.add('error');
         emailInput.focus();
         return;
       }
 
       if (password.length < 6) {
-        formFeedback.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
-        formFeedback.classList.add('error');
+        loginFeedback.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+        loginFeedback.classList.add('error');
         passwordInput.focus();
         return;
       }
@@ -552,23 +687,90 @@
         const data = await window.AuthService.login({ email, senha: password });
 
         if (data.success) {
-          sessionStorage.setItem('is_2fa_session', JSON.stringify({
-            token_temp: data.token_temp,
-            nome: data.nome,
-            codigo_demo: data.codigo_demo || null
-          }));
-          window.location.href = '/verificacao.html';
+          handle2faRedirect(data);
         } else {
-          formFeedback.textContent = data.message || 'Credenciais inválidas.';
-          formFeedback.classList.add('error');
+          loginFeedback.textContent = data.message || 'Credenciais inválidas.';
+          loginFeedback.classList.add('error');
           submitBtn.disabled = false;
           submitBtn.textContent = 'Entrar no IntelliStock';
         }
       } catch (err) {
-        formFeedback.textContent = 'Falha ao processar login. Verifique se o modo API está disponível.';
-        formFeedback.classList.add('error');
+        loginFeedback.textContent = 'Falha ao processar login. Verifique se o modo API está disponível.';
+        loginFeedback.classList.add('error');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Entrar no IntelliStock';
+      }
+    });
+
+    registerForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const nome = cadastroNomeInput.value.trim();
+      const email = cadastroEmailInput.value.trim();
+      const senha = cadastroSenhaInput.value.trim();
+      const confirmarSenha = cadastroSenhaConfirmInput.value.trim();
+      const emailOk = /\S+@\S+\.\S+/.test(email);
+
+      registerFeedback.className = 'form-feedback';
+
+      if (nome.length < 3) {
+        registerFeedback.textContent = 'Informe seu nome completo para criar a conta.';
+        registerFeedback.classList.add('error');
+        cadastroNomeInput.focus();
+        return;
+      }
+
+      if (!emailOk) {
+        registerFeedback.textContent = 'Informe um e-mail válido para o cadastro.';
+        registerFeedback.classList.add('error');
+        cadastroEmailInput.focus();
+        return;
+      }
+
+      if (senha.length < 6) {
+        registerFeedback.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+        registerFeedback.classList.add('error');
+        cadastroSenhaInput.focus();
+        return;
+      }
+
+      if (senha !== confirmarSenha) {
+        registerFeedback.textContent = 'A confirmação da senha não confere.';
+        registerFeedback.classList.add('error');
+        cadastroSenhaConfirmInput.focus();
+        return;
+      }
+
+      registerBtn.disabled = true;
+      registerBtn.textContent = 'Criando conta...';
+
+      try {
+        const data = await window.AuthService.register({ nome, email, senha });
+
+        if (data.success) {
+          registerFeedback.textContent = data.message || 'Cadastro realizado com sucesso. Faça login para continuar.';
+          registerFeedback.classList.add('success');
+
+          setAuthMode('login');
+          emailInput.value = email;
+          passwordInput.value = '';
+          loginFeedback.className = 'form-feedback';
+          loginFeedback.textContent = 'Conta criada. Agora entre com seu e-mail e senha.';
+          loginFeedback.classList.add('success');
+
+          registerBtn.disabled = false;
+          registerBtn.textContent = 'Criar conta e continuar';
+        } else {
+          registerFeedback.textContent = data.message || 'Não foi possível concluir o cadastro.';
+          registerFeedback.classList.add('error');
+          registerBtn.disabled = false;
+          registerBtn.textContent = 'Criar conta e continuar';
+        }
+      } catch (err) {
+        registerFeedback.textContent = 'Falha ao processar cadastro. Verifique se o modo API está disponível.';
+        registerFeedback.classList.add('error');
+        registerBtn.disabled = false;
+        registerBtn.textContent = 'Criar conta e continuar';
       }
     });
   </script>

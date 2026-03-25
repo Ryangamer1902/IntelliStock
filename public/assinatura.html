@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assinatura | IntelliStock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f3f7f7;
+      --ink: #122127;
+      --muted: #5d6b70;
+      --brand: #0e8f83;
+      --brand-strong: #096b62;
+      --accent: #ee7f3b;
+      --line: rgba(18, 33, 39, 0.1);
+      --shadow: 0 20px 45px rgba(9, 41, 49, 0.12);
+      --card: #ffffff;
+      --danger: #c0392b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 5%, rgba(14, 143, 131, 0.15), transparent 28%),
+        radial-gradient(circle at 95% 10%, rgba(238, 127, 59, 0.12), transparent 24%),
+        linear-gradient(180deg, #f8fbfb 0%, var(--bg) 75%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .shell { width: min(1200px, 96%); margin: 0 auto; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      background: rgba(248, 251, 251, 0.85);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+    }
+
+    .brand-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, var(--brand), #0fb8a9);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.88rem;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
+      padding: 8px 13px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    nav a:hover,
+    nav a.active {
+      background: rgba(14, 143, 131, 0.13);
+      color: var(--brand-strong);
+    }
+
+    .user-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 13px 7px 9px;
+      background: var(--card);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1f3840;
+    }
+
+    .avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, var(--brand), #0fb8a9);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .btn-logout {
+      border: 1px solid rgba(192, 57, 43, 0.3);
+      background: rgba(192, 57, 43, 0.08);
+      color: var(--danger);
+      border-radius: 999px;
+      padding: 7px 13px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    main { padding: 34px 0 62px; }
+
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(180deg, #ffffff, #f7fbfb);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      margin-bottom: 16px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(14, 143, 131, 0.26);
+      color: var(--brand-strong);
+      background: rgba(14, 143, 131, 0.08);
+      font-weight: 700;
+      font-size: 0.84rem;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 { font-family: 'Sora', sans-serif; }
+
+    h1 {
+      font-size: clamp(1.45rem, 2.8vw, 1.95rem);
+      margin-bottom: 6px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 70ch;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+    }
+
+    .card p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .status-row,
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .info-row:last-child,
+    .status-row:last-child { border-bottom: 0; }
+
+    .info-row span:first-child,
+    .status-row span:first-child {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .info-row strong,
+    .status-row strong {
+      text-align: right;
+      color: #183841;
+      font-size: 0.93rem;
+    }
+
+    .plan-banner {
+      border-radius: 18px;
+      padding: 18px;
+      background: linear-gradient(135deg, rgba(14, 143, 131, 0.14), rgba(14, 143, 131, 0.04));
+      border: 1px solid rgba(14, 143, 131, 0.16);
+      margin-bottom: 18px;
+    }
+
+    .plan-banner .price {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    .plan-banner .price strong {
+      font-size: 2rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-weight: 800;
+      font-size: 0.76rem;
+      background: rgba(14, 143, 131, 0.14);
+      color: #0a6a5f;
+    }
+
+    .invoice-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .invoice-item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+      display: grid;
+      gap: 6px;
+    }
+
+    .invoice-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.9rem;
+    }
+
+    .invoice-meta {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .btn {
+      border: 0;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-main {
+      background: linear-gradient(135deg, var(--brand), #0cac9c);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(14, 143, 131, 0.28);
+    }
+
+    .btn-soft {
+      background: rgba(14, 143, 131, 0.1);
+      color: var(--brand-strong);
+      border: 1px solid rgba(14, 143, 131, 0.25);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 18px;
+      border: 1px dashed rgba(18, 33, 39, 0.16);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .empty-state h2 {
+      margin-bottom: 8px;
+      font-size: 1.2rem;
+    }
+
+    .empty-state p {
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 30, 0.45);
+      z-index: 100;
+      backdrop-filter: blur(3px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 28px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.22);
+    }
+
+    .modal h2 {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+    }
+
+    .modal .sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 18px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #1f3840;
+    }
+
+    .field input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px 13px;
+      font-size: 0.92rem;
+      font-family: 'Manrope', sans-serif;
+      outline: none;
+      background: #fafcfc;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-feedback {
+      display: none;
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    .form-feedback.error {
+      display: block;
+      color: #8b3a18;
+      background: rgba(238, 127, 59, 0.16);
+      border: 1px solid rgba(238, 127, 59, 0.38);
+    }
+
+    .reveal-section {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+
+    .reveal-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .user-area { width: 100%; justify-content: space-between; }
+      .field-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell topbar">
+      <a class="brand" href="/dashboard.html">
+        <span class="brand-badge">IS</span>
+        <span>IntelliStock</span>
+      </a>
+      <nav>
+        <a href="/dashboard.html">Estoque</a>
+        <a href="/relatorios.html">Relatórios</a>
+        <a href="/insumos.html">Insumos</a>
+        <a href="/assinatura.html" class="active">Assinatura</a>
+      </nav>
+      <div class="user-area">
+        <div class="user-chip">
+          <div class="avatar" id="avatarInitial">?</div>
+          <span>Olá, <strong id="userName">...</strong></span>
+        </div>
+        <button class="btn-logout" id="btnLogout">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="shell">
+      <section class="hero reveal-section">
+        <span class="pill">Gestão da assinatura</span>
+        <h1>Assinatura, cobrança e cartão em um só lugar</h1>
+        <p>Esta é a área onde o usuário revisa a assinatura atual, a próxima cobrança e atualiza o cartão sem precisar falar com suporte.</p>
+      </section>
+
+      <div id="emptyState" class="empty-state reveal-section" style="display:none">
+        <h2>Nenhuma assinatura ativa ainda</h2>
+        <p>Escolha uma assinatura para testar o fluxo de checkout e visualizar aqui a cobrança, o cartão e o histórico financeiro da conta.</p>
+        <a class="btn btn-main" href="/produtos.html">Escolher assinatura</a>
+      </div>
+
+      <div id="subscriptionContent" style="display:none">
+        <div class="grid">
+          <section class="stack">
+            <article class="card reveal-section">
+              <div class="plan-banner">
+                <span class="badge" id="planStatus">Ativa</span>
+                <h2 id="planName" style="margin-top:10px">Assinatura Mensal</h2>
+                <div class="price">
+                  <strong id="planPrice">R$ 179,00</strong>
+                  <span id="planInterval" class="muted">/mês</span>
+                </div>
+                <p id="planSummary">Sua operação está coberta com renovação automática habilitada.</p>
+              </div>
+
+              <div class="status-row">
+                <span>Próxima cobrança</span>
+                <strong id="nextCharge">-</strong>
+              </div>
+              <div class="status-row">
+                <span>Responsável pela conta</span>
+                <strong id="customerName">-</strong>
+              </div>
+              <div class="status-row">
+                <span>E-mail de cobrança</span>
+                <strong id="customerEmail">-</strong>
+              </div>
+              <div class="status-row">
+                <span>Documento</span>
+                <strong id="customerDocument">-</strong>
+              </div>
+              <div class="status-row">
+                <span>Renovação automática</span>
+                <strong id="autoRenew">Ativada</strong>
+              </div>
+
+              <div class="btn-row">
+                <a class="btn btn-soft" href="/produtos.html">Alterar assinatura</a>
+                <button class="btn btn-main" id="btnChangeCard">Trocar cartão</button>
+              </div>
+            </article>
+
+            <article class="card reveal-section">
+              <h2>Histórico de cobranças</h2>
+              <p>Resumo dos pagamentos simulados para você validar a experiência do usuário dentro da plataforma.</p>
+              <div class="invoice-list" id="invoiceList"></div>
+            </article>
+          </section>
+
+          <aside class="stack">
+            <article class="card reveal-section">
+              <h2>Cartão cadastrado</h2>
+              <div class="info-row">
+                <span>Bandeira</span>
+                <strong id="cardBrand">-</strong>
+              </div>
+              <div class="info-row">
+                <span>Final</span>
+                <strong id="cardLast4">-</strong>
+              </div>
+              <div class="info-row">
+                <span>Portador</span>
+                <strong id="cardHolder">-</strong>
+              </div>
+              <div class="info-row">
+                <span>Validade</span>
+                <strong id="cardExpiry">-</strong>
+              </div>
+            </article>
+
+            <article class="card reveal-section">
+              <h2>Dados de faturamento</h2>
+              <div class="info-row">
+                <span>Empresa</span>
+                <strong id="companyName">-</strong>
+              </div>
+              <div class="info-row">
+                <span>Rua</span>
+                <strong id="billingStreet">-</strong>
+              </div>
+              <div class="info-row">
+                <span>Número</span>
+                <strong id="billingNumber">-</strong>
+              </div>
+              <div class="info-row">
+                <span>Bairro</span>
+                <strong id="billingDistrict">-</strong>
+              </div>
+              <div class="info-row">
+                <span>Cidade</span>
+                <strong id="billingCity">-</strong>
+              </div>
+              <div class="info-row">
+                <span>Status</span>
+                <strong id="subscriptionStatus">Ativa</strong>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="overlay" id="cardOverlay">
+    <div class="modal">
+      <h2>Trocar cartão</h2>
+      <p class="sub">Atualize o meio de pagamento usado nas próximas renovações.</p>
+      <div class="form-feedback" id="cardFeedback"></div>
+      <div class="field">
+        <label for="modalHolder">Nome no cartão</label>
+        <input type="text" id="modalHolder" placeholder="Nome como está no cartão">
+      </div>
+      <div class="field">
+        <label for="modalNumber">Número do cartão</label>
+        <input type="text" id="modalNumber" placeholder="0000 0000 0000 0000" maxlength="19">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="modalExpiry">Validade</label>
+          <input type="text" id="modalExpiry" placeholder="MM/AA" maxlength="5">
+        </div>
+        <div class="field">
+          <label for="modalCvv">CVV</label>
+          <input type="password" id="modalCvv" placeholder="123" maxlength="4">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-soft" id="btnCancelCard">Cancelar</button>
+        <button class="btn btn-main" id="btnSaveCard">Salvar cartão</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUBSCRIPTION_KEY = 'intellistock_subscription_v1';
+    const INVOICES_KEY = 'intellistock_invoices_v1';
+    const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+
+    if (!usuario) {
+      window.location.href = '/login.html';
+    }
+
+    if (usuario) {
+      const nome = usuario.nome || 'Usuário';
+      document.getElementById('userName').textContent = nome;
+      const initials = nome.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+      document.getElementById('avatarInitial').textContent = initials;
+    }
+
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      sessionStorage.removeItem('is_usuario');
+      sessionStorage.removeItem('is_2fa_session');
+      window.location.href = '/login.html';
+    });
+
+    function fmtMoney(value) {
+      return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function fmtDate(value) {
+      return new Date(value).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    function readSubscription() {
+      try {
+        return JSON.parse(localStorage.getItem(SUBSCRIPTION_KEY) || 'null');
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function readInvoices() {
+      try {
+        return JSON.parse(localStorage.getItem(INVOICES_KEY) || '[]');
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function formatCardNumber(value) {
+      return String(value || '').replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+    }
+
+    function formatExpiry(value) {
+      const digits = String(value || '').replace(/\D/g, '').slice(0, 4);
+      if (digits.length < 3) return digits;
+      return digits.slice(0, 2) + '/' + digits.slice(2);
+    }
+
+    function detectBrand(cardNumber) {
+      const digits = String(cardNumber || '').replace(/\D/g, '');
+      if (/^4/.test(digits)) return 'Visa';
+      if (/^(5[1-5]|2[2-7])/.test(digits)) return 'Mastercard';
+      if (/^3[47]/.test(digits)) return 'American Express';
+      if (/^(4011|4312|4389)/.test(digits)) return 'Elo';
+      return 'Cartão';
+    }
+
+    function render() {
+      const subscription = readSubscription();
+      if (!subscription) {
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('subscriptionContent').style.display = 'block';
+      document.getElementById('planStatus').textContent = subscription.status || 'Ativa';
+      document.getElementById('planName').textContent = subscription.planName;
+      document.getElementById('planPrice').textContent = fmtMoney(subscription.planPrice);
+      document.getElementById('planInterval').textContent = subscription.intervalLabel;
+      document.getElementById('planSummary').textContent = 'Sua assinatura está pronta para renovação automática e gerenciamento do cartão.';
+      document.getElementById('nextCharge').textContent = fmtDate(subscription.nextChargeAt);
+      document.getElementById('customerName').textContent = subscription.customerName;
+      document.getElementById('customerEmail').textContent = subscription.customerEmail;
+      document.getElementById('customerDocument').textContent = subscription.customerDocument;
+      document.getElementById('autoRenew').textContent = subscription.autoRenew ? 'Ativada' : 'Desativada';
+      document.getElementById('cardBrand').textContent = subscription.cardBrand;
+      document.getElementById('cardLast4').textContent = '•••• ' + subscription.cardLast4;
+      document.getElementById('cardHolder').textContent = subscription.cardHolder;
+      document.getElementById('cardExpiry').textContent = subscription.cardExpiry;
+      document.getElementById('companyName').textContent = subscription.companyName || 'Não informado';
+      const billing = (typeof subscription.billingAddress === 'object' && subscription.billingAddress !== null)
+        ? subscription.billingAddress
+        : {
+            rua: subscription.billingAddress || subscription.billingAddressText || '-',
+            numero: '-',
+            bairro: '-',
+            cidade: '-'
+          };
+      document.getElementById('billingStreet').textContent = billing.rua || '-';
+      document.getElementById('billingNumber').textContent = billing.numero || '-';
+      document.getElementById('billingDistrict').textContent = billing.bairro || '-';
+      document.getElementById('billingCity').textContent = billing.cidade || '-';
+      document.getElementById('subscriptionStatus').textContent = subscription.status || 'Ativa';
+
+      const invoices = readInvoices();
+      const invoiceList = document.getElementById('invoiceList');
+      invoiceList.innerHTML = invoices.map((invoice) => `
+        <div class="invoice-item">
+          <div class="invoice-head">
+            <strong>${invoice.description}</strong>
+            <span class="badge">${invoice.status}</span>
+          </div>
+          <div class="invoice-meta">${fmtDate(invoice.date)} • ${fmtMoney(invoice.amount)}</div>
+          <div class="invoice-meta">ID ${invoice.id}</div>
+        </div>
+      `).join('');
+    }
+
+    const cardOverlay = document.getElementById('cardOverlay');
+    const modalNumber = document.getElementById('modalNumber');
+    const modalExpiry = document.getElementById('modalExpiry');
+    const cardFeedback = document.getElementById('cardFeedback');
+
+    modalNumber.addEventListener('input', (event) => {
+      event.target.value = formatCardNumber(event.target.value);
+    });
+
+    modalExpiry.addEventListener('input', (event) => {
+      event.target.value = formatExpiry(event.target.value);
+    });
+
+    document.getElementById('btnChangeCard').addEventListener('click', () => {
+      const subscription = readSubscription();
+      if (!subscription) return;
+      cardFeedback.className = 'form-feedback';
+      document.getElementById('modalHolder').value = subscription.cardHolder || '';
+      document.getElementById('modalNumber').value = '';
+      document.getElementById('modalExpiry').value = subscription.cardExpiry || '';
+      document.getElementById('modalCvv').value = '';
+      cardOverlay.classList.add('open');
+    });
+
+    document.getElementById('btnCancelCard').addEventListener('click', () => {
+      cardOverlay.classList.remove('open');
+    });
+
+    cardOverlay.addEventListener('click', (event) => {
+      if (event.target === cardOverlay) {
+        cardOverlay.classList.remove('open');
+      }
+    });
+
+    document.getElementById('btnSaveCard').addEventListener('click', () => {
+      const subscription = readSubscription();
+      if (!subscription) return;
+
+      const holder = document.getElementById('modalHolder').value.trim();
+      const number = document.getElementById('modalNumber').value.trim();
+      const expiry = document.getElementById('modalExpiry').value.trim();
+      const cvv = document.getElementById('modalCvv').value.trim();
+
+      cardFeedback.className = 'form-feedback';
+
+      if (holder.length < 3 || number.replace(/\D/g, '').length < 16 || !/^\d{2}\/\d{2}$/.test(expiry) || cvv.length < 3) {
+        cardFeedback.textContent = 'Preencha corretamente os dados do novo cartão.';
+        cardFeedback.classList.add('error');
+        return;
+      }
+
+      subscription.cardHolder = holder;
+      subscription.cardBrand = detectBrand(number);
+      subscription.cardLast4 = number.replace(/\D/g, '').slice(-4);
+      subscription.cardExpiry = expiry;
+      localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+
+      cardOverlay.classList.remove('open');
+      render();
+    });
+
+    render();
+
+    const revealEls = document.querySelectorAll('.reveal-section');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), index * 80);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    revealEls.forEach((el) => revealObserver.observe(el));
+  </script>
+</body>
+</html>

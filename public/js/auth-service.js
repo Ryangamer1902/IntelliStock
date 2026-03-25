@@ -1,6 +1,16 @@
 (function () {
   const MODE_KEY = 'auth_mode';
   const DEFAULT_MODE = 'mock';
+  const MOCK_USERS_KEY = 'mock_auth_users_v1';
+
+  const defaultMockUsers = [
+    {
+      id: 1,
+      nome: 'Usuario Demo',
+      email: 'demo@intellistock.com',
+      senha: '123456'
+    }
+  ];
 
   function getMode() {
     const saved = localStorage.getItem(MODE_KEY);
@@ -42,19 +52,37 @@
     return data;
   }
 
-  async function mockLogin(payload) {
-    const email = String(payload.email || '').trim().toLowerCase();
-    const senha = String(payload.senha || '');
+  async function apiRegister(payload) {
+    const response = await fetch('/api/auth/cadastro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-    if (!email || !senha) {
-      return { success: false, message: 'E-mail e senha são obrigatórios.' };
-    }
+    const data = await response.json();
+    return data;
+  }
 
-    // Credencial de demonstração para trabalho de frontend
-    if (email !== 'cliente@intellistock.com' || senha !== '123456') {
-      return { success: false, message: 'Credenciais inválidas (mock). Use cliente@intellistock.com / 123456.' };
-    }
+  function readMockUsers() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || 'null');
+      if (Array.isArray(saved) && saved.length) {
+        return saved;
+      }
+    } catch (_) {}
 
+    return defaultMockUsers.map((user) => ({ ...user }));
+  }
+
+  function writeMockUsers(users) {
+    localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+  }
+
+  function nextMockUserId(users) {
+    return users.reduce((maxId, user) => Math.max(maxId, Number(user.id) || 0), 0) + 1;
+  }
+
+  function createMockChallenge(usuario) {
     const tokenTemp = makeToken();
     const codigo = makeCode();
     const expiraEm = Date.now() + 10 * 60 * 1000;
@@ -64,17 +92,73 @@
       codigo,
       expiraEm,
       usuario: {
-        id: 1,
-        nome: 'Cliente Demo',
-        email
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email
       }
     }));
 
     return {
       success: true,
       token_temp: tokenTemp,
-      nome: 'Cliente Demo',
+      nome: usuario.nome,
       codigo_demo: codigo
+    };
+  }
+
+  async function mockLogin(payload) {
+    const email = String(payload.email || '').trim().toLowerCase();
+    const senha = String(payload.senha || '');
+
+    if (!email || !senha) {
+      return { success: false, message: 'E-mail e senha são obrigatórios.' };
+    }
+
+    const users = readMockUsers();
+    const usuario = users.find((user) => user.email === email);
+
+    if (!usuario || usuario.senha !== senha) {
+      return { success: false, message: 'Credenciais inválidas (mock).' };
+    }
+
+    return createMockChallenge(usuario);
+  }
+
+  async function mockRegister(payload) {
+    const nome = String(payload.nome || '').trim();
+    const email = String(payload.email || '').trim().toLowerCase();
+    const senha = String(payload.senha || '');
+
+    if (nome.length < 3) {
+      return { success: false, message: 'Informe um nome com pelo menos 3 caracteres.' };
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      return { success: false, message: 'Informe um e-mail válido.' };
+    }
+
+    if (senha.length < 6) {
+      return { success: false, message: 'A senha precisa ter pelo menos 6 caracteres.' };
+    }
+
+    const users = readMockUsers();
+    if (users.some((user) => user.email === email)) {
+      return { success: false, message: 'Já existe uma conta cadastrada com este e-mail.' };
+    }
+
+    const usuario = {
+      id: nextMockUserId(users),
+      nome,
+      email,
+      senha
+    };
+
+    users.push(usuario);
+    writeMockUsers(users);
+
+    return {
+      success: true,
+      message: 'Cadastro realizado com sucesso. Faça login com seu e-mail e senha.'
     };
   }
 
@@ -109,6 +193,10 @@
     return getMode() === 'api' ? apiLogin(payload) : mockLogin(payload);
   }
 
+  async function register(payload) {
+    return getMode() === 'api' ? apiRegister(payload) : mockRegister(payload);
+  }
+
   async function verify(payload) {
     return getMode() === 'api' ? apiVerify(payload) : mockVerify(payload);
   }
@@ -117,6 +205,7 @@
     getMode,
     setMode,
     login,
+    register,
     verify
   };
 })();

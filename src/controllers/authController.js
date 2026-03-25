@@ -2,6 +2,29 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
+async function criarDesafioVerificacao(db, usuario) {
+  const codigo = String(Math.floor(100000 + Math.random() * 900000));
+  const tokenTemp = crypto.randomBytes(32).toString('hex');
+  const expiraEm = new Date(Date.now() + 10 * 60 * 1000);
+
+  await db.query('DELETE FROM codigos_verificacao WHERE usuario_id = ?', [usuario.id]);
+  await db.query(
+    'INSERT INTO codigos_verificacao (usuario_id, token_temp, codigo, expira_em) VALUES (?, ?, ?, ?)',
+    [usuario.id, tokenTemp, codigo, expiraEm]
+  );
+
+  return {
+    success: true,
+    token_temp: tokenTemp,
+    nome: usuario.nome,
+    codigo_demo: codigo
+  };
+}
+
+function emailValido(email) {
+  return /\S+@\S+\.\S+/.test(String(email || '').trim());
+}
+
 class AuthController {
   static async login(req, res) {
     const db = global.db;
@@ -33,31 +56,57 @@ class AuthController {
         return res.status(401).json({ success: false, message: 'E-mail ou senha incorretos.' });
       }
 
-      // Gerar código de 6 dígitos e token temporário seguro
-      const codigo = String(Math.floor(100000 + Math.random() * 900000));
-      const tokenTemp = crypto.randomBytes(32).toString('hex');
-      const expiraEm = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
-
-      // Remover códigos anteriores do usuário
-      await db.query('DELETE FROM codigos_verificacao WHERE usuario_id = ?', [usuario.id]);
-
-      // Inserir novo código
-      await db.query(
-        'INSERT INTO codigos_verificacao (usuario_id, token_temp, codigo, expira_em) VALUES (?, ?, ?, ?)',
-        [usuario.id, tokenTemp, codigo, expiraEm]
-      );
-
-      // Em produção: enviar código por e-mail ou SMS
-      // Em modo demo: código retornado na resposta para facilitar teste
-      return res.json({
-        success: true,
-        token_temp: tokenTemp,
-        nome: usuario.nome,
-        codigo_demo: codigo
-      });
+      return res.json(await criarDesafioVerificacao(db, usuario));
 
     } catch (err) {
       console.error('Erro no login:', err);
+      return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
+    }
+  }
+
+  static async cadastrar(req, res) {
+    const db = global.db;
+    if (!db) {
+      return res.status(503).json({
+        success: false,
+        message: 'Banco de dados não configurado. Execute npm run setup:db e reinicie o servidor.'
+      });
+    }
+
+    const nome = String(req.body.nome || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const senha = String(req.body.senha || '');
+
+    if (nome.length < 3) {
+      return res.status(400).json({ success: false, message: 'Informe um nome com pelo menos 3 caracteres.' });
+    }
+
+    if (!emailValido(email)) {
+      return res.status(400).json({ success: false, message: 'Informe um e-mail válido.' });
+    }
+
+    if (senha.length < 6) {
+      return res.status(400).json({ success: false, message: 'A senha precisa ter pelo menos 6 caracteres.' });
+    }
+
+    try {
+      const [rows] = await db.query('SELECT id FROM usuarios WHERE email = ? LIMIT 1', [email]);
+      if (rows.length > 0) {
+        return res.status(409).json({ success: false, message: 'Já existe uma conta cadastrada com este e-mail.' });
+      }
+
+      const senhaHash = await bcrypt.hash(senha, 10);
+      await db.query(
+        'INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)',
+        [nome, email, senhaHash]
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: 'Cadastro realizado com sucesso. Faça login com seu e-mail e senha.'
+      });
+    } catch (err) {
+      console.error('Erro no cadastro:', err);
       return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
     }
   }
