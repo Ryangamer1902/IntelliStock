@@ -644,7 +644,6 @@
         <a href="/dashboard.html" class="active">Estoque</a>
         <a href="/relatorios.html">Relatórios</a>
         <a href="/insumos.html">Insumos</a>
-        <a href="/assinatura.html">Assinatura</a>
       </nav>
       <div class="user-area">
         <div class="user-chip">
@@ -716,6 +715,7 @@
               <tr>
                 <th>Material</th>
                 <th>Código</th>
+                <th>Fornecedor</th>
                 <th>Quantidade</th>
                 <th>Mínimo</th>
                 <th>Status</th>
@@ -756,8 +756,12 @@
         <input type="text" id="fieldNome" placeholder="Ex: Parafuso M6 inox">
       </div>
       <div class="field">
-        <label>Código de barras *</label>
-        <input type="text" id="fieldCodigo" placeholder="Ex: 7891234567890">
+        <label>Código de barras (13 dígitos) *</label>
+        <input type="text" id="fieldCodigo" placeholder="Ex: 7891234567890" maxlength="13" pattern="\\d{13}" required>
+      </div>
+      <div class="field">
+        <label>Fornecedor *</label>
+        <input type="text" id="fieldFornecedor" placeholder="Ex: ACME Ltda" required>
       </div>
       <div class="field-row">
         <div class="field">
@@ -912,11 +916,10 @@
             <strong>${escHtml(m.nome)}</strong>
           </td>
           <td style="font-size:0.82rem;color:var(--muted)">${escHtml(m.codigo_barras)}</td>
+          <td style="font-size:0.82rem;color:var(--muted)">${escHtml(m.fornecedor || '')}</td>
           <td>
             <div class="qty-wrap">
-              <button class="qty-btn" onclick="changeQty(${m.id}, -1)" title="Remover 1">−</button>
               <span class="qty-num">${m.quantidade_atual}</span>
-              <button class="qty-btn" onclick="changeQty(${m.id}, 1)" title="Adicionar 1">+</button>
             </div>
           </td>
           <td style="color:var(--muted);font-size:0.88rem">${m.quantidade_minima}</td>
@@ -1054,6 +1057,7 @@
       document.getElementById('btnSaveModal').textContent = 'Salvar';
       document.getElementById('fieldNome').value = '';
       document.getElementById('fieldCodigo').value = '';
+      document.getElementById('fieldFornecedor').value = '';
       document.getElementById('fieldQtd').value = '';
       document.getElementById('fieldQtdMin').value = '';
       document.getElementById('fieldCusto').value = '';
@@ -1074,6 +1078,7 @@
       document.getElementById('btnSaveModal').textContent = 'Atualizar';
       document.getElementById('fieldNome').value = mat.nome;
       document.getElementById('fieldCodigo').value = mat.codigo_barras;
+      document.getElementById('fieldFornecedor').value = mat.fornecedor || '';
       document.getElementById('fieldQtd').value = mat.quantidade_atual;
       document.getElementById('fieldQtdMin').value = mat.quantidade_minima;
       document.getElementById('fieldCusto').value = mat.preco_custo ?? mat.preco_manual ?? '';
@@ -1092,6 +1097,7 @@
     document.getElementById('btnSaveModal').addEventListener('click', async () => {
       const nome = document.getElementById('fieldNome').value.trim();
       const codigo = document.getElementById('fieldCodigo').value.trim();
+      const fornecedor = document.getElementById('fieldFornecedor').value.trim();
       const qtd = parseInt(document.getElementById('fieldQtd').value) || 0;
       const qtdMin = parseInt(document.getElementById('fieldQtdMin').value);
       const custo = parseFloat(document.getElementById('fieldCusto').value);
@@ -1099,8 +1105,14 @@
       const preco = calcVenda();
       const fb = document.getElementById('modalFeedback');
 
-      if (!nome || !codigo || isNaN(qtdMin) || isNaN(custo) || isNaN(preco)) {
+      if (!nome || !codigo || !fornecedor || isNaN(qtdMin) || isNaN(custo) || isNaN(preco)) {
         fb.textContent = 'Preencha todos os campos obrigatórios.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+      // Validação do código de barras EAN-13
+      if (!/^\d{13}$/.test(codigo)) {
+        fb.textContent = 'O código de barras deve ter exatamente 13 dígitos numéricos.';
         fb.className = 'modal-feedback error';
         return;
       }
@@ -1116,7 +1128,7 @@
           const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, codigo_barras: codigo, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco })
+            body: JSON.stringify({ nome, codigo_barras: codigo, fornecedor, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco })
           });
           const data = await res.json();
           if (!data.success) throw new Error(data.message);
@@ -1124,11 +1136,11 @@
           if (editingId) {
             const idx = mockMateriais.findIndex(m => m.id === editingId);
             if (idx !== -1) {
-              mockMateriais[idx] = { ...mockMateriais[idx], nome, codigo_barras: codigo, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco };
+              mockMateriais[idx] = { ...mockMateriais[idx], nome, codigo_barras: codigo, fornecedor, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco };
               persistMockMateriais();
             }
           } else {
-            mockMateriais.unshift({ id: mockNextId++, codigo_barras: codigo, nome, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco });
+            mockMateriais.unshift({ id: mockNextId++, codigo_barras: codigo, nome, fornecedor, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco });
             persistMockMateriais();
           }
         }

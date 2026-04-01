@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -18,36 +18,30 @@
       --line: rgba(18, 33, 39, 0.1);
       --shadow: 0 20px 45px rgba(9, 41, 49, 0.12);
       --card: #ffffff;
+      --danger: #c0392b;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Manrope', sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 8% 5%, rgba(14, 143, 131, 0.18), transparent 28%),
-        radial-gradient(circle at 95% 10%, rgba(238, 127, 59, 0.16), transparent 24%),
+        radial-gradient(circle at 8% 5%, rgba(14, 143, 131, 0.15), transparent 28%),
+        radial-gradient(circle at 95% 10%, rgba(238, 127, 59, 0.12), transparent 24%),
         linear-gradient(180deg, #f8fbfb 0%, var(--bg) 75%);
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    .shell {
-      width: min(1140px, 94%);
-      margin: 0 auto;
-    }
+    .shell { width: min(1200px, 96%); margin: 0 auto; }
 
     header {
       position: sticky;
       top: 0;
-      z-index: 20;
-      backdrop-filter: blur(8px);
-      background: rgba(248, 251, 251, 0.78);
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      background: rgba(248, 251, 251, 0.85);
       border-bottom: 1px solid var(--line);
     }
 
@@ -55,8 +49,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 0;
-      gap: 20px;
+      padding: 14px 0;
+      gap: 16px;
     }
 
     .brand {
@@ -67,7 +61,6 @@
       color: var(--ink);
       font-family: 'Sora', sans-serif;
       font-weight: 700;
-      letter-spacing: 0.2px;
     }
 
     .brand-badge {
@@ -79,465 +72,336 @@
       background: linear-gradient(145deg, var(--brand), #0fb8a9);
       color: #fff;
       font-weight: 800;
+      font-size: 0.88rem;
     }
 
     nav {
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
+      flex-wrap: nowrap;
+      gap: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     nav a {
       text-decoration: none;
-      color: var(--ink);
-      padding: 9px 13px;
+      color: var(--muted);
+      padding: 8px 13px;
       border-radius: 999px;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 600;
-      transition: background 0.2s ease, color 0.2s ease;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s;
     }
 
-    nav a:hover,
-    nav a.active {
+    nav a:hover, nav a.active {
       background: rgba(14, 143, 131, 0.13);
       color: var(--brand-strong);
     }
 
-    main {
-      padding: 52px 0 66px;
+    .user-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
     }
 
-    .hero {
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       border: 1px solid var(--line);
-      border-radius: 22px;
-      padding: 24px;
-      background: linear-gradient(180deg, #ffffff, #f7fbfb);
-      box-shadow: var(--shadow);
-      margin-bottom: 14px;
+      border-radius: 999px;
+      padding: 7px 13px 7px 9px;
+      background: var(--card);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1f3840;
+    }
+
+    .avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, var(--brand), #0fb8a9);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .btn-logout {
+      border: 1px solid rgba(192, 57, 43, 0.3);
+      background: rgba(192, 57, 43, 0.08);
+      color: var(--danger);
+      border-radius: 999px;
+      padding: 7px 13px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-logout:hover { background: rgba(192, 57, 43, 0.15); }
+
+    main { padding: 36px 0 64px; }
+
+    .page-head {
+      margin-bottom: 28px;
     }
 
     .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(14, 143, 131, 0.26);
+      display: inline-block;
+      background: rgba(14, 143, 131, 0.12);
       color: var(--brand-strong);
-      background: rgba(14, 143, 131, 0.08);
-      font-weight: 700;
-      font-size: 0.84rem;
-      margin-bottom: 12px;
+      border-radius: 999px;
+      padding: 5px 13px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      margin-bottom: 10px;
     }
 
-    h1,
-    h2,
-    h3 {
+    .page-head h1 {
       font-family: 'Sora', sans-serif;
-    }
-
-    h1 {
-      font-size: clamp(1.8rem, 3vw, 2.35rem);
+      font-size: clamp(1.45rem, 3vw, 1.9rem);
       margin-bottom: 8px;
+      line-height: 1.25;
     }
 
-    .hero p {
+    .page-head p {
       color: var(--muted);
-      line-height: 1.7;
+      font-size: 0.95rem;
       max-width: 70ch;
-      margin-bottom: 16px;
+      line-height: 1.6;
     }
 
-    .kpi-grid {
+    .kpi-row {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
+      gap: 12px;
+      margin-bottom: 24px;
     }
 
     .kpi {
       border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #fff;
-      padding: 12px;
+      border-radius: 16px;
+      background: var(--card);
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(8, 37, 44, 0.06);
+      position: relative;
+      overflow: hidden;
     }
 
-    .kpi span {
+    .kpi::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--brand), #0fb8a9);
+    }
+
+    .kpi-label {
+      font-size: 0.8rem;
       color: var(--muted);
-      font-size: 0.82rem;
-      display: block;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1;
       margin-bottom: 4px;
     }
 
-    .kpi strong {
-      font-family: 'Sora', sans-serif;
-      font-size: 1.25rem;
-      display: block;
-      margin-bottom: 3px;
-    }
-
-    .kpi small {
-      color: #146157;
-      font-weight: 700;
-      font-size: 0.79rem;
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 600;
     }
 
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 14px;
+      margin-bottom: 14px;
     }
 
     .panel {
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: #fff;
-      padding: 16px;
-      box-shadow: 0 8px 20px rgba(8, 37, 44, 0.06);
+      background: var(--card);
+      padding: 20px;
+      box-shadow: 0 4px 14px rgba(8, 37, 44, 0.06);
     }
 
     .panel h2 {
-      font-size: 1.08rem;
-      margin-bottom: 6px;
+      font-family: 'Sora', sans-serif;
+      font-size: 1rem;
+      margin-bottom: 4px;
     }
 
-    .panel p {
+    .panel > p {
       color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.6;
-      margin-bottom: 12px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
     }
 
-    .rank-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .rank-item {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px;
-      background: linear-gradient(180deg, #ffffff, #f9fcfc);
-    }
+    .rank-item { margin-bottom: 12px; }
+    .rank-item:last-child { margin-bottom: 0; }
 
     .rank-head {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 6px;
-      font-size: 0.89rem;
+      font-size: 0.88rem;
       font-weight: 700;
-      color: #1e3a41;
+      margin-bottom: 4px;
     }
 
     .bar {
       height: 9px;
       border-radius: 999px;
-      background: rgba(18, 33, 39, 0.1);
+      background: rgba(18, 33, 39, 0.08);
       overflow: hidden;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
     .fill {
       height: 100%;
       border-radius: 999px;
-      background: linear-gradient(130deg, var(--brand), #0fb8a9);
+      background: linear-gradient(90deg, var(--brand), #0fb8a9);
     }
 
     .fill-low {
-      background: linear-gradient(130deg, var(--accent), #f3a26f);
+      background: linear-gradient(90deg, var(--accent), #f3a26f);
     }
 
     .rank-foot {
+      font-size: 0.78rem;
       color: var(--muted);
-      font-size: 0.82rem;
     }
 
     .full-panel {
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: #fff;
-      padding: 16px;
-      box-shadow: 0 8px 20px rgba(8, 37, 44, 0.06);
+      background: var(--card);
+      padding: 20px;
+      box-shadow: 0 4px 14px rgba(8, 37, 44, 0.06);
       margin-bottom: 14px;
     }
 
     .full-panel h2 {
-      font-size: 1.06rem;
-      margin-bottom: 6px;
+      font-family: 'Sora', sans-serif;
+      font-size: 1rem;
+      margin-bottom: 4px;
     }
 
-    .full-panel p {
+    .full-panel > p {
       color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.6;
-      margin-bottom: 12px;
-    }
-
-    .table-wrap {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      min-width: 760px;
-      border-collapse: collapse;
-      background: #fff;
-    }
-
-    th,
-    td {
-      text-align: left;
-      padding: 10px 11px;
-      border-bottom: 1px solid var(--line);
-      font-size: 0.88rem;
-      white-space: nowrap;
-    }
-
-    th {
-      background: rgba(14, 143, 131, 0.1);
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      color: #194149;
-    }
-
-    tr:last-child td {
-      border-bottom: 0;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-weight: 800;
-      font-size: 0.74rem;
-    }
-
-    .badge-up {
-      color: #0a6359;
-      background: rgba(14, 143, 131, 0.14);
-    }
-
-    .badge-down {
-      color: #954518;
-      background: rgba(238, 127, 59, 0.2);
-    }
-
-    .cta {
-      border-radius: 16px;
-      padding: 18px;
-      background: linear-gradient(120deg, #123f4a 0%, #0b6b64 60%, #0f8e80 100%);
-      color: #f5ffff;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .cta p {
-      color: rgba(245, 255, 255, 0.9);
-      line-height: 1.6;
-      max-width: 67ch;
-    }
-
-    .btn {
-      border: 0;
-      text-decoration: none;
-      padding: 12px 18px;
-      border-radius: 11px;
-      font-weight: 800;
-      font-size: 0.92rem;
-      letter-spacing: 0.2px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .btn-main {
-      color: #fff;
-      background: linear-gradient(130deg, var(--accent), #f69b63);
-      box-shadow: 0 12px 28px rgba(220, 99, 24, 0.32);
-    }
-
-    .btn-soft {
-      border: 1px solid rgba(14, 143, 131, 0.25);
-      background: rgba(14, 143, 131, 0.1);
-      color: var(--brand-strong);
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-    }
-
-    .back-to-top {
-      margin-top: 18px;
-      display: flex;
-      justify-content: flex-start;
-    }
-
-    .hero-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      font-size: 0.85rem;
       margin-bottom: 16px;
-    }
-
-    .meta-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(18, 33, 39, 0.05);
-      border: 1px solid var(--line);
-      color: #214249;
-      font-size: 0.83rem;
-      font-weight: 700;
-    }
-
-    .section-stack {
-      display: grid;
-      gap: 12px;
-      margin-bottom: 12px;
     }
 
     .insight-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
 
     .insight-card {
       border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px;
-      background: linear-gradient(180deg, #ffffff, #f7fbfb);
-      box-shadow: 0 8px 18px rgba(8, 37, 44, 0.06);
+      border-radius: 12px;
+      padding: 14px;
+      background: #f8fbfb;
     }
 
     .insight-card span {
       display: block;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--muted);
-      margin-bottom: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
     }
 
     .insight-card strong {
       display: block;
       font-family: 'Sora', sans-serif;
-      font-size: 1.15rem;
-      margin-bottom: 6px;
-      color: #17383f;
+      font-size: 1rem;
+      font-weight: 800;
+      margin-bottom: 5px;
+      color: var(--ink);
     }
 
     .insight-card p {
-      margin: 0;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       color: var(--muted);
-      line-height: 1.55;
+      line-height: 1.5;
+      margin: 0;
     }
+
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    thead th {
+      background: rgba(14, 143, 131, 0.08);
+      padding: 11px 13px;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #194149;
+      border-bottom: 1px solid var(--line);
+    }
+
+    tbody td {
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.88rem;
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: rgba(14, 143, 131, 0.03); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-weight: 800;
+      font-size: 0.74rem;
+    }
+
+    .badge-up { color: #0a6359; background: rgba(14, 143, 131, 0.14); }
+    .badge-down { color: #954518; background: rgba(238, 127, 59, 0.2); }
 
     .empty-report {
-      border: 1px dashed rgba(18, 33, 39, 0.18);
-      border-radius: 16px;
-      padding: 26px;
+      border: 1px dashed rgba(18, 33, 39, 0.15);
+      border-radius: 12px;
+      padding: 22px;
       text-align: center;
       color: var(--muted);
-      background: rgba(255, 255, 255, 0.72);
-    }
-
-    @media (max-width: 980px) {
-      .topbar {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      nav {
-        width: 100%;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 4px;
-      }
-
-      nav a {
-        white-space: nowrap;
-        flex: 0 0 auto;
-      }
-
-      .kpi-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .insight-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 560px) {
-      main {
-        padding: 36px 0 52px;
-      }
-
-      .hero,
-      .panel,
-      .full-panel,
-      .cta {
-        padding: 16px;
-      }
-
-      .kpi-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .cta {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .insight-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 420px) {
-      main {
-        padding: 24px 0 36px;
-      }
-
-      .hero,
-      .panel,
-      .full-panel,
-      .cta {
-        padding: 12px;
-      }
-
-      h1 {
-        font-size: 1.45rem;
-      }
-
-      .actions {
-        flex-direction: column;
-      }
-
-      .actions .btn {
-        width: 100%;
-        justify-content: center;
-      }
+      font-size: 0.88rem;
+      background: rgba(255,255,255,0.6);
     }
 
     .reveal-section {
@@ -550,139 +414,154 @@
       opacity: 1;
       transform: translateY(0);
     }
+
+    .kpi.reveal-section:nth-child(1) { transition-delay: 0ms; }
+    .kpi.reveal-section:nth-child(2) { transition-delay: 80ms; }
+    .kpi.reveal-section:nth-child(3) { transition-delay: 160ms; }
+    .kpi.reveal-section:nth-child(4) { transition-delay: 240ms; }
+
+    @media (max-width: 1024px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .insight-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      .topbar { flex-wrap: wrap; gap: 10px; }
+    }
+
+    @media (max-width: 560px) {
+      main { padding: 24px 0 48px; }
+      .kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .insight-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 380px) {
+      .kpi-row { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
-<body id="topo">
+<body>
   <header>
     <div class="shell topbar">
-      <a class="brand" href="/index.html">
+      <a class="brand" href="/dashboard.html">
         <span class="brand-badge">IS</span>
         <span>IntelliStock</span>
       </a>
       <nav>
-        <a href="/dashboard.html" class="nav-auth-link" style="display:none">Estoque</a>
-        <a href="/relatorios.html" class="active">Relatórios</a>
-        <a href="/insumos.html" class="nav-auth-link" style="display:none">Insumos</a>
-        <a href="/assinatura.html" class="nav-auth-link" style="display:none">Assinatura</a>
+        <a href="/dashboard.html">Estoque</a>
+        <a href="/relatorios.html" class="active">Relat&#243;rios</a>
+        <a href="/insumos.html">Insumos</a>
       </nav>
-      <div class="user-area" id="userArea" style="display:none;flex-shrink:0;align-items:center;gap:10px">
-        <div style="display:flex;align-items:center;gap:8px;border:1px solid rgba(18,33,39,0.1);border-radius:999px;padding:7px 13px 7px 9px;background:#fff;font-size:0.85rem;font-weight:700;color:#1f3840">
-          <div id="avatarInitial" style="width:26px;height:26px;border-radius:50%;background:linear-gradient(145deg,#0e8f83,#0fb8a9);display:grid;place-items:center;color:#fff;font-size:0.75rem;font-weight:800">?</div>
-          Olá, <strong id="userName">...</strong>
+      <div class="user-area" id="userArea" style="display:none">
+        <div class="user-chip">
+          <div class="avatar" id="avatarInitial">?</div>
+          <span>Ol&#225;, <strong id="userName">...</strong></span>
         </div>
-        <button id="btnLogout" style="border:1px solid rgba(192,57,43,0.3);background:rgba(192,57,43,0.08);color:#c0392b;border-radius:999px;padding:7px 13px;font-size:0.82rem;font-weight:700;cursor:pointer">Sair</button>
+        <button class="btn-logout" id="btnLogout">Sair</button>
       </div>
     </div>
   </header>
 
-  <main class="shell">
-    <section class="hero reveal-section">
-      <span class="pill">Relatórios inteligentes do estoque</span>
-      <h1>Veja com clareza o que mais sai, o que está parado e onde o estoque precisa da sua atenção</h1>
-      <p id="heroCopy">
-        O painel abaixo cruza giro estimado, estoque atual, margem e cobertura para mostrar ao gestor o que mais vende,
-        o que menos vende e quais itens precisam de ação comercial ou reposição.
-      </p>
-      <div class="hero-meta">
-        <span class="meta-chip" id="dataSourceNote">Base do relatório: carregando...</span>
-        <span class="meta-chip" id="syncNote">Leitura do catálogo: em andamento</span>
+  <main>
+    <div class="shell">
+      <div class="page-head reveal-section">
+        <span class="pill">Relat&#243;rios inteligentes do estoque</span>
+        <h1>Veja com clareza o que mais sai, o que est&#225; parado e onde o estoque precisa da sua aten&#231;&#227;o</h1>
+        <p id="heroCopy">
+          O painel abaixo cruza giro estimado, estoque atual, margem e cobertura para mostrar ao gestor o que mais vende,
+          o que menos vende e quais itens precisam de a&#231;&#227;o comercial ou reposi&#231;&#227;o.
+        </p>
       </div>
 
-      <div class="kpi-grid">
-        <article class="kpi">
-          <span>Itens analisados</span>
-          <strong id="kpiItens">0</strong>
-          <small id="kpiItensSub">catálogo carregado</small>
+      <div class="kpi-row">
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Itens analisados</div>
+          <div class="kpi-value" id="kpiItens">0</div>
+          <div class="kpi-sub" id="kpiItensSub">cat&#225;logo carregado</div>
+        </div>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Sa&#237;da estimada no per&#237;odo</div>
+          <div class="kpi-value" id="kpiSaidas">0 un.</div>
+          <div class="kpi-sub" id="kpiSaidasSub">giro consolidado</div>
+        </div>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Item com maior giro</div>
+          <div class="kpi-value" id="kpiTop">-</div>
+          <div class="kpi-sub" id="kpiTopSub">sem leitura ainda</div>
+        </div>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Abaixo do m&#237;nimo</div>
+          <div class="kpi-value" id="kpiCriticos">0</div>
+          <div class="kpi-sub" id="kpiCriticosSub">nenhum item cr&#237;tico</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <article class="panel reveal-section">
+          <h2>Itens que mais sa&#237;ram</h2>
+          <p>Priorize reposi&#231;&#227;o e exposi&#231;&#227;o comercial dos produtos com maior giro no per&#237;odo.</p>
+          <div class="rank-list" id="topSoldList"></div>
         </article>
-        <article class="kpi">
-          <span>Saída estimada no período</span>
-          <strong id="kpiSaidas">0 un.</strong>
-          <small id="kpiSaidasSub">giro consolidado</small>
-        </article>
-        <article class="kpi">
-          <span>Item com maior giro</span>
-          <strong id="kpiTop">-</strong>
-          <small id="kpiTopSub">sem leitura ainda</small>
-        </article>
-        <article class="kpi">
-          <span>Abaixo do mínimo</span>
-          <strong id="kpiCriticos">0</strong>
-          <small id="kpiCriticosSub">nenhum item crítico</small>
+        <article class="panel reveal-section">
+          <h2>Itens com menor sa&#237;da</h2>
+          <p>Encontre os produtos mais lentos para ajustar promo&#231;&#227;o, compra e capital parado.</p>
+          <div class="rank-list" id="lowSoldList"></div>
         </article>
       </div>
-    </section>
 
-    <section class="grid">
-      <article class="panel reveal-section">
-        <h2>Itens que mais saíram</h2>
-        <p>Priorize reposição e exposição comercial dos produtos com maior giro no período.</p>
-        <div class="rank-list" id="topSoldList"></div>
-      </article>
-
-      <article class="panel reveal-section">
-        <h2>Itens com menor saída</h2>
-        <p>Encontre os produtos mais lentos para ajustar promoção, compra e capital parado.</p>
-        <div class="rank-list" id="lowSoldList"></div>
-      </article>
-    </section>
-
-    <section class="grid">
-      <article class="panel reveal-section">
-        <h2>Maior volume em estoque</h2>
-        <p>Veja onde está a maior concentração do seu estoque atual.</p>
-        <div class="rank-list" id="highStockList"></div>
-      </article>
-
-      <article class="panel reveal-section">
-        <h2>Menor volume em estoque</h2>
-        <p>Identifique risco de ruptura e itens com necessidade de reposição imediata.</p>
-        <div class="rank-list" id="lowStockList"></div>
-      </article>
-    </section>
-
-    <section class="full-panel reveal-section">
-      <h2>Diagnóstico executivo do estoque</h2>
-      <p>
-        Este resumo transforma os dados do catálogo em leitura comercial para o gestor entender rapidamente o que está acontecendo.
-      </p>
-      <div class="insight-grid" id="insightGrid"></div>
-    </section>
-
-    <section class="full-panel reveal-section">
-      <h2>Resumo geral por produto</h2>
-      <p>
-        Aqui você compara giro estimado, estoque atual, cobertura mínima, preço de venda e tendência de cada item.
-      </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th>Saída estimada</th>
-              <th>Estoque atual</th>
-              <th>Cobertura</th>
-              <th>Preço venda</th>
-              <th>Tendência</th>
-            </tr>
-          </thead>
-          <tbody id="reportTableBody"></tbody>
-        </table>
+      <div class="grid">
+        <article class="panel reveal-section">
+          <h2>Maior volume em estoque</h2>
+          <p>Veja onde est&#225; a maior concentra&#231;&#227;o do seu estoque atual.</p>
+          <div class="rank-list" id="highStockList"></div>
+        </article>
+        <article class="panel reveal-section">
+          <h2>Menor volume em estoque</h2>
+          <p>Identifique risco de ruptura e itens com necessidade de reposi&#231;&#227;o imediata.</p>
+          <div class="rank-list" id="lowStockList"></div>
+        </article>
       </div>
-    </section>
 
-    <span id="ctaSummary" style="display:none"></span>
+      <section class="full-panel reveal-section">
+        <h2>Diagn&#243;stico executivo do estoque</h2>
+        <p>
+          Este resumo transforma os dados do cat&#225;logo em leitura comercial para o gestor entender rapidamente o que est&#225; acontecendo.
+        </p>
+        <div class="insight-grid" id="insightGrid"></div>
+      </section>
 
+      <section class="full-panel reveal-section">
+        <h2>Resumo geral por produto</h2>
+        <p>
+          Aqui voc&#234; compara giro estimado, estoque atual, cobertura m&#237;nima, pre&#231;o de venda e tend&#234;ncia de cada item.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Sa&#237;da estimada</th>
+                <th>Estoque atual</th>
+                <th>Cobertura</th>
+                <th>Pre&#231;o venda</th>
+                <th>Tend&#234;ncia</th>
+              </tr>
+            </thead>
+            <tbody id="reportTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <span id="ctaSummary" style="display:none"></span>
+      <span id="dataSourceNote" style="display:none"></span>
+      <span id="syncNote" style="display:none"></span>
+
+    </div>
   </main>
 
+  <script src="/js/auth-service.js"></script>
   <script>
-    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
-    if (__menuUser) {
-      document.querySelectorAll('.nav-auth-link').forEach((link) => {
-        link.style.display = '';
-      });
-    }
-
-    // Sessão opcional: a página pode ser acessada sem login.
     const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
     if (_usuario) {
       const area = document.getElementById('userArea');
@@ -733,15 +612,15 @@
     }
 
     function hashMaterial(material) {
-      return Array.from(`${material.codigo_barras || ''}${material.nome || ''}`).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      return Array.from(String(material.codigo_barras || '') + String(material.nome || '')).reduce((acc, char) => acc + char.charCodeAt(0), 0);
     }
 
     function buildAnalytics(material) {
       const estoque = Number(material.quantidade_atual || 0);
       const minimo = Math.max(Number(material.quantidade_minima || 0), 1);
       const precoVenda = Number(material.preco_manual || 0);
-      const precoCusto = Number(material.preco_custo ?? material.preco_manual ?? 0);
-      const margem = Number(material.margem_lucro ?? (precoCusto > 0 ? ((precoVenda - precoCusto) / precoCusto) * 100 : 0));
+      const precoCusto = Number(material.preco_custo != null ? material.preco_custo : (material.preco_manual || 0));
+      const margem = Number(material.margem_lucro != null ? material.margem_lucro : (precoCusto > 0 ? ((precoVenda - precoCusto) / precoCusto) * 100 : 0));
       const hash = hashMaterial(material);
       const pressaoEstoque = estoque === 0 ? minimo * 1.8 : Math.max(minimo - estoque, 0) * 2.4;
       const saidasPeriodo = Math.max(4, Math.round((minimo * 2.1) + pressaoEstoque + (margem * 0.55) + (hash % 29)));
@@ -750,147 +629,65 @@
       const lucroEstimado = lucroUnitario * saidasPeriodo;
       const excessoEstoque = Math.max(estoque - (minimo * 2), 0);
       const capitalParado = excessoEstoque * precoCusto;
-
       let tendenciaLabel = 'Boa saída';
       let tendenciaClass = 'badge-up';
-      if (estoque === 0) {
-        tendenciaLabel = 'Sem estoque';
-        tendenciaClass = 'badge-down';
-      } else if (estoque < minimo) {
-        tendenciaLabel = 'Reposição urgente';
-        tendenciaClass = 'badge-down';
-      } else if (cobertura < 1.5) {
-        tendenciaLabel = 'Monitorar';
-        tendenciaClass = 'badge-down';
-      } else if (cobertura > 3.2) {
-        tendenciaLabel = 'Estoque folgado';
-        tendenciaClass = 'badge-up';
-      }
-
-      return {
-        ...material,
-        estoque,
-        minimo,
-        precoVenda,
-        precoCusto,
-        margem,
-        saidasPeriodo,
-        cobertura,
-        lucroEstimado,
-        capitalParado,
-        tendenciaLabel,
-        tendenciaClass
-      };
+      if (estoque === 0) { tendenciaLabel = 'Sem estoque'; tendenciaClass = 'badge-down'; }
+      else if (estoque < minimo) { tendenciaLabel = 'Reposição urgente'; tendenciaClass = 'badge-down'; }
+      else if (cobertura < 1.5) { tendenciaLabel = 'Monitorar'; tendenciaClass = 'badge-down'; }
+      else if (cobertura > 3.2) { tendenciaLabel = 'Estoque folgado'; tendenciaClass = 'badge-up'; }
+      return { ...material, estoque, minimo, precoVenda, precoCusto, margem, saidasPeriodo, cobertura, lucroEstimado, capitalParado, tendenciaLabel, tendenciaClass };
     }
 
-    function renderRankList(targetId, items, metricKey, formatter, footBuilder, lowVariant = false) {
+    function renderRankList(targetId, items, metricKey, formatter, footBuilder, lowVariant) {
       const target = document.getElementById(targetId);
-      if (!items.length) {
-        target.innerHTML = '<div class="empty-report">Nenhum item disponível para análise.</div>';
-        return;
-      }
-
+      if (!items.length) { target.innerHTML = '<div class="empty-report">Nenhum item disponível para análise.</div>'; return; }
       const maxValue = Math.max(...items.map(item => item[metricKey] || 0), 1);
       target.innerHTML = items.map(item => {
         const value = item[metricKey] || 0;
         const width = Math.max(8, Math.round((value / maxValue) * 100));
-        return `
-          <div class="rank-item">
-            <div class="rank-head"><span>${escHtml(item.nome)}</span><span>${formatter(value, item)}</span></div>
-            <div class="bar"><div class="fill ${lowVariant ? 'fill-low' : ''}" style="width:${width}%"></div></div>
-            <div class="rank-foot">${footBuilder(item)}</div>
-          </div>
-        `;
+        return '<div class="rank-item"><div class="rank-head"><span>' + escHtml(item.nome) + '</span><span>' + formatter(value, item) + '</span></div><div class="bar"><div class="fill ' + (lowVariant ? 'fill-low' : '') + '" style="width:' + width + '%"></div></div><div class="rank-foot">' + footBuilder(item) + '</div></div>';
       }).join('');
     }
 
     function renderInsights(analytics) {
       const target = document.getElementById('insightGrid');
-      if (!analytics.length) {
-        target.innerHTML = '<div class="empty-report">Cadastre materiais para visualizar insights executivos.</div>';
-        return;
-      }
-
+      if (!analytics.length) { target.innerHTML = '<div class="empty-report">Cadastre materiais para visualizar insights executivos.</div>'; return; }
       const criticos = analytics.filter(item => item.estoque < item.minimo).length;
       const semEstoque = analytics.filter(item => item.estoque === 0).length;
       const capitalParado = analytics.reduce((sum, item) => sum + item.capitalParado, 0);
       const lucroEstimado = analytics.reduce((sum, item) => sum + item.lucroEstimado, 0);
       const melhorMargem = [...analytics].sort((a, b) => b.margem - a.margem)[0];
       const maiorEstoque = [...analytics].sort((a, b) => b.estoque - a.estoque)[0];
-
-      target.innerHTML = `
-        <article class="insight-card">
-          <span>Reposição imediata</span>
-          <strong>${criticos} item(ns) críticos</strong>
-          <p>${criticos === 0 ? 'Nenhum item abaixo do mínimo no momento.' : 'Esses itens precisam de compra rápida para evitar perda de venda.'}</p>
-        </article>
-        <article class="insight-card">
-          <span>Produtos zerados</span>
-          <strong>${semEstoque} item(ns) sem saldo</strong>
-          <p>${semEstoque === 0 ? 'O catálogo não tem ruptura total agora.' : 'Há ruptura completa em parte do catálogo e isso merece atenção.'}</p>
-        </article>
-        <article class="insight-card">
-          <span>Lucro estimado do período</span>
-          <strong>${fmtMoney(lucroEstimado)}</strong>
-          <p>Estimativa calculada a partir do preço de venda, custo e giro dos itens do catálogo.</p>
-        </article>
-        <article class="insight-card">
-          <span>Capital parado</span>
-          <strong>${fmtMoney(capitalParado)}</strong>
-          <p>${maiorEstoque ? `Maior concentração atual em ${escHtml(maiorEstoque.nome)}.` : 'Sem concentração relevante no estoque.'}</p>
-        </article>
-        <article class="insight-card">
-          <span>Maior margem</span>
-          <strong>${melhorMargem ? escHtml(melhorMargem.nome) : '-'}</strong>
-          <p>${melhorMargem ? `${melhorMargem.margem.toFixed(1)}% de margem cadastrada.` : 'Sem leitura disponível.'}</p>
-        </article>
-        <article class="insight-card">
-          <span>Leitura comercial</span>
-          <strong>${criticos > 0 ? 'Ação imediata' : 'Cenário estável'}</strong>
-          <p>${criticos > 0 ? 'Priorize reposição dos itens críticos e empurre os produtos de menor saída com campanha.' : 'A operação está equilibrada e pode focar em aumentar giro dos itens lentos.'}</p>
-        </article>
-      `;
+      target.innerHTML =
+        '<article class="insight-card"><span>Reposição imediata</span><strong>' + criticos + ' item(ns) críticos</strong><p>' + (criticos === 0 ? 'Nenhum item abaixo do mínimo no momento.' : 'Esses itens precisam de compra rápida para evitar perda de venda.') + '</p></article>' +
+        '<article class="insight-card"><span>Produtos zerados</span><strong>' + semEstoque + ' item(ns) sem saldo</strong><p>' + (semEstoque === 0 ? 'O catálogo não tem ruptura total agora.' : 'Há ruptura completa em parte do catálogo e isso merece atenção.') + '</p></article>' +
+        '<article class="insight-card"><span>Lucro estimado do período</span><strong>' + fmtMoney(lucroEstimado) + '</strong><p>Estimativa calculada a partir do preço de venda, custo e giro dos itens do catálogo.</p></article>' +
+        '<article class="insight-card"><span>Capital parado</span><strong>' + fmtMoney(capitalParado) + '</strong><p>' + (maiorEstoque ? 'Maior concentração atual em ' + escHtml(maiorEstoque.nome) + '.' : 'Sem concentração relevante no estoque.') + '</p></article>' +
+        '<article class="insight-card"><span>Maior margem</span><strong>' + (melhorMargem ? escHtml(melhorMargem.nome) : '-') + '</strong><p>' + (melhorMargem ? melhorMargem.margem.toFixed(1) + '% de margem cadastrada.' : 'Sem leitura disponível.') + '</p></article>' +
+        '<article class="insight-card"><span>Leitura comercial</span><strong>' + (criticos > 0 ? 'Ação imediata' : 'Cenário estável') + '</strong><p>' + (criticos > 0 ? 'Priorize reposição dos itens críticos e empurre os produtos de menor saída com campanha.' : 'A operação está equilibrada e pode focar em aumentar giro dos itens lentos.') + '</p></article>';
     }
 
-    function renderTable(analytics) {
+    function renderReportTable(analytics) {
       const target = document.getElementById('reportTableBody');
-      if (!analytics.length) {
-        target.innerHTML = '<tr><td colspan="6"><div class="empty-report">Nenhum produto disponível para o relatório.</div></td></tr>';
-        return;
-      }
-
-      target.innerHTML = analytics.map(item => `
-        <tr>
-          <td>${escHtml(item.nome)}</td>
-          <td>${item.saidasPeriodo} un.</td>
-          <td>${item.estoque} un.</td>
-          <td>${item.minimo > 0 ? item.cobertura.toFixed(1) : '0.0'}x mínimo</td>
-          <td>${fmtMoney(item.precoVenda)}</td>
-          <td><span class="badge ${item.tendenciaClass}">${item.tendenciaLabel}</span></td>
-        </tr>
-      `).join('');
+      if (!analytics.length) { target.innerHTML = '<tr><td colspan="6"><div class="empty-report">Nenhum produto disponível para o relatório.</div></td></tr>'; return; }
+      target.innerHTML = analytics.map(item =>
+        '<tr><td>' + escHtml(item.nome) + '</td><td>' + item.saidasPeriodo + ' un.</td><td>' + item.estoque + ' un.</td><td>' + (item.minimo > 0 ? item.cobertura.toFixed(1) : '0.0') + 'x mínimo</td><td>' + fmtMoney(item.precoVenda) + '</td><td><span class="badge ' + item.tendenciaClass + '">' + item.tendenciaLabel + '</span></td></tr>'
+      ).join('');
     }
 
-    function updateHero(analytics, sourceLabel) {
+    function updateKpis(analytics) {
       const totalItens = analytics.length;
       const totalSaidas = analytics.reduce((sum, item) => sum + item.saidasPeriodo, 0);
       const topItem = [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo)[0];
       const criticos = analytics.filter(item => item.estoque < item.minimo).length;
-      const lentos = [...analytics].sort((a, b) => a.saidasPeriodo - b.saidasPeriodo).slice(0, 2).map(item => item.nome).join(' e ');
-
       document.getElementById('kpiItens').textContent = totalItens;
       document.getElementById('kpiItensSub').textContent = totalItens === 1 ? 'item monitorado' : 'itens monitorados';
-      document.getElementById('kpiSaidas').textContent = `${totalSaidas} un.`;
+      document.getElementById('kpiSaidas').textContent = totalSaidas + ' un.';
       document.getElementById('kpiSaidasSub').textContent = 'estimativa baseada no giro atual';
       document.getElementById('kpiTop').textContent = topItem ? topItem.nome : '-';
-      document.getElementById('kpiTopSub').textContent = topItem ? `${topItem.saidasPeriodo} un. de saída estimada` : 'sem leitura disponível';
+      document.getElementById('kpiTopSub').textContent = topItem ? topItem.saidasPeriodo + ' un. de saída estimada' : 'sem leitura disponível';
       document.getElementById('kpiCriticos').textContent = criticos;
       document.getElementById('kpiCriticosSub').textContent = criticos === 0 ? 'nenhum item crítico agora' : 'precisam de reposição';
-      document.getElementById('dataSourceNote').textContent = sourceLabel;
-      document.getElementById('syncNote').textContent = totalItens ? 'Painel recalculado com o catálogo atual' : 'Cadastre itens para gerar análises';
-      document.getElementById('ctaSummary').textContent = topItem
-        ? `${topItem.nome} lidera o giro no período, enquanto ${lentos || 'os itens mais lentos'} merecem ação comercial para destravar resultado.`
-        : 'Assim que houver materiais cadastrados, o painel mostrará os destaques de saída e estoque.';
     }
 
     async function carregarMateriais() {
@@ -898,31 +695,24 @@
         const res = await fetch('/api/materiais');
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Erro ao carregar materiais');
-        return { materiais: data.data || [], sourceLabel: 'Base do relatório: catálogo da API' };
+        return data.data || [];
       }
-
-      return {
-        materiais: readMockMateriais(),
-        sourceLabel: 'Base do relatório: catálogo mock salvo no navegador'
-      };
+      return readMockMateriais();
     }
 
     async function renderReports() {
       try {
-        const { materiais, sourceLabel } = await carregarMateriais();
+        const materiais = await carregarMateriais();
         const analytics = materiais.map(buildAnalytics);
-
-        updateHero(analytics, sourceLabel);
-        renderRankList('topSoldList', [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo).slice(0, 4), 'saidasPeriodo', value => `${value} un.`, item => `Margem de ${item.margem.toFixed(1)}% e cobertura atual de ${item.cobertura.toFixed(1)}x.`, false);
-        renderRankList('lowSoldList', [...analytics].sort((a, b) => a.saidasPeriodo - b.saidasPeriodo).slice(0, 4), 'saidasPeriodo', value => `${value} un.`, item => item.estoque === 0 ? 'Sem estoque no momento e com baixa tração recente.' : `Giro mais lento, com ${item.estoque} un. ainda disponíveis.`, true);
-        renderRankList('highStockList', [...analytics].sort((a, b) => b.estoque - a.estoque).slice(0, 4), 'estoque', value => `${value} un.`, item => `Mínimo definido em ${item.minimo} un. e preço de venda em ${fmtMoney(item.precoVenda)}.`, false);
-        renderRankList('lowStockList', [...analytics].sort((a, b) => a.estoque - b.estoque).slice(0, 4), 'estoque', value => `${value} un.`, item => item.estoque < item.minimo ? 'Abaixo do mínimo e com risco de ruptura.' : `Cobertura atual de ${item.cobertura.toFixed(1)}x do mínimo.`, true);
+        updateKpis(analytics);
+        renderRankList('topSoldList', [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo).slice(0, 4), 'saidasPeriodo', v => v + ' un.', item => 'Margem de ' + item.margem.toFixed(1) + '% e cobertura de ' + item.cobertura.toFixed(1) + 'x.', false);
+        renderRankList('lowSoldList', [...analytics].sort((a, b) => a.saidasPeriodo - b.saidasPeriodo).slice(0, 4), 'saidasPeriodo', v => v + ' un.', item => item.estoque === 0 ? 'Sem estoque no momento.' : 'Giro lento, ' + item.estoque + ' un. disponíveis.', true);
+        renderRankList('highStockList', [...analytics].sort((a, b) => b.estoque - a.estoque).slice(0, 4), 'estoque', v => v + ' un.', item => 'Mínimo em ' + item.minimo + ' un. Preço venda ' + fmtMoney(item.precoVenda) + '.', false);
+        renderRankList('lowStockList', [...analytics].sort((a, b) => a.estoque - b.estoque).slice(0, 4), 'estoque', v => v + ' un.', item => item.estoque < item.minimo ? 'Abaixo do mínimo e com risco de ruptura.' : 'Cobertura atual de ' + item.cobertura.toFixed(1) + 'x do mínimo.', true);
         renderInsights(analytics);
-        renderTable([...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo));
+        renderReportTable([...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo));
       } catch (error) {
-        document.getElementById('dataSourceNote').textContent = 'Base do relatório: indisponível';
-        document.getElementById('syncNote').textContent = `Erro ao carregar: ${error.message}`;
-        document.getElementById('topSoldList').innerHTML = `<div class="empty-report">${escHtml(error.message)}</div>`;
+        document.getElementById('topSoldList').innerHTML = '<div class="empty-report">Erro ao carregar: ' + escHtml(error.message) + '</div>';
         document.getElementById('lowSoldList').innerHTML = '<div class="empty-report">Não foi possível gerar os rankings.</div>';
         document.getElementById('highStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';
         document.getElementById('lowStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';

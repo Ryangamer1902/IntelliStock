@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+</head>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,13 +19,7 @@
       --card: #ffffff;
       --danger: #c0392b;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Manrope', sans-serif;
       color: var(--ink);
@@ -37,12 +30,7 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
-
-    .shell {
-      width: min(1200px, 96%);
-      margin: 0 auto;
-    }
-
+    .shell { width: min(1200px, 96%); margin: 0 auto; }
     header {
       position: sticky;
       top: 0;
@@ -51,7 +39,6 @@
       background: rgba(248, 251, 251, 0.85);
       border-bottom: 1px solid var(--line);
     }
-
     .topbar {
       display: flex;
       align-items: center;
@@ -59,7 +46,6 @@
       padding: 14px 0;
       gap: 16px;
     }
-
     .brand {
       display: flex;
       align-items: center;
@@ -69,7 +55,6 @@
       font-family: 'Sora', sans-serif;
       font-weight: 700;
     }
-
     .brand-badge {
       width: 34px;
       height: 34px;
@@ -81,7 +66,6 @@
       font-weight: 800;
       font-size: 0.88rem;
     }
-
     nav {
       display: flex;
       align-items: center;
@@ -90,7 +74,6 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
-
     nav a {
       text-decoration: none;
       color: var(--muted);
@@ -101,20 +84,16 @@
       white-space: nowrap;
       transition: background 0.2s, color 0.2s;
     }
-
-    nav a:hover,
-    nav a.active {
+    nav a:hover, nav a.active {
       background: rgba(14, 143, 131, 0.13);
       color: var(--brand-strong);
     }
-
     .user-area {
       display: flex;
       align-items: center;
       gap: 10px;
       flex-shrink: 0;
     }
-
     .user-chip {
       display: flex;
       align-items: center;
@@ -127,7 +106,6 @@
       font-weight: 700;
       color: #1f3840;
     }
-
     .avatar {
       width: 26px;
       height: 26px;
@@ -139,7 +117,6 @@
       font-size: 0.75rem;
       font-weight: 800;
     }
-
     .btn-logout {
       border: 1px solid rgba(192, 57, 43, 0.3);
       background: rgba(192, 57, 43, 0.08);
@@ -151,69 +128,14 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-
-    .btn-logout:hover {
-      background: rgba(192, 57, 43, 0.15);
-    }
-
-    main {
-      padding: 34px 0 62px;
-    }
-
-    .hero {
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      background: linear-gradient(180deg, #ffffff, #f7fbfb);
-      box-shadow: var(--shadow);
-      padding: 22px;
-      margin-bottom: 16px;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(14, 143, 131, 0.26);
-      color: var(--brand-strong);
-      background: rgba(14, 143, 131, 0.08);
-      font-weight: 700;
-      font-size: 0.84rem;
-      margin-bottom: 12px;
-    }
-
-    h1 {
-      font-family: 'Sora', sans-serif;
-      font-size: clamp(1.45rem, 2.8vw, 1.95rem);
-      margin-bottom: 6px;
-    }
-
-    .hero p {
-      color: var(--muted);
-      line-height: 1.65;
-      max-width: 70ch;
-      margin-bottom: 14px;
-    }
-
-    .hero-note {
-      display: inline-flex;
-      border: 1px solid rgba(14, 143, 131, 0.28);
-      background: rgba(14, 143, 131, 0.08);
-      color: #0f5f55;
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
-
+    .btn-logout:hover { background: rgba(192, 57, 43, 0.15); }
+    main { padding: 36px 0 64px; }
     .kpi-row {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
     }
-
     .kpi {
       border: 1px solid var(--line);
       border-radius: 16px;
@@ -223,23 +145,14 @@
       position: relative;
       overflow: hidden;
     }
-
     .kpi::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       height: 3px;
       background: linear-gradient(90deg, var(--brand), #0fb8a9);
     }
-
-    .kpi.alert::before {
-      background: linear-gradient(90deg, var(--accent), #f6a060);
-    }
-
     .kpi-label {
-      display: block;
       font-size: 0.8rem;
       color: var(--muted);
       font-weight: 700;
@@ -247,9 +160,7 @@
       letter-spacing: 0.4px;
       margin-bottom: 8px;
     }
-
     .kpi-value {
-      display: block;
       font-family: 'Sora', sans-serif;
       font-size: 1.7rem;
       font-weight: 800;
@@ -257,14 +168,11 @@
       line-height: 1;
       margin-bottom: 4px;
     }
-
     .kpi-sub {
-      display: block;
       font-size: 0.8rem;
       color: var(--muted);
       font-weight: 600;
     }
-
     .toolbar {
       display: flex;
       align-items: center;
@@ -272,13 +180,11 @@
       margin-bottom: 12px;
       flex-wrap: wrap;
     }
-
     .search-wrap {
       flex: 1;
       min-width: 220px;
       position: relative;
     }
-
     .search-wrap svg {
       position: absolute;
       left: 12px;
@@ -287,7 +193,6 @@
       color: var(--muted);
       pointer-events: none;
     }
-
     .search-wrap input {
       width: 100%;
       border: 1px solid var(--line);
@@ -299,12 +204,10 @@
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-
     .search-wrap input:focus {
       border-color: rgba(14, 143, 131, 0.55);
       box-shadow: 0 0 0 4px rgba(14, 143, 131, 0.12);
     }
-
     .btn {
       border: 0;
       padding: 10px 18px;
@@ -319,17 +222,12 @@
       text-decoration: none;
       white-space: nowrap;
     }
-
-    .btn:hover {
-      transform: translateY(-1px);
-    }
-
+    .btn:hover { transform: translateY(-1px); }
     .btn-soft {
       background: rgba(14, 143, 131, 0.1);
       color: var(--brand-strong);
       border: 1px solid rgba(14, 143, 131, 0.25);
     }
-
     .table-card {
       border: 1px solid var(--line);
       border-radius: 18px;
@@ -337,17 +235,12 @@
       box-shadow: var(--shadow);
       overflow: hidden;
     }
-
-    .table-wrap {
-      overflow-x: auto;
-    }
-
+    .table-wrap { overflow-x: auto; }
     table {
       width: 100%;
       min-width: 920px;
       border-collapse: collapse;
     }
-
     thead th {
       position: sticky;
       top: 0;
@@ -362,34 +255,24 @@
       border-bottom: 1px solid var(--line);
       white-space: nowrap;
     }
-
     tbody td {
       padding: 12px 14px;
       border-bottom: 1px solid var(--line);
       font-size: 0.9rem;
       vertical-align: middle;
     }
-
-    tbody tr:hover {
-      background: rgba(14, 143, 131, 0.05);
-    }
-
-    tbody tr:last-child td {
-      border-bottom: 0;
-    }
-
+    tbody tr:hover { background: rgba(14, 143, 131, 0.05); }
+    tbody tr:last-child td { border-bottom: 0; }
     .material-name {
       font-weight: 800;
       color: #183841;
       margin-bottom: 2px;
       display: block;
     }
-
     .material-id {
       color: var(--muted);
       font-size: 0.8rem;
     }
-
     .badge {
       display: inline-flex;
       align-items: center;
@@ -399,66 +282,26 @@
       font-size: 0.75rem;
       white-space: nowrap;
     }
-
-    .badge-ok {
-      color: #0a6a5f;
-      background: rgba(14, 143, 131, 0.14);
-    }
-
-    .badge-low {
-      color: #9a4b1b;
-      background: rgba(238, 127, 59, 0.22);
-    }
-
-    .badge-zero {
-      color: #8e2f24;
-      background: rgba(192, 57, 43, 0.14);
-    }
-
+    .badge-ok { color: #0a6a5f; background: rgba(14, 143, 131, 0.14); }
+    .badge-low { color: #9a4b1b; background: rgba(238, 127, 59, 0.22); }
+    .badge-zero { color: #8e2f24; background: rgba(192, 57, 43, 0.14); }
     .empty-state {
       text-align: center;
       padding: 42px 10px;
       color: var(--muted);
       font-size: 0.94rem;
     }
-
     @media (max-width: 1000px) {
-      .kpi-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+      .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-
     @media (max-width: 760px) {
-      .topbar {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .user-area {
-        width: 100%;
-        justify-content: space-between;
-      }
-
-      .kpi-row {
-        grid-template-columns: 1fr;
-      }
-
-      .hero {
-        padding: 16px;
-      }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .user-area { width: 100%; justify-content: space-between; }
+      .kpi-row { grid-template-columns: 1fr; }
+      .hero { padding: 16px; }
     }
-
-    .reveal-section {
-      opacity: 0;
-      transform: translateY(18px);
-      transition: opacity 0.55s ease, transform 0.55s ease;
-    }
-
-    .reveal-section.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
+    .reveal-section { opacity: 0; transform: translateY(18px); transition: opacity 0.55s ease, transform 0.55s ease; }
+    .reveal-section.visible { opacity: 1; transform: translateY(0); }
     .kpi.reveal-section:nth-child(1) { transition-delay: 0ms; }
     .kpi.reveal-section:nth-child(2) { transition-delay: 80ms; }
     .kpi.reveal-section:nth-child(3) { transition-delay: 160ms; }
@@ -476,7 +319,7 @@
         <a href="/dashboard.html">Estoque</a>
         <a href="/relatorios.html">Relatórios</a>
         <a href="/insumos.html" class="active">Insumos</a>
-        <a href="/assinatura.html">Assinatura</a>
+
       </nav>
       <div class="user-area">
         <div class="user-chip">
@@ -490,37 +333,36 @@
 
   <main>
     <div class="shell">
-      <section class="hero reveal-section">
-        <span class="pill">Controle de insumos</span>
-        <h1>Painel de insumos integrado ao banco de dados</h1>
-        <p>
-          Nesta tela você acompanha os insumos cadastrados, visualiza custo e saldo em estoque e identifica
-          rapidamente itens com nível baixo para reposição.
+      <section class="hero reveal-section" style="margin-bottom: 18px;">
+        <span class="pill">Insumos</span>
+        <h1 style="font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 800; margin-bottom: 8px;">Gestão de Insumos</h1>
+        <p style="color: var(--muted); font-size: 1.04rem; line-height: 1.6; max-width: 600px; margin-bottom: 10px;">
+          Visualize, pesquise e acompanhe o saldo e custo dos insumos do estoque em tempo real.
         </p>
         <span class="hero-note" id="sourceNote">Fonte dos dados: carregando...</span>
       </section>
 
       <section class="kpi-row">
-        <article class="kpi reveal-section">
-          <span class="kpi-label">Total de insumos</span>
-          <strong class="kpi-value" id="kpiTotal">0</strong>
-          <small class="kpi-sub">itens cadastrados</small>
-        </article>
-        <article class="kpi alert reveal-section">
-          <span class="kpi-label">Baixo estoque</span>
-          <strong class="kpi-value" id="kpiLow">0</strong>
-          <small class="kpi-sub">abaixo do mínimo</small>
-        </article>
-        <article class="kpi reveal-section">
-          <span class="kpi-label">Sem estoque</span>
-          <strong class="kpi-value" id="kpiZero">0</strong>
-          <small class="kpi-sub">quantidade zerada</small>
-        </article>
-        <article class="kpi reveal-section">
-          <span class="kpi-label">Valor em estoque</span>
-          <strong class="kpi-value" id="kpiValue">R$ 0,00</strong>
-          <small class="kpi-sub">estimado por custo</small>
-        </article>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Total de insumos</div>
+          <div class="kpi-value" id="kpiTotal">—</div>
+          <div class="kpi-sub" id="kpiTotalSub">itens cadastrados</div>
+        </div>
+        <div class="kpi alert reveal-section">
+          <div class="kpi-label">Baixo estoque</div>
+          <div class="kpi-value" id="kpiLow">—</div>
+          <div class="kpi-sub" id="kpiLowSub">abaixo do mínimo</div>
+        </div>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Sem estoque</div>
+          <div class="kpi-value" id="kpiZero">—</div>
+          <div class="kpi-sub" id="kpiZeroSub">quantidade zerada</div>
+        </div>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Valor em estoque</div>
+          <div class="kpi-value" id="kpiValue">—</div>
+          <div class="kpi-sub" id="kpiValueSub">estimado por custo</div>
+        </div>
       </section>
 
       <section class="toolbar reveal-section">
@@ -637,9 +479,13 @@
       const value = items.reduce((sum, item) => sum + (Number(item.preco_custo_un || 0) * Number(item.qtd_atual || 0)), 0);
 
       document.getElementById('kpiTotal').textContent = total;
+      document.getElementById('kpiTotalSub').textContent = total === 1 ? 'item cadastrado' : 'itens cadastrados';
       document.getElementById('kpiLow').textContent = low;
+      document.getElementById('kpiLowSub').textContent = low === 0 ? 'tudo dentro do limite' : 'abaixo do mínimo';
       document.getElementById('kpiZero').textContent = zero;
+      document.getElementById('kpiZeroSub').textContent = zero === 0 ? 'nenhum zerado' : 'quantidade zerada';
       document.getElementById('kpiValue').textContent = fmtMoney(value);
+      document.getElementById('kpiValueSub').textContent = 'estimado por custo';
     }
 
     function renderTable(items) {
