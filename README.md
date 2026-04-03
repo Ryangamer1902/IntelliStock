@@ -38,13 +38,26 @@ Fluxo resumido: **Frontend → API Express → MySQL → API → Frontend**
 ### Passos
 ```bash
 cd IntelliStock
-npm install
-npm run start:tudo
+npm run start:all
 ```
+
+Importante:
+Se existir uma pasta duplicada `IntelliStock/IntelliStock`, execute os comandos na raiz que contém `src/` e `public/`.
+No PowerShell, valide antes com:
+
+```powershell
+Get-ChildItem
+```
+
+Você deve ver `src`, `public`, `server.js` e `package.json` na pasta atual.
 
 O comando `start:tudo` executa:
 1. `npm run setup:db` → assistente para criar/configurar o `.env`
 2. `npm run dev` → inicia o servidor com nodemon
+
+O comando `start:all` executa tudo em uma vez:
+1. `npm install`
+2. `npm run start:tudo`
 
 Servidor padrão: `http://localhost:3001`
 

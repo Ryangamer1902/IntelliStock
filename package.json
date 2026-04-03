@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "setup-db": "node setup-db.js",
     "setup:db": "node setup-db.js",
-    "start:tudo": "npm run setup:db && npm run dev"
+    "start:tudo": "npm run setup:db && npm run dev",
+    "start:all": "npm install && npm run start:tudo"
   },
   "keywords": ["estoque", "inventory", "management"],
   "author": "",
