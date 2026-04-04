@@ -1,5 +1,5 @@
 // src/controllers/insumosController.js
-// Controller para leitura de insumos no schema sge_pesca
+// Controller para leitura de insumos no schema principal do estoque_db
 
 const Insumo = require('../models/Insumo');
 
@@ -21,7 +21,7 @@ class InsumosController {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Erro ao listar insumos. Verifique se o schema sge_pesca foi aplicado e o DB_NAME aponta para ele.',
+        message: 'Erro ao listar insumos. Verifique se o schema principal foi aplicado e se a API esta conectada ao estoque_db.',
         error: error.message
       });
     }

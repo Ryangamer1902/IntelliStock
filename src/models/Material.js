@@ -1,5 +1,5 @@
 // src/models/Material.js
-// Modelo para operações com a tabela materiais
+// Modelo para operacoes com materiais e historico de movimentacoes
 
 class Material {
   /**
@@ -7,13 +7,12 @@ class Material {
    * @returns {Promise<Array>} Lista de materiais
    */
   static async findAll() {
+    const connection = await global.db.getConnection();
     try {
-      const connection = await global.db.getConnection();
       const [rows] = await connection.query('SELECT * FROM materiais ORDER BY id DESC');
-      connection.release();
       return rows;
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
     }
   }
 
@@ -23,29 +22,27 @@ class Material {
    * @returns {Promise<Object>} Dados do material
    */
   static async findById(id) {
+    const connection = await global.db.getConnection();
     try {
-      const connection = await global.db.getConnection();
       const [rows] = await connection.query('SELECT * FROM materiais WHERE id = ?', [id]);
-      connection.release();
       return rows[0] || null;
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
     }
   }
 
   /**
-   * Buscar material por código de barras
-   * @param {string} codigoBarras - Código de barras
+   * Buscar material por codigo de barras
+   * @param {string} codigoBarras - Codigo de barras
    * @returns {Promise<Object>} Dados do material
    */
   static async findByCodigoBarras(codigoBarras) {
+    const connection = await global.db.getConnection();
     try {
-      const connection = await global.db.getConnection();
       const [rows] = await connection.query('SELECT * FROM materiais WHERE codigo_barras = ?', [codigoBarras]);
-      connection.release();
       return rows[0] || null;
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
     }
   }
 
@@ -55,13 +52,12 @@ class Material {
    * @returns {Promise<Array>} Lista de materiais encontrados
    */
   static async findByNome(nome) {
+    const connection = await global.db.getConnection();
     try {
-      const connection = await global.db.getConnection();
       const [rows] = await connection.query('SELECT * FROM materiais WHERE nome LIKE ? ORDER BY id DESC', [`%${nome}%`]);
-      connection.release();
       return rows;
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
     }
   }
 
@@ -71,23 +67,23 @@ class Material {
    * @returns {Promise<number>} ID do material criado
    */
   static async create(dados) {
+    const { codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = dados;
+
+    if (!codigo_barras || !nome || !fornecedor || quantidade_minima === undefined || preco_custo === undefined || preco_manual === undefined) {
+      throw new Error('Campos obrigatorios faltando');
+    }
+
+    const connection = await global.db.getConnection();
     try {
-      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = dados;
-
-      // Validações básicas
-      if (!codigo_barras || !nome || quantidade_minima === undefined || preco_custo === undefined || preco_manual === undefined) {
-        throw new Error('Campos obrigatórios faltando');
-      }
-
-      const connection = await global.db.getConnection();
       const [result] = await connection.query(
-        'INSERT INTO materiais (codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [codigo_barras, nome, quantidade_atual || 0, quantidade_minima, preco_custo, margem_lucro || 0, preco_manual]
+        `INSERT INTO materiais
+          (codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [codigo_barras, nome, fornecedor, quantidade_atual || 0, quantidade_minima, preco_custo, margem_lucro || 0, preco_manual]
       );
-      connection.release();
       return result.insertId;
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
     }
   }
 
@@ -95,35 +91,30 @@ class Material {
    * Atualizar material
    * @param {number} id - ID do material
    * @param {Object} dados - Dados a atualizar
-   * @returns {Promise<boolean>} Sucesso da operação
+   * @returns {Promise<boolean>} Sucesso da operacao
    */
   static async update(id, dados) {
+    const connection = await global.db.getConnection();
     try {
-      const connection = await global.db.getConnection();
-      const [result] = await connection.query(
-        'UPDATE materiais SET ? WHERE id = ?',
-        [dados, id]
-      );
-      connection.release();
+      const [result] = await connection.query('UPDATE materiais SET ? WHERE id = ?', [dados, id]);
       return result.affectedRows > 0;
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
     }
   }
 
   /**
    * Deletar material
    * @param {number} id - ID do material
-   * @returns {Promise<boolean>} Sucesso da operação
+   * @returns {Promise<boolean>} Sucesso da operacao
    */
   static async delete(id) {
+    const connection = await global.db.getConnection();
     try {
-      const connection = await global.db.getConnection();
       const [result] = await connection.query('DELETE FROM materiais WHERE id = ?', [id]);
-      connection.release();
       return result.affectedRows > 0;
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
     }
   }
 
@@ -134,43 +125,94 @@ class Material {
    * @returns {Promise<Object>} Material atualizado
    */
   static async atualizarQuantidade(id, diferenca) {
+    const connection = await global.db.getConnection();
     try {
-      const connection = await global.db.getConnection();
-      
-      // Buscar quantidade atual
       const [material] = await connection.query('SELECT quantidade_atual FROM materiais WHERE id = ?', [id]);
-      
       if (!material || material.length === 0) {
-        throw new Error('Material não encontrado');
+        throw new Error('Material nao encontrado');
       }
 
-      const novaQuantidade = Math.max(0, material[0].quantidade_atual + diferenca);
-      
-      // Atualizar quantidade
+      const novaQuantidade = Math.max(0, Number(material[0].quantidade_atual) + Number(diferenca));
       await connection.query('UPDATE materiais SET quantidade_atual = ? WHERE id = ?', [novaQuantidade, id]);
-      
-      // Retornar material atualizado
+
       const [materialAtualizado] = await connection.query('SELECT * FROM materiais WHERE id = ?', [id]);
-      
-      connection.release();
       return materialAtualizado[0];
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
     }
   }
 
   /**
    * Buscar materiais com estoque baixo
-   * @returns {Promise<Array>} Materiais com quantidade abaixo do mínimo
+   * @returns {Promise<Array>} Materiais com quantidade abaixo do minimo
    */
   static async findBaixoEstoque() {
+    const connection = await global.db.getConnection();
     try {
-      const connection = await global.db.getConnection();
       const [rows] = await connection.query('SELECT * FROM materiais WHERE quantidade_atual < quantidade_minima ORDER BY id DESC');
-      connection.release();
       return rows;
-    } catch (error) {
-      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * Registrar movimentacao no historico
+   * @param {Object} mov - Dados da movimentacao
+   */
+  static async registrarMovimentacao(mov) {
+    const {
+      material_id,
+      tipo_movimento,
+      quantidade_delta = 0,
+      quantidade_anterior = 0,
+      quantidade_atual = 0,
+      usuario_nome = 'Sistema',
+      observacao = null,
+      material_nome_snapshot = 'Material removido'
+    } = mov;
+
+    const connection = await global.db.getConnection();
+    try {
+      await connection.query(
+        `INSERT INTO movimentacoes_estoque
+          (material_id, material_nome_snapshot, tipo_movimento, quantidade_delta, quantidade_anterior, quantidade_atual, usuario_nome, observacao)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [material_id, material_nome_snapshot, tipo_movimento, quantidade_delta, quantidade_anterior, quantidade_atual, usuario_nome, observacao]
+      );
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * Listar historico de movimentacoes
+   * @returns {Promise<Array>}
+   */
+  static async listarMovimentacoes() {
+    const connection = await global.db.getConnection();
+    try {
+      const [rows] = await connection.query(
+        `SELECT
+          m.id,
+          m.material_id,
+          COALESCE(mt.nome, m.material_nome_snapshot) AS material_nome,
+          m.tipo_movimento,
+          m.quantidade_delta,
+          m.quantidade_anterior,
+          m.quantidade_atual,
+          m.usuario_nome,
+          m.observacao,
+          m.created_at
+        FROM movimentacoes_estoque m
+        LEFT JOIN materiais mt ON mt.id = m.material_id
+        ORDER BY m.created_at DESC, m.id DESC
+        LIMIT 300`
+      );
+
+      return rows;
+    } finally {
+      connection.release();
     }
   }
 }

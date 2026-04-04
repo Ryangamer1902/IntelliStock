@@ -131,7 +131,7 @@
 
     function getMode() {
       const saved = localStorage.getItem('auth_mode');
-      return saved === 'api' ? 'api' : 'mock';
+      return saved === 'mock' ? 'mock' : 'api';
     }
 
     function fmtMoney(value) {

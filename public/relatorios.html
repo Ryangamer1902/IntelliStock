@@ -146,18 +146,18 @@
 
     const MOCK_STORAGE_KEY = 'intellistock_mock_materiais_v1';
     const defaultMockMateriais = [
-      { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
-      { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
-      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
-      { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75 },
-      { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00 },
-      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
-      { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90 },
+      { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
+      { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
+      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', fornecedor: 'Aco Forte Chapas', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
+      { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', fornecedor: 'EletroCabos Brasil', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75 },
+      { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', fornecedor: 'SegMais EPIs', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00 },
+      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', fornecedor: 'Quimica Rapida', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
+      { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', fornecedor: 'EletroCabos Brasil', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90 },
     ];
 
     function getMode() {
       const saved = localStorage.getItem('auth_mode');
-      return saved === 'api' ? 'api' : 'mock';
+      return saved === 'mock' ? 'mock' : 'api';
     }
 
     function readMockMateriais() {

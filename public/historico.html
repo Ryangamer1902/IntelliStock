@@ -47,23 +47,23 @@
       <div class="kpi-grid">
         <article class="kpi-card">
           <span>Mercadorias cadastradas</span>
-          <strong>1.248</strong>
-          <small>+84 no último mês</small>
+          <strong id="kpiCadastradas">-</strong>
+          <small id="kpiCadastradasSub">carregando...</small>
         </article>
         <article class="kpi-card">
           <span>Entradas no período</span>
-          <strong>3.560 un.</strong>
-          <small>+18% vs mês anterior</small>
+          <strong id="kpiEntradas">-</strong>
+          <small id="kpiEntradasSub">carregando...</small>
         </article>
         <article class="kpi-card">
           <span>Saídas no período</span>
-          <strong>2.940 un.</strong>
-          <small>giro saudável de estoque</small>
+          <strong id="kpiSaidas">-</strong>
+          <small id="kpiSaidasSub">carregando...</small>
         </article>
         <article class="kpi-card">
           <span>Saldo atual em estoque</span>
-          <strong>6.872 un.</strong>
-          <small>controle em tempo real</small>
+          <strong id="kpiSaldo">-</strong>
+          <small id="kpiSaldoSub">carregando...</small>
         </article>
       </div>
 
@@ -102,42 +102,9 @@
                   <th>Em estoque</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="historicoBody">
                 <tr>
-                  <td>18/03/2026 09:14</td>
-                  <td>Lâmina Premium Aço</td>
-                  <td><span class="badge badge-in">Entrada</span></td>
-                  <td>Mariana</td>
-                  <td>+120</td>
-                  <td>-</td>
-                  <td class="stock-good">480 un.</td>
-                </tr>
-                <tr>
-                  <td>18/03/2026 10:32</td>
-                  <td>Pomada Modeladora 120g</td>
-                  <td><span class="badge badge-out">Saída</span></td>
-                  <td>Caio</td>
-                  <td>-</td>
-                  <td>38</td>
-                  <td class="stock-good">212 un.</td>
-                </tr>
-                <tr>
-                  <td>18/03/2026 11:47</td>
-                  <td>Shampoo Anticaspa 1L</td>
-                  <td><span class="badge badge-in">Entrada</span></td>
-                  <td>Rafaela</td>
-                  <td>+80</td>
-                  <td>-</td>
-                  <td class="stock-good">146 un.</td>
-                </tr>
-                <tr>
-                  <td>18/03/2026 13:05</td>
-                  <td>Toalha Profissional</td>
-                  <td><span class="badge badge-out">Saída</span></td>
-                  <td>Diego</td>
-                  <td>-</td>
-                  <td>64</td>
-                  <td class="stock-alert">22 un.</td>
+                  <td colspan="7">Carregando movimentações...</td>
                 </tr>
               </tbody>
             </table>
@@ -227,18 +194,143 @@
       });
     }
 
-    // Sessão opcional: a página pode ser acessada sem login.
     const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
     if (_usuario) {
       const area = document.getElementById('userArea');
       area.style.display = 'flex';
-      document.getElementById('userName').textContent = _usuario.nome || 'Usuário';
-      const ini = (_usuario.nome || 'U').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('userName').textContent = _usuario.nome || 'Usuario';
+      const ini = (_usuario.nome || 'U').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
       document.getElementById('avatarInitial').textContent = ini;
       document.getElementById('btnLogout').addEventListener('click', () => {
         sessionStorage.removeItem('is_usuario');
+        sessionStorage.removeItem('is_2fa_session');
         window.location.href = '/login.html';
       });
+    }
+
+    const MOCK_STORAGE_KEY = 'intellistock_mock_historico_v1';
+
+    const defaultMockHistorico = [
+      { id: 1, material_nome: 'Parafuso M6 Inox', tipo_movimento: 'CADASTRO', quantidade_delta: 250, quantidade_anterior: 0, quantidade_atual: 250, usuario_nome: 'Mariana', created_at: new Date().toISOString() },
+      { id: 2, material_nome: 'Porca Sextavada M6', tipo_movimento: 'CADASTRO', quantidade_delta: 180, quantidade_anterior: 0, quantidade_atual: 180, usuario_nome: 'Mariana', created_at: new Date(Date.now() - 3600000).toISOString() },
+      { id: 3, material_nome: 'Chapa de Aço 2mm', tipo_movimento: 'AJUSTE', quantidade_delta: -12, quantidade_anterior: 20, quantidade_atual: 8, usuario_nome: 'Caio', created_at: new Date(Date.now() - 7200000).toISOString() },
+      { id: 4, material_nome: 'Cabo Elétrico 2.5mm (metro)', tipo_movimento: 'AJUSTE', quantidade_delta: -50, quantidade_anterior: 50, quantidade_atual: 0, usuario_nome: 'Rafaela', created_at: new Date(Date.now() - 10800000).toISOString() },
+      { id: 5, material_nome: 'Tinta Spray Preta 400ml', tipo_movimento: 'AJUSTE', quantidade_delta: -6, quantidade_anterior: 10, quantidade_atual: 4, usuario_nome: 'Diego', created_at: new Date(Date.now() - 14400000).toISOString() }
+    ];
+
+    function getMode() {
+      const saved = localStorage.getItem('auth_mode');
+      return saved === 'mock' ? 'mock' : 'api';
+    }
+
+    function readMockHistorico() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) || 'null');
+        if (Array.isArray(saved) && saved.length) return saved;
+      } catch (_) {}
+      return defaultMockHistorico.map((item) => ({ ...item }));
+    }
+
+    function fmtDate(value) {
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '-';
+      return d.toLocaleString('pt-BR');
+    }
+
+    function fmtQtd(n) {
+      return Number(n || 0).toLocaleString('pt-BR') + ' un.';
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function tipoInfo(tipo, delta) {
+      if (tipo === 'CADASTRO' || Number(delta) > 0) {
+        return { badge: '<span class="badge badge-in">Entrada</span>', chegou: '+' + Math.abs(Number(delta || 0)), saiu: '-' };
+      }
+      if (tipo === 'REMOCAO') {
+        return { badge: '<span class="badge badge-out">Remocao</span>', chegou: '-', saiu: Math.abs(Number(delta || 0)) };
+      }
+      return { badge: '<span class="badge badge-out">Saida</span>', chegou: '-', saiu: Math.abs(Number(delta || 0)) };
+    }
+
+    function classeSaldo(saldo) {
+      return Number(saldo || 0) <= 30 ? 'stock-alert' : 'stock-good';
+    }
+
+    function renderTable(rows) {
+      const tbody = document.getElementById('historicoBody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7">Nenhuma movimentacao encontrada.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map((item) => {
+        const info = tipoInfo(item.tipo_movimento, item.quantidade_delta);
+        const saldo = Number(item.quantidade_atual || 0);
+        const usuario = String(item.usuario_nome || 'Sistema');
+
+        return `
+          <tr>
+            <td>${fmtDate(item.created_at)}</td>
+            <td>${escHtml(item.material_nome || '-')}</td>
+            <td>${info.badge}</td>
+            <td>${escHtml(usuario)}</td>
+            <td>${info.chegou === '-' ? '-' : info.chegou}</td>
+            <td>${info.saiu === '-' ? '-' : info.saiu}</td>
+            <td class="${classeSaldo(saldo)}">${fmtQtd(saldo)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateKpis(rows) {
+      const materiais = new Set(rows.map((r) => r.material_id || r.material_nome));
+      const entradas = rows.filter((r) => Number(r.quantidade_delta || 0) > 0).reduce((s, r) => s + Number(r.quantidade_delta || 0), 0);
+      const saidas = rows.filter((r) => Number(r.quantidade_delta || 0) < 0).reduce((s, r) => s + Math.abs(Number(r.quantidade_delta || 0)), 0);
+      const saldoMap = new Map();
+      rows.forEach((r) => {
+        const chave = r.material_id || r.material_nome;
+        if (!saldoMap.has(chave)) saldoMap.set(chave, Number(r.quantidade_atual || 0));
+      });
+      const saldoTotal = Array.from(saldoMap.values()).reduce((s, n) => s + n, 0);
+
+      document.getElementById('kpiCadastradas').textContent = materiais.size;
+      document.getElementById('kpiCadastradasSub').textContent = materiais.size === 1 ? '1 item no historico' : `${materiais.size} itens no historico`;
+      document.getElementById('kpiEntradas').textContent = fmtQtd(entradas);
+      document.getElementById('kpiEntradasSub').textContent = 'somatorio de entradas';
+      document.getElementById('kpiSaidas').textContent = fmtQtd(saidas);
+      document.getElementById('kpiSaidasSub').textContent = 'somatorio de saidas';
+      document.getElementById('kpiSaldo').textContent = fmtQtd(saldoTotal);
+      document.getElementById('kpiSaldoSub').textContent = 'saldo consolidado dos itens';
+    }
+
+    async function carregarHistorico() {
+      try {
+        let rows = [];
+
+        if (getMode() === 'api') {
+          const response = await fetch('/api/materiais/historico');
+          const data = await response.json();
+          if (!data.success || !Array.isArray(data.data)) {
+            throw new Error(data.message || 'Resposta invalida da API');
+          }
+          rows = data.data;
+        } else {
+          rows = readMockHistorico();
+        }
+
+        renderTable(rows);
+        updateKpis(rows);
+      } catch (err) {
+        renderTable([]);
+        updateKpis([]);
+      }
     }
 
     const revealEls = document.querySelectorAll('.reveal-section');
@@ -251,6 +343,8 @@
       });
     }, { threshold: 0.08 });
     revealEls.forEach((el) => revealObserver.observe(el));
+
+    carregarHistorico();
   </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 (function () {
   const MODE_KEY = 'auth_mode';
-  const DEFAULT_MODE = 'mock';
+  const DEFAULT_MODE = 'api';
   const MOCK_USERS_KEY = 'mock_auth_users_v1';
 
   const defaultMockUsers = [
