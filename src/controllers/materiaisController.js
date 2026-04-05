@@ -1,5 +1,5 @@
 // src/controllers/materiaisController.js
-// Controller para gerenciar operações com materiais
+// Controller para gerenciar operacoes com materiais
 
 const Material = require('../models/Material');
 
@@ -7,6 +7,10 @@ function calcularPrecoVenda(precoCusto, margemLucro) {
   const custo = Number(precoCusto) || 0;
   const margem = Number(margemLucro) || 0;
   return Number((custo * (1 + margem / 100)).toFixed(2));
+}
+
+function usuarioDaRequisicao(req) {
+  return String(req.body?.usuario_nome || req.headers['x-usuario-nome'] || 'Sistema').slice(0, 100);
 }
 
 class MateriaisController {
@@ -17,13 +21,7 @@ class MateriaisController {
   static async listar(req, res) {
     try {
       const { busca } = req.query;
-
-      let materiais;
-      if (busca) {
-        materiais = await Material.findByNome(busca);
-      } else {
-        materiais = await Material.findAll();
-      }
+      const materiais = busca ? await Material.findByNome(busca) : await Material.findAll();
 
       res.status(200).json({
         success: true,
@@ -40,8 +38,30 @@ class MateriaisController {
   }
 
   /**
+   * GET /api/materiais/historico
+   * Listar movimentacoes de estoque
+   */
+  static async listarHistorico(req, res) {
+    try {
+      const movimentacoes = await Material.listarMovimentacoes();
+
+      res.status(200).json({
+        success: true,
+        message: 'Historico recuperado com sucesso',
+        data: movimentacoes
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Erro ao listar historico de estoque',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * GET /api/materiais/:id
-   * Buscar material específico por ID
+   * Buscar material especifico por ID
    */
   static async obter(req, res) {
     try {
@@ -51,7 +71,7 @@ class MateriaisController {
       if (!material) {
         return res.status(404).json({
           success: false,
-          message: 'Material não encontrado'
+          message: 'Material nao encontrado'
         });
       }
 
@@ -75,30 +95,28 @@ class MateriaisController {
    */
   static async criar(req, res) {
     try {
-      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
+      const { codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
       const precoVenda = preco_manual !== undefined ? Number(preco_manual) : calcularPrecoVenda(preco_custo, margem_lucro);
 
-      // Validação básica
-      if (!codigo_barras || !nome) {
+      if (!codigo_barras || !nome || !fornecedor) {
         return res.status(400).json({
           success: false,
-          message: 'Código de barras e nome são obrigatórios'
+          message: 'Codigo de barras, nome e fornecedor sao obrigatorios'
         });
       }
 
-      // Verificar se código de barras já existe
       const materialExistente = await Material.findByCodigoBarras(codigo_barras);
       if (materialExistente) {
         return res.status(409).json({
           success: false,
-          message: 'Material com este código de barras já existe'
+          message: 'Material com este codigo de barras ja existe'
         });
       }
 
-      // Criar material
       const novoMaterialId = await Material.create({
         codigo_barras,
         nome,
+        fornecedor,
         quantidade_atual: quantidade_atual || 0,
         quantidade_minima: quantidade_minima || 10,
         preco_custo: preco_custo || 0,
@@ -107,6 +125,17 @@ class MateriaisController {
       });
 
       const novoMaterial = await Material.findById(novoMaterialId);
+
+      await Material.registrarMovimentacao({
+        material_id: novoMaterialId,
+        material_nome_snapshot: String(novoMaterial?.nome || nome),
+        tipo_movimento: 'CADASTRO',
+        quantidade_delta: Number(quantidade_atual || 0),
+        quantidade_anterior: 0,
+        quantidade_atual: Number(quantidade_atual || 0),
+        usuario_nome: usuarioDaRequisicao(req),
+        observacao: 'Cadastro de novo material'
+      });
 
       res.status(201).json({
         success: true,
@@ -129,32 +158,30 @@ class MateriaisController {
   static async atualizar(req, res) {
     try {
       const { id } = req.params;
-      const { codigo_barras, nome, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
+      const { codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
 
-      // Verificar se material existe
       const material = await Material.findById(id);
       if (!material) {
         return res.status(404).json({
           success: false,
-          message: 'Material não encontrado'
+          message: 'Material nao encontrado'
         });
       }
 
-      // Se mudar código de barras, verificar duplicatas
       if (codigo_barras && codigo_barras !== material.codigo_barras) {
         const materialComCodigo = await Material.findByCodigoBarras(codigo_barras);
         if (materialComCodigo) {
           return res.status(409).json({
             success: false,
-            message: 'Já existe um material com este código de barras'
+            message: 'Ja existe um material com este codigo de barras'
           });
         }
       }
 
-      // Montar objeto de atualização
       const dadosAtualizacao = {};
       if (codigo_barras !== undefined) dadosAtualizacao.codigo_barras = codigo_barras;
       if (nome !== undefined) dadosAtualizacao.nome = nome;
+      if (fornecedor !== undefined) dadosAtualizacao.fornecedor = fornecedor;
       if (quantidade_atual !== undefined) dadosAtualizacao.quantidade_atual = quantidade_atual;
       if (quantidade_minima !== undefined) dadosAtualizacao.quantidade_minima = quantidade_minima;
       if (preco_custo !== undefined) dadosAtualizacao.preco_custo = preco_custo;
@@ -168,9 +195,21 @@ class MateriaisController {
         );
       }
 
-      // Atualizar
       await Material.update(id, dadosAtualizacao);
       const materialAtualizado = await Material.findById(id);
+
+      const qtdAnterior = Number(material.quantidade_atual || 0);
+      const qtdAtual = Number(materialAtualizado.quantidade_atual || 0);
+      await Material.registrarMovimentacao({
+        material_id: Number(id),
+        material_nome_snapshot: String(materialAtualizado?.nome || material?.nome || 'Material'),
+        tipo_movimento: 'EDICAO',
+        quantidade_delta: qtdAtual - qtdAnterior,
+        quantidade_anterior: qtdAnterior,
+        quantidade_atual: qtdAtual,
+        usuario_nome: usuarioDaRequisicao(req),
+        observacao: 'Edicao de dados do material'
+      });
 
       res.status(200).json({
         success: true,
@@ -193,17 +232,25 @@ class MateriaisController {
   static async deletar(req, res) {
     try {
       const { id } = req.params;
-
-      // Verificar se material existe
       const material = await Material.findById(id);
       if (!material) {
         return res.status(404).json({
           success: false,
-          message: 'Material não encontrado'
+          message: 'Material nao encontrado'
         });
       }
 
-      // Deletar
+      await Material.registrarMovimentacao({
+        material_id: Number(id),
+        material_nome_snapshot: String(material?.nome || 'Material removido'),
+        tipo_movimento: 'REMOCAO',
+        quantidade_delta: -Number(material.quantidade_atual || 0),
+        quantidade_anterior: Number(material.quantidade_atual || 0),
+        quantidade_atual: 0,
+        usuario_nome: usuarioDaRequisicao(req),
+        observacao: 'Exclusao de material'
+      });
+
       await Material.delete(id);
 
       res.status(200).json({
@@ -229,16 +276,33 @@ class MateriaisController {
       const { id } = req.params;
       const { diferenca } = req.body;
 
-      // Validação
       if (diferenca === undefined || typeof diferenca !== 'number') {
         return res.status(400).json({
           success: false,
-          message: 'Diferença de quantidade é obrigatória e deve ser um número'
+          message: 'Diferenca de quantidade e obrigatoria e deve ser um numero'
         });
       }
 
-      // Atualizar quantidade
+      const materialAntes = await Material.findById(id);
+      if (!materialAntes) {
+        return res.status(404).json({
+          success: false,
+          message: 'Material nao encontrado'
+        });
+      }
+
       const materialAtualizado = await Material.atualizarQuantidade(id, diferenca);
+
+      await Material.registrarMovimentacao({
+        material_id: Number(id),
+        material_nome_snapshot: String(materialAtualizado?.nome || materialAntes?.nome || 'Material'),
+        tipo_movimento: 'AJUSTE',
+        quantidade_delta: Number(diferenca),
+        quantidade_anterior: Number(materialAntes.quantidade_atual || 0),
+        quantidade_atual: Number(materialAtualizado.quantidade_atual || 0),
+        usuario_nome: usuarioDaRequisicao(req),
+        observacao: 'Ajuste manual de quantidade'
+      });
 
       res.status(200).json({
         success: true,

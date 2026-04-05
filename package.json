@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "setup-db": "node setup-db.js",
     "setup:db": "node setup-db.js",
+    "seed:demo": "node -e \"const db = require('./src/config/database'); db.connect().then(async (ok) => { if (!ok) throw new Error('Banco nao conectado'); const seedDemoData = require('./src/utils/seedDemoData'); await seedDemoData(global.db); await db.disconnect(); process.exit(0); }).catch(async (err) => { if (db.disconnect) { try { await db.disconnect(); } catch (_) {} } console.error(err.message || err); process.exit(1); })\"",
     "start:tudo": "npm run setup:db && npm run dev",
     "start:all": "npm install && npm run start:tudo"
   },

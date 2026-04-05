@@ -106,7 +106,7 @@
             </thead>
             <tbody id="tableBody">
               <tr>
-                <td colspan="7">
+                <td colspan="10">
                   <div class="empty-state">
                     <p>Carregando materiais...</p>
                   </div>
@@ -218,20 +218,20 @@
     // ===== MODO API =====
     function getMode() {
       const saved = localStorage.getItem('auth_mode');
-      return saved === 'api' ? 'api' : 'mock';
+      return saved === 'mock' ? 'mock' : 'api';
     }
 
     // ===== MOCK DATA =====
     const MOCK_STORAGE_KEY = 'intellistock_mock_materiais_v1';
     const MOCK_NEXT_ID_KEY = 'intellistock_mock_next_id_v1';
     const defaultMockMateriais = [
-      { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
-      { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
-      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
-      { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75 },
-      { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00 },
-      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
-      { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90 },
+      { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
+      { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
+      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', fornecedor: 'Aco Forte Chapas', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
+      { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', fornecedor: 'EletroCabos Brasil', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75 },
+      { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', fornecedor: 'SegMais EPIs', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00 },
+      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', fornecedor: 'Quimica Rapida', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
+      { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', fornecedor: 'EletroCabos Brasil', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90 },
     ];
 
     function readMockMateriais() {
@@ -283,7 +283,7 @@
     function renderTable(lista) {
       const tbody = document.getElementById('tableBody');
       if (!lista || lista.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
+        tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           <p>Nenhum material encontrado.</p></div></td></tr>`;
         return;
@@ -391,8 +391,11 @@
         if (getMode() === 'api') {
           const res = await fetch(`/api/materiais/${id}/quantidade`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ diferenca: diff })
+            headers: {
+              'Content-Type': 'application/json',
+              'x-usuario-nome': usuario?.nome || 'Sistema'
+            },
+            body: JSON.stringify({ diferenca: diff, usuario_nome: usuario?.nome || 'Sistema' })
           });
           const data = await res.json();
           if (!data.success) throw new Error(data.message);
@@ -506,8 +509,11 @@
           const method = editingId ? 'PUT' : 'POST';
           const res = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, codigo_barras: codigo, fornecedor, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco })
+            headers: {
+              'Content-Type': 'application/json',
+              'x-usuario-nome': usuario?.nome || 'Sistema'
+            },
+            body: JSON.stringify({ nome, codigo_barras: codigo, fornecedor, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco, usuario_nome: usuario?.nome || 'Sistema' })
           });
           const data = await res.json();
           if (!data.success) throw new Error(data.message);
@@ -544,7 +550,10 @@
 
       try {
         if (getMode() === 'api') {
-          const res = await fetch(`/api/materiais/${id}`, { method: 'DELETE' });
+          const res = await fetch(`/api/materiais/${id}`, {
+            method: 'DELETE',
+            headers: { 'x-usuario-nome': usuario?.nome || 'Sistema' }
+          });
           const data = await res.json();
           if (!data.success) throw new Error(data.message);
         } else {

@@ -78,8 +78,8 @@ npm run start:tudo # Configura .env + inicia servidor
 
 As telas de login e verificação já estão preparadas para dois modos:
 
-1. `mock` (padrão): funciona sem banco/API para desenvolvimento de interface.
-2. `api`: usa endpoints reais para autenticação.
+1. `api` (padrão): usa endpoints reais para autenticação e CRUD no MySQL.
+2. `mock`: funciona sem banco/API para desenvolvimento de interface.
 
 Como trocar de modo no navegador (DevTools Console):
 
@@ -88,9 +88,10 @@ localStorage.setItem('auth_mode', 'mock') // frontend isolado
 localStorage.setItem('auth_mode', 'api')  // conecta no backend real
 ```
 
-Credencial de demonstração no modo `mock`:
+Credenciais de demonstração disponíveis também no modo `api` após aplicar o schema e iniciar o servidor:
 
 - E-mail: `cliente@intellistock.com`
+- E-mail: `demo@intellistock.com`
 - Senha: `123456`
 
 Contrato esperado no modo `api`:
@@ -121,7 +122,9 @@ Crie o banco e aplique o schema:
 mysql -u root -p < src/database/schema.sql
 ```
 
-Se o banco já existia antes dessa atualização, recrie a tabela materiais ou adicione manualmente as colunas novas: `preco_custo` e `margem_lucro`.
+Se o banco já existia antes dessa atualização, reaplique o `schema.sql` para garantir as colunas `preco_custo`, `margem_lucro`, `fornecedor`, a tabela `movimentacoes_estoque` e as tabelas de `insumos` no próprio `estoque_db`.
+
+O servidor nao importa mais registros demo automaticamente.
 
 Configuração padrão esperada no `.env`:
 
@@ -143,11 +146,12 @@ Base: `/api/materiais`
 
 - `GET /api/materiais` → listar materiais
 - `GET /api/materiais/:id` → buscar por id
-- `POST /api/materiais` → criar material com `preco_custo`, `margem_lucro` e `preco_manual` (preço de venda)
-- `PUT /api/materiais/:id` → atualizar material e recalcular o preço de venda
+- `POST /api/materiais` → criar material com `fornecedor`, `preco_custo`, `margem_lucro` e `preco_manual` (preco de venda)
+- `PUT /api/materiais/:id` → atualizar material e recalcular o preco de venda
 - `PUT /api/materiais/:id/quantidade` → ajustar quantidade
 - `DELETE /api/materiais/:id` → remover material
 - `GET /api/materiais/estoque/baixo` → listar estoque baixo
+- `GET /api/materiais/historico` → listar movimentacoes de estoque para a tela de historico
 
 ---
 

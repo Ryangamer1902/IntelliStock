@@ -22,6 +22,13 @@ router.get('/', MateriaisController.listar);
 router.get('/estoque/baixo', MateriaisController.listarBaixoEstoque);
 
 /**
+ * GET /api/materiais/historico
+ * Listar histórico de movimentações do estoque
+ * NOTA: Esta rota deve estar ANTES da rota /:id para evitar conflito
+ */
+router.get('/historico', MateriaisController.listarHistorico);
+
+/**
  * GET /api/materiais/:id
  * Obter um material específico por ID
  */
