@@ -124,7 +124,7 @@ mysql -u root -p < src/database/schema.sql
 
 Se o banco já existia antes dessa atualização, reaplique o `schema.sql` para garantir as colunas `preco_custo`, `margem_lucro`, `fornecedor`, a tabela `movimentacoes_estoque` e as tabelas de `insumos` no próprio `estoque_db`.
 
-Quando o servidor sobe com essas tabelas vazias, ele importa automaticamente os registros demo para uso em modo `api`.
+O servidor nao importa mais registros demo automaticamente.
 
 Configuração padrão esperada no `.env`:
 

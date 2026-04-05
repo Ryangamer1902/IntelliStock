@@ -44,7 +44,6 @@ const initializeDatabase = async () => {
     dbConnected = true;
     global.db = pool;
     await seedAdmin(pool);
-    await seedDemoData(pool);
     return true;
   } catch (error) {
     console.warn('⚠️ Banco de dados não conectado. Execute: npm run setup:db');
@@ -63,7 +62,6 @@ const materiaisRoutes = require('./src/routes/materiais.routes');
 const insumosRoutes = require('./src/routes/insumos.routes');
 const authRoutes = require('./src/routes/auth.routes');
 const seedAdmin = require('./src/utils/seedAdmin');
-const seedDemoData = require('./src/utils/seedDemoData');
 
 app.use('/api/materiais', materiaisRoutes);
 app.use('/api/insumos', insumosRoutes);
