@@ -114,29 +114,126 @@ Depois edite o `.env` com suas credenciais do MySQL.
 
 ---
 
-## 🗄️ Banco de dados
+## 🗄️ Banco de dados - Guia completo de inicialização
 
-Crie o banco e aplique o schema:
+### Passo 1: Instalar Node.js (se ainda não tiver)
 
-```bash
-mysql -u root -p < src/database/schema.sql
+1. Baixe Node.js em https://nodejs.org/ (versão LTS recomendada).
+2. Execute o instalador.
+3. No PowerShell, valide a instalação:
+```powershell
+node -v
+npm -v
 ```
 
-Se o banco já existia antes dessa atualização, reaplique o `schema.sql` para garantir as colunas `preco_custo`, `margem_lucro`, `fornecedor`, a tabela `movimentacoes_estoque` e as tabelas de `insumos` no próprio `estoque_db`.
+### Passo 2: Resolver problema de npm no PowerShell (Windows)
 
-O servidor nao importa mais registros demo automaticamente.
+Se receber erro `O arquivo ... não pode ser carregado porque a execução de scripts foi desabilitada`, use:
 
-Configuração padrão esperada no `.env`:
+```powershell
+$env:Path = "C:\Program Files\nodejs;$env:Path"; npm.cmd -v
+```
 
+**Dica:** Para evitar digitar isso toda vez, adicione permissão permanente:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+### Passo 3: Configurar o arquivo .env
+
+1. No diretório raiz do projeto, execute:
+```powershell
+npm.cmd run setup:db
+```
+
+2. Responda as perguntas do assistente:
+   - Host: `localhost`
+   - Usuário: `root`
+   - Senha: sua senha do MySQL (deixar em branco se não tiver)
+   - Nome do banco: `estoque_db`
+   - Porta: `3306`
+   - Porta da aplicação: `3001`
+   - Ambiente: `development`
+
+3. A partir daí, o arquivo `.env` será criado automaticamente com suas credenciais.
+
+**Arquivo esperado no `.env`:**
 ```env
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=
+DB_PASSWORD=sua_senha_aqui
 DB_NAME=estoque_db
 DB_PORT=3306
 PORT=3001
 NODE_ENV=development
 ```
+
+### Passo 4: Criar o banco de dados e aplicar o schema
+
+#### Opção A: Usando MySQL Workbench (recomendado)
+
+1. Abra **MySQL Workbench**.
+2. Conecte-se na sua instância local de MySQL.
+3. Abra uma nova aba SQL.
+4. Cole e execute este bloco:
+```sql
+CREATE DATABASE IF NOT EXISTS estoque_db;
+USE estoque_db;
+```
+5. Verifique que aparece `estoque_db` no painel Schemas (lado esquerdo).
+6. Abra o arquivo `src/database/schema.sql` do projeto.
+7. Execute todo o script SQL (botão raio "Run All" ou Ctrl+Shift+Enter).
+8. Valide se as tabelas foram criadas sem erros vermelhos:
+```sql
+USE estoque_db;
+SHOW TABLES;
+```
+
+#### Opção B: Pela linha de comando (Windows PowerShell)
+
+1. Certifique-se de que tem a sua senha configurada no `.env`.
+2. Execute:
+```powershell
+mysql -u root -p estoque_db < src/database/schema.sql
+```
+3. Digite sua senha quando solicitado.
+
+### Passo 5: Iniciar o servidor
+
+Após configurar tudo, execute:
+
+```powershell
+npm.cmd run dev
+```
+
+Resultado esperado:
+```
+✓ Conexão com banco de dados estabelecida com sucesso
+🚀 Servidor rodando em http://localhost:3001
+📦 Ambiente: development
+```
+
+Se receber erro de autenticação MySQL, verifique:
+- A senha no `.env` está correta.
+- O MySQL está rodando (Windows → Services → MySQL).
+- O usuário `root` existe no seu MySQL.
+
+### Problemas comuns
+
+| Erro | Solução |
+|------|---------|
+| `Access denied for user 'root'@'localhost'` | Verifique a senha no `.env` ou atualize via MySQL Workbench |
+| `Error Code 1046: No database selected` | Cole `USE estoque_db;` antes de executar o schema |
+| `npm: comando não encontrado` | Use `npm.cmd` no PowerShell ou execute `Set-ExecutionPolicy` |
+| `MySQL port 3306 já em uso` | Altere `DB_PORT` no `.env` para uma porta livre (ex: 3307) |
+
+### Dados de demonstração
+
+Após iniciar o servidor com sucesso, use estas credenciais para login:
+
+- **E-mail:** `cliente@intellistock.com` ou `demo@intellistock.com`
+- **Senha:** `123456`
+- **Código de verificação (2FA):** `123456`
 
 ---
 
