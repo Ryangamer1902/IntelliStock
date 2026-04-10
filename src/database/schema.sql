@@ -112,6 +112,17 @@ CREATE TABLE IF NOT EXISTS codigos_verificacao (
   INDEX idx_token_temp (token_temp)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS tokens_reset_senha (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  token VARCHAR(64) NOT NULL UNIQUE,
+  expira_em TIMESTAMP NOT NULL,
+  usado TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+  INDEX idx_token_reset (token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ==================== INSUMOS ====================
 
 CREATE TABLE IF NOT EXISTS fornecedores (

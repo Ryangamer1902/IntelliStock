@@ -36,7 +36,10 @@ const questions = [
   { key: 'DB_NAME', label: 'Nome do banco (padrão: estoque_db)', default: 'estoque_db' },
   { key: 'DB_PORT', label: 'Porta do MySQL (padrão: 3306)', default: '3306' },
   { key: 'PORT', label: 'Porta da aplicação (padrão: 3001)', default: '3001' },
-  { key: 'NODE_ENV', label: 'Ambiente (development/production)', default: 'development' }
+  { key: 'NODE_ENV', label: 'Ambiente (development/production)', default: 'development' },
+  { key: 'MAIL_ENABLED', label: 'Enviar 2FA por e-mail? (true/false)', default: 'false' },
+  { key: 'MAIL_USER', label: 'E-mail Gmail que vai enviar os códigos', default: '' },
+  { key: 'MAIL_PASS', label: 'App Password do Gmail (16 caracteres)', default: '' }
 ];
 
 let config = {};
@@ -62,6 +65,22 @@ const saveEnv = () => {
   console.log('\n' + '='.repeat(50));
   console.log('💾 Salvando configurações...\n');
 
+  if (String(config.MAIL_ENABLED).toLowerCase() === 'true') {
+    config.MAIL_HOST = 'smtp.gmail.com';
+    config.MAIL_PORT = '587';
+    config.MAIL_SECURE = 'false';
+    if (config.MAIL_USER) {
+      config.MAIL_FROM = `IntelliStock <${config.MAIL_USER}>`;
+    } else {
+      config.MAIL_FROM = '';
+    }
+  } else {
+    config.MAIL_HOST = 'smtp.gmail.com';
+    config.MAIL_PORT = '587';
+    config.MAIL_SECURE = 'false';
+    config.MAIL_FROM = '';
+  }
+
   let envText = '';
   
   Object.entries(config).forEach(([key, value]) => {
@@ -75,7 +94,7 @@ const saveEnv = () => {
     console.log('─'.repeat(50));
     
     Object.entries(config).forEach(([key, value]) => {
-      const displayValue = key === 'DB_PASSWORD' ? '***' : value;
+      const displayValue = key === 'DB_PASSWORD' || key === 'MAIL_PASS' ? '***' : value;
       console.log(`  ${key}: ${displayValue}`);
     });
     

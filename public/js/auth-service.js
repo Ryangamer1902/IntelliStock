@@ -63,6 +63,24 @@
     return data;
   }
 
+  async function apiSolicitarReset(payload) {
+    const response = await fetch('/api/auth/solicitar-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return response.json();
+  }
+
+  async function apiRedefinirSenha(payload) {
+    const response = await fetch('/api/auth/redefinir-senha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return response.json();
+  }
+
   function readMockUsers() {
     try {
       const saved = JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || 'null');
@@ -102,6 +120,7 @@
       success: true,
       token_temp: tokenTemp,
       nome: usuario.nome,
+      email_enviado: false,
       codigo_demo: codigo
     };
   }
@@ -189,6 +208,36 @@
     return { success: true, usuario: pending.usuario };
   }
 
+  async function mockSolicitarReset(payload) {
+    const email = String(payload.email || '').trim().toLowerCase();
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      return { success: false, message: 'Informe um e-mail válido.' };
+    }
+    const token = makeToken();
+    sessionStorage.setItem('mock_reset_token', token);
+    
+    // Simulate email send
+    console.log(`[MOCK EMAIL] Acesse para resetar a senha: http://localhost:3001/redefinir-senha.html?token=${token}`);
+    
+    return { success: true, message: 'Se este e-mail for válido, você receberá as instruções. (MOCK: Veja o console)' };
+  }
+
+  async function mockRedefinirSenha(payload) {
+    const token = String(payload.token || '').trim();
+    const senha = String(payload.senha || '');
+
+    if (!token) return { success: false, message: 'Token inválido.' };
+    if (senha.length < 6) return { success: false, message: 'A nova senha precisa ter pelo menos 6 caracteres.' };
+
+    const expectedToken = sessionStorage.getItem('mock_reset_token');
+    if (!expectedToken || token !== expectedToken) {
+      return { success: false, message: 'Link inválido ou já utilizado.' };
+    }
+
+    sessionStorage.removeItem('mock_reset_token');
+    return { success: true, message: 'Senha redefinida com sucesso. Faça login com sua nova senha. (Modo MOCK não salva permanentemente, mas simula sucesso)' };
+  }
+
   async function login(payload) {
     return getMode() === 'api' ? apiLogin(payload) : mockLogin(payload);
   }
@@ -201,11 +250,21 @@
     return getMode() === 'api' ? apiVerify(payload) : mockVerify(payload);
   }
 
+  async function solicitarReset(payload) {
+    return getMode() === 'api' ? apiSolicitarReset(payload) : mockSolicitarReset(payload);
+  }
+
+  async function redefinirSenha(payload) {
+    return getMode() === 'api' ? apiRedefinirSenha(payload) : mockRedefinirSenha(payload);
+  }
+
   window.AuthService = {
     getMode,
     setMode,
     login,
     register,
-    verify
+    verify,
+    solicitarReset,
+    redefinirSenha
   };
 })();

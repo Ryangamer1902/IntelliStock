@@ -1,11 +1,13 @@
 // src/controllers/authController.js
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { enviarCodigoVerificacao, enviarLinkResetSenha } = require('../services/emailService');
 
 async function criarDesafioVerificacao(db, usuario) {
   const codigo = String(Math.floor(100000 + Math.random() * 900000));
   const tokenTemp = crypto.randomBytes(32).toString('hex');
   const expiraEm = new Date(Date.now() + 10 * 60 * 1000);
+  const mailRequired = String(process.env.MAIL_ENABLED || '').trim().toLowerCase() === 'true';
 
   await db.query('DELETE FROM codigos_verificacao WHERE usuario_id = ?', [usuario.id]);
   await db.query(
@@ -13,12 +15,31 @@ async function criarDesafioVerificacao(db, usuario) {
     [usuario.id, tokenTemp, codigo, expiraEm]
   );
 
-  return {
+  const envioEmail = await enviarCodigoVerificacao({
+    para: usuario.email,
+    nome: usuario.nome,
+    codigo
+  });
+
+  const resposta = {
     success: true,
     token_temp: tokenTemp,
     nome: usuario.nome,
-    codigo_demo: codigo
+    email_enviado: envioEmail.sent
   };
+
+  if (mailRequired && !envioEmail.sent) {
+    return {
+      success: false,
+      message: 'Nao foi possivel enviar o codigo de verificacao por e-mail. Tente novamente em instantes.'
+    };
+  }
+
+  if (!envioEmail.sent && process.env.NODE_ENV !== 'production') {
+    resposta.codigo_demo = codigo;
+  }
+
+  return resposta;
 }
 
 function emailValido(email) {
@@ -56,7 +77,12 @@ class AuthController {
         return res.status(401).json({ success: false, message: 'E-mail ou senha incorretos.' });
       }
 
-      return res.json(await criarDesafioVerificacao(db, usuario));
+      const desafio = await criarDesafioVerificacao(db, usuario);
+      if (!desafio.success) {
+        return res.status(502).json(desafio);
+      }
+
+      return res.json(desafio);
 
     } catch (err) {
       console.error('Erro no login:', err);
@@ -163,6 +189,88 @@ class AuthController {
 
     } catch (err) {
       console.error('Erro na verificação 2FA:', err);
+      return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
+    }
+  }
+
+  static async solicitarReset(req, res) {
+    const db = global.db;
+    if (!db) return res.status(503).json({ success: false, message: 'Banco de dados nao configurado.' });
+
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!emailValido(email)) {
+      return res.status(400).json({ success: false, message: 'Informe um e-mail valido.' });
+    }
+
+    try {
+      const [rows] = await db.query(
+        'SELECT id, nome, email FROM usuarios WHERE email = ? AND ativo = 1 LIMIT 1',
+        [email]
+      );
+
+      // Resposta generica por seguranca (nao revela se o e-mail existe)
+      if (rows.length === 0) {
+        return res.json({ success: true, message: 'Se este e-mail estiver cadastrado, voce receberá as instruções em instantes.' });
+      }
+
+      const usuario = rows[0];
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiraEm = new Date(Date.now() + 30 * 60 * 1000);
+
+      await db.query('DELETE FROM tokens_reset_senha WHERE usuario_id = ?', [usuario.id]);
+      await db.query(
+        'INSERT INTO tokens_reset_senha (usuario_id, token, expira_em) VALUES (?, ?, ?)',
+        [usuario.id, token, expiraEm]
+      );
+
+      const baseUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3001}`;
+      const link = `${baseUrl}/redefinir-senha.html?token=${token}`;
+
+      const envio = await enviarLinkResetSenha({ para: usuario.email, nome: usuario.nome, link });
+
+      if (!envio.sent) {
+        console.error('Falha ao enviar e-mail de reset para', usuario.email, '-', envio.reason);
+        return res.status(502).json({ success: false, message: 'Nao foi possivel enviar o e-mail. Tente novamente.' });
+      }
+
+      return res.json({ success: true, message: 'Se este e-mail estiver cadastrado, voce receberá as instruções em instantes.' });
+    } catch (err) {
+      console.error('Erro ao solicitar reset:', err);
+      return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
+    }
+  }
+
+  static async redefinirSenha(req, res) {
+    const db = global.db;
+    if (!db) return res.status(503).json({ success: false, message: 'Banco de dados nao configurado.' });
+
+    const token = String(req.body.token || '').trim();
+    const novaSenha = String(req.body.senha || '');
+
+    if (!token) return res.status(400).json({ success: false, message: 'Token invalido.' });
+    if (novaSenha.length < 6) return res.status(400).json({ success: false, message: 'A nova senha precisa ter pelo menos 6 caracteres.' });
+
+    try {
+      const [rows] = await db.query(
+        `SELECT tr.id, tr.usuario_id, tr.expira_em, tr.usado
+         FROM tokens_reset_senha tr
+         WHERE tr.token = ?`,
+        [token]
+      );
+
+      if (rows.length === 0) return res.status(401).json({ success: false, message: 'Link invalido ou ja utilizado.' });
+
+      const reg = rows[0];
+      if (reg.usado) return res.status(401).json({ success: false, message: 'Este link ja foi utilizado.' });
+      if (new Date() > new Date(reg.expira_em)) return res.status(401).json({ success: false, message: 'Link expirado. Solicite um novo.' });
+
+      const senhaHash = await bcrypt.hash(novaSenha, 10);
+      await db.query('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [senhaHash, reg.usuario_id]);
+      await db.query('UPDATE tokens_reset_senha SET usado = 1 WHERE id = ?', [reg.id]);
+
+      return res.json({ success: true, message: 'Senha redefinida com sucesso. Faca login com sua nova senha.' });
+    } catch (err) {
+      console.error('Erro ao redefinir senha:', err);
       return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
     }
   }

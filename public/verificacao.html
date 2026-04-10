@@ -79,7 +79,22 @@
         `Olá, ${session.nome}! Digite o código de 6 dígitos para confirmar o acesso.`;
     }
 
-    // Exibir código demo se disponível
+    const feedback = document.getElementById('formFeedback');
+
+    if (session && session.email_enviado) {
+      feedback.innerHTML = `
+        <span class="feedback-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M8 12l2.5 2.5L16 9"></path>
+          </svg>
+          <span>Codigo enviado para seu e-mail. Confira sua caixa de entrada e spam.</span>
+        </span>
+      `;
+      feedback.classList.add('success');
+    }
+
+    // Exibir codigo demo se disponível
     if (session && session.codigo_demo) {
       document.getElementById('demoBox').classList.remove('is-hidden');
       document.getElementById('demoCode').textContent = session.codigo_demo;
@@ -88,7 +103,6 @@
     // ----- OTP Inputs -----
     const boxes = Array.from(document.querySelectorAll('.otp-box'));
     const confirmBtn = document.getElementById('confirmBtn');
-    const feedback = document.getElementById('formFeedback');
 
     function getCode() {
       return boxes.map(b => b.value).join('');

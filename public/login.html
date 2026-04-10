@@ -66,7 +66,7 @@
 
           <div class="row">
             <label><input id="remember" type="checkbox"> Manter conectado</label>
-            <a href="#">Esqueci minha senha</a>
+            <a href="#" id="openForgotLink">Esqueci minha senha</a>
           </div>
 
           <button id="submitBtn" class="btn" type="submit">Entrar no IntelliStock</button>
@@ -88,8 +88,8 @@
           <div class="field">
             <label for="cadastroSenha">Senha</label>
             <div class="password-wrap">
-              <input id="cadastroSenha" type="password" placeholder="Crie uma senha com 6+ caracteres" minlength="6" required>
-              <button id="toggleRegisterPass" class="toggle-pass" type="button">Mostrar</button>
+               <input id="cadastroSenha" type="password" placeholder="Crie uma senha com 6+ caracteres" minlength="6" required>
+               <button id="toggleRegisterPass" class="toggle-pass" type="button">Mostrar</button>
             </div>
           </div>
 
@@ -101,7 +101,18 @@
             </div>
           </div>
 
-          <button id="registerBtn" class="btn" type="submit">Criar conta e continuar</button>
+           <button id="registerBtn" class="btn" type="submit">Criar conta e continuar</button>
+        </form>
+
+        <form id="forgotForm" class="auth-panel" novalidate hidden>
+          <div id="forgotFeedback" class="form-feedback"></div>
+
+          <div class="field">
+            <label for="forgotEmail">E-mail</label>
+            <input id="forgotEmail" type="email" placeholder="seuemail@empresa.com" required>
+          </div>
+
+          <button id="forgotBtn" class="btn" type="submit">Enviar instruções</button>
         </form>
 
         <p class="small" id="authSmallText">Ainda não tem acesso? <a href="#" id="openCadastroLink">Crie seu cadastro</a></p>
@@ -112,6 +123,35 @@
       <a class="btn btn-soft" href="/index.html">Voltar ao início</a>
     </div>
   </main>
+
+  <!-- Modal: Esqueci minha senha -->
+  <div id="esqueciOverlay" style="display:none;position:fixed;inset:0;background:rgba(18,33,39,.45);z-index:100;align-items:center;justify-content:center;">
+    <div id="esqueciModal" role="dialog" aria-modal="true" aria-labelledby="esqueciTitulo" style="background:#fff;border-radius:20px;padding:36px 32px;width:min(420px,92%);box-shadow:0 24px 56px rgba(9,41,49,.18);position:relative;">
+      <button id="fecharEsqueci" type="button" aria-label="Fechar" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#5d6b70;line-height:1;">&#x2715;</button>
+
+      <div id="esqueciConteudo">
+        <h3 id="esqueciTitulo" style="font-family:'Sora',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:6px;">Esqueci minha senha</h3>
+        <p style="color:#5d6b70;font-size:.91rem;margin-bottom:20px;">Informe seu e-mail cadastrado e enviaremos um link para criar uma nova senha.</p>
+        <div id="esqueciResposta" class="form-feedback"></div>
+        <form id="esqueciForm" novalidate>
+          <div class="field">
+            <label for="esqueciEmail">E-mail</label>
+            <input id="esqueciEmail" type="email" placeholder="seuemail@empresa.com" required>
+          </div>
+          <button id="esqueciBtn" class="btn" type="submit">Enviar link de redefinição</button>
+        </form>
+      </div>
+
+      <div id="esqueciSucesso" hidden style="text-align:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="none" viewBox="0 0 24 24" stroke="#0e8f83" stroke-width="2" style="margin-bottom:10px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <h4 style="font-family:'Sora',sans-serif;font-size:1.1rem;margin-bottom:8px;">E-mail enviado!</h4>
+        <p style="color:#5d6b70;font-size:.9rem;">Verifique sua caixa de entrada e clique no link para redefinir sua senha.</p>
+        <button type="button" id="fecharAposSucesso" class="btn" style="margin-top:20px;">Fechar</button>
+      </div>
+    </div>
+  </div>
 
   <script src="./js/auth-service.js"></script>
   <script>
@@ -143,6 +183,11 @@
     const cardIntro = document.getElementById('cardIntro');
     const authSmallText = document.getElementById('authSmallText');
     const openCadastroLink = document.getElementById('openCadastroLink');
+    const forgotForm = document.getElementById('forgotForm');
+    const forgotEmailInput = document.getElementById('forgotEmail');
+    const forgotBtn = document.getElementById('forgotBtn');
+    const forgotFeedback = document.getElementById('forgotFeedback');
+    const openForgotLink = document.getElementById('openForgotLink');
 
     function togglePasswordVisibility(input, button) {
       const isPassword = input.type === 'password';
@@ -154,6 +199,7 @@
       sessionStorage.setItem('is_2fa_session', JSON.stringify({
         token_temp: data.token_temp,
         nome: data.nome,
+        email_enviado: data.email_enviado === true,
         codigo_demo: data.codigo_demo || null
       }));
       window.location.href = '/verificacao.html';
@@ -161,26 +207,42 @@
 
     function setAuthMode(mode) {
       const isCadastro = mode === 'cadastro';
-      tabLogin.classList.toggle('active', !isCadastro);
-      tabCadastro.classList.toggle('active', isCadastro);
-      loginForm.hidden = isCadastro;
-      registerForm.hidden = !isCadastro;
-      cardTitle.textContent = isCadastro ? 'Criar conta' : 'Login';
-      cardIntro.textContent = isCadastro
-        ? 'Crie sua conta para acessar a plataforma pela primeira vez.'
-        : 'Use seu e-mail corporativo para acessar a plataforma.';
-      authSmallText.innerHTML = isCadastro
-        ? 'Já possui conta? <a href="#" id="openLoginLink">Entrar agora</a>'
-        : 'Ainda não tem acesso? <a href="#" id="openCadastroLink">Crie seu cadastro</a>';
+      const isForgot = mode === 'esqueci';
+      const isLogin = mode === 'login';
 
-      const dynamicLink = document.getElementById(isCadastro ? 'openLoginLink' : 'openCadastroLink');
-      dynamicLink.addEventListener('click', (event) => {
-        event.preventDefault();
-        setAuthMode(isCadastro ? 'login' : 'cadastro');
-      });
+      tabLogin.classList.toggle('active', isLogin);
+      tabCadastro.classList.toggle('active', isCadastro);
+      
+      loginForm.hidden = !isLogin;
+      registerForm.hidden = !isCadastro;
+      if(forgotForm) forgotForm.hidden = !isForgot;
+
+      if (isCadastro) {
+        cardTitle.textContent = 'Criar conta';
+        cardIntro.textContent = 'Crie sua conta para acessar a plataforma pela primeira vez.';
+        authSmallText.innerHTML = 'Já possui conta? <a href="#" id="openLoginLink">Entrar agora</a>';
+      } else if (isForgot) {
+        cardTitle.textContent = 'Esqueci minha senha';
+        cardIntro.textContent = 'Informe o e-mail da sua conta para criar uma nova senha.';
+        authSmallText.innerHTML = 'Lembrou a senha? <a href="#" id="openLoginLink">Entrar agora</a>';
+      } else {
+        cardTitle.textContent = 'Login';
+        cardIntro.textContent = 'Use seu e-mail corporativo para acessar a plataforma.';
+        authSmallText.innerHTML = 'Ainda não tem acesso? <a href="#" id="openCadastroLink">Crie seu cadastro</a>';
+      }
+
+      const dynamicLink = document.getElementById(isCadastro || isForgot ? 'openLoginLink' : 'openCadastroLink');
+      if (dynamicLink) {
+        dynamicLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          setAuthMode(isCadastro || isForgot ? 'login' : 'cadastro');
+        });
+      }
 
       if (isCadastro) {
         cadastroNomeInput.focus();
+      } else if (isForgot) {
+        if(forgotEmailInput) forgotEmailInput.focus();
       } else {
         emailInput.focus();
       }
@@ -191,10 +253,18 @@
     toggleRegisterPassConfirm.addEventListener('click', () => togglePasswordVisibility(cadastroSenhaConfirmInput, toggleRegisterPassConfirm));
     tabLogin.addEventListener('click', () => setAuthMode('login'));
     tabCadastro.addEventListener('click', () => setAuthMode('cadastro'));
-    openCadastroLink.addEventListener('click', (event) => {
-      event.preventDefault();
-      setAuthMode('cadastro');
-    });
+    if (openCadastroLink) {
+      openCadastroLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        setAuthMode('cadastro');
+      });
+    }
+    if (openForgotLink) {
+      openForgotLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        setAuthMode('esqueci');
+      });
+    }
 
     loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -310,6 +380,115 @@
         registerFeedback.classList.add('error');
         registerBtn.disabled = false;
         registerBtn.textContent = 'Criar conta e continuar';
+      }
+    });
+
+    if (forgotForm) {
+      forgotForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const email = forgotEmailInput.value.trim();
+        const emailOk = /\S+@\S+\.\S+/.test(email);
+
+        forgotFeedback.className = 'form-feedback';
+
+        if (!emailOk) {
+          forgotFeedback.textContent = 'Informe um e-mail válido para continuar.';
+          forgotFeedback.classList.add('error');
+          forgotEmailInput.focus();
+          return;
+        }
+
+        forgotBtn.disabled = true;
+        forgotBtn.textContent = 'Enviando...';
+
+        try {
+          const data = await window.AuthService.solicitarReset({ email });
+          forgotFeedback.textContent = data.message || 'Se este e-mail for válido, receberá instruções em instantes.';
+          forgotFeedback.classList.add(data.success ? 'success' : 'error');
+          if (data.success && window.AuthService.getMode() === 'mock') {
+            forgotFeedback.innerHTML += '<br><small style="margin-top:10px;display:block;">No modo MOCK: Teste gerado no console!</small>';
+          }
+        } catch (err) {
+          forgotFeedback.textContent = 'Falha ao solicitar redefinição. Tente mais tarde.';
+          forgotFeedback.classList.add('error');
+        } finally {
+          forgotBtn.disabled = false;
+          forgotBtn.textContent = 'Enviar instruções';
+        }
+      });
+    }
+  </script>
+
+  <script>
+    // Modal: Esqueci minha senha
+    const esqueciOverlay = document.getElementById('esqueciOverlay');
+    const esqueciModal = document.getElementById('esqueciModal');
+    const esqueciForm = document.getElementById('esqueciForm');
+    const esqueciEmailInput = document.getElementById('esqueciEmail');
+    const esqueciBtn = document.getElementById('esqueciBtn');
+    const esqueciResposta = document.getElementById('esqueciResposta');
+    const esqueciConteudo = document.getElementById('esqueciConteudo');
+    const esqueciSucesso = document.getElementById('esqueciSucesso');
+
+    function abrirEsqueci() {
+      esqueciOverlay.style.display = 'flex';
+      esqueciForm.reset();
+      esqueciResposta.className = 'form-feedback';
+      esqueciResposta.textContent = '';
+      esqueciConteudo.hidden = false;
+      esqueciSucesso.hidden = true;
+      esqueciEmailInput.focus();
+    }
+
+    function fecharEsqueci() {
+      esqueciOverlay.style.display = 'none';
+    }
+
+    document.getElementById('esqueciLink').addEventListener('click', (e) => { e.preventDefault(); abrirEsqueci(); });
+    document.getElementById('fecharEsqueci').addEventListener('click', fecharEsqueci);
+    document.getElementById('fecharAposSucesso').addEventListener('click', fecharEsqueci);
+    esqueciOverlay.addEventListener('click', (e) => { if (e.target === esqueciOverlay) fecharEsqueci(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && esqueciOverlay.style.display !== 'none') fecharEsqueci(); });
+
+    esqueciForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = esqueciEmailInput.value.trim();
+      esqueciResposta.className = 'form-feedback';
+      esqueciResposta.textContent = '';
+
+      if (!/\S+@\S+\.\S+/.test(email)) {
+        esqueciResposta.textContent = 'Informe um e-mail v\u00e1lido.';
+        esqueciResposta.className = 'form-feedback error';
+        esqueciEmailInput.focus();
+        return;
+      }
+
+      esqueciBtn.disabled = true;
+      esqueciBtn.textContent = 'Enviando...';
+
+      try {
+        const resp = await fetch('/api/auth/solicitar-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          esqueciConteudo.hidden = true;
+          esqueciSucesso.hidden = false;
+        } else {
+          esqueciResposta.textContent = data.message || 'Não foi possível enviar o e-mail. Tente novamente.';
+          esqueciResposta.className = 'form-feedback error';
+          esqueciBtn.disabled = false;
+          esqueciBtn.textContent = 'Enviar link de redefinição';
+        }
+      } catch (err) {
+        esqueciResposta.textContent = 'Erro de conexão. Tente novamente.';
+        esqueciResposta.className = 'form-feedback error';
+        esqueciBtn.disabled = false;
+        esqueciBtn.textContent = 'Enviar link de redefinição';
       }
     });
   </script>

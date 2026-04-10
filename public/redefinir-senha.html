@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redefinir Senha | IntelliStock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/login.css">
+  <style>
+    .login-card { margin: 40px auto; max-width: 440px; }
+    .brand-wrap { text-align: center; margin-bottom: 24px; display: block; }
+  </style>
+</head>
+<body id="topo" style="background:var(--shade-background); min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+
+  <main class="shell" style="width:100%; max-width: 440px;">
+    <a class="brand brand-wrap" href="/index.html">
+      <span class="brand-badge">IS</span>
+      <span style="color:#111827; font-weight:800; font-size:1.5rem; font-family:var(--font-heading)">IntelliStock</span>
+    </a>
+
+    <section class="login-card reveal-section">
+      <h2 id="cardTitle">Criar nova senha</h2>
+      <p id="cardIntro">Digite sua nova senha abaixo. Ela precisa ter pelo menos 6 caracteres.</p>
+
+      <form id="resetForm" class="auth-panel" novalidate>
+        <div id="resetFeedback" class="form-feedback"></div>
+
+        <div class="field">
+          <label for="novaSenha">Nova senha</label>
+          <div class="password-wrap">
+            <input id="novaSenha" type="password" placeholder="Digite a nova senha" minlength="6" required>
+            <button id="togglePass1" class="toggle-pass" type="button">Mostrar</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="confirmaSenha">Confirmar senha</label>
+          <div class="password-wrap">
+            <input id="confirmaSenha" type="password" placeholder="Repita a senha" minlength="6" required>
+            <button id="togglePass2" class="toggle-pass" type="button">Mostrar</button>
+          </div>
+        </div>
+
+        <button id="submitBtn" class="btn" type="submit">Salvar nova senha</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="./js/auth-service.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    const resetFeedback = document.getElementById('resetFeedback');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (!token) {
+      resetFeedback.className = 'form-feedback error';
+      resetFeedback.textContent = 'Token de redefinição não encontrado. Solicite um novo pelo aplicativo.';
+      submitBtn.disabled = true;
+    }
+
+    const resetForm = document.getElementById('resetForm');
+    const novaSenhaInput = document.getElementById('novaSenha');
+    const confirmaSenhaInput = document.getElementById('confirmaSenha');
+    
+    const togglePass1 = document.getElementById('togglePass1');
+    const togglePass2 = document.getElementById('togglePass2');
+
+    function togglePasswordVisibility(input, button) {
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      button.textContent = isPassword ? 'Ocultar' : 'Mostrar';
+    }
+
+    togglePass1.addEventListener('click', () => togglePasswordVisibility(novaSenhaInput, togglePass1));
+    togglePass2.addEventListener('click', () => togglePasswordVisibility(confirmaSenhaInput, togglePass2));
+
+    resetForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!token) return;
+
+      const senha = novaSenhaInput.value.trim();
+      const confirma = confirmaSenhaInput.value.trim();
+
+      resetFeedback.className = 'form-feedback';
+
+      if (senha.length < 6) {
+        resetFeedback.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+        resetFeedback.classList.add('error');
+        novaSenhaInput.focus();
+        return;
+      }
+
+      if (senha !== confirma) {
+        resetFeedback.textContent = 'As senhas não conferem.';
+        resetFeedback.classList.add('error');
+        confirmaSenhaInput.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Salvando...';
+
+      try {
+        const data = await window.AuthService.redefinirSenha({ token, senha });
+
+        if (data.success) {
+          resetFeedback.textContent = data.message || 'Senha redefinida com sucesso.';
+          resetFeedback.classList.add('success');
+          // Ocultar formulário
+          novaSenhaInput.closest('.field').style.display = 'none';
+          confirmaSenhaInput.closest('.field').style.display = 'none';
+          submitBtn.style.display = 'none';
+          
+          let counter = 3;
+          const interval = setInterval(() => {
+            counter--;
+            resetFeedback.textContent = `${data.message} Redirecionando em ${counter}s...`;
+            if(counter <= 0) {
+              clearInterval(interval);
+              window.location.href = '/login.html';
+            }
+          }, 1000);
+        } else {
+          resetFeedback.textContent = data.message || 'Falha ao redefinir senha.';
+          resetFeedback.classList.add('error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Salvar nova senha';
+        }
+      } catch (err) {
+        resetFeedback.textContent = 'Erro ao processar a solicitação. Tente novamente mais tarde.';
+        resetFeedback.classList.add('error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Salvar nova senha';
+      }
+    });
+
+    setTimeout(() => document.querySelector('.reveal-section').classList.add('visible'), 60);
+  </script>
+</body>
+</html>
