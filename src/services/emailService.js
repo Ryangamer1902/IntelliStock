@@ -15,7 +15,7 @@ function getMailConfig() {
     secure: toBoolean(process.env.MAIL_SECURE, false),
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
-    from: process.env.MAIL_FROM || process.env.MAIL_USER
+    from: `"IntelliStock" <${process.env.MAIL_FROM || process.env.MAIL_USER}>`
   };
 }
 
@@ -47,16 +47,47 @@ function getTransporter(config) {
 
 function buildHtml(nome, codigo) {
   return `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1f2937;">
-      <h2 style="margin-bottom: 8px;">Verificacao de acesso</h2>
-      <p>Olá${nome ? `, ${nome}` : ''}.</p>
-      <p>Use o codigo abaixo para concluir seu login no IntelliStock:</p>
-      <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 18px 0; color: #111827;">
-        ${codigo}
-      </div>
-      <p>Este codigo expira em 10 minutos e so pode ser usado uma vez.</p>
-      <p style="font-size: 12px; color: #6b7280;">Se voce nao solicitou este acesso, ignore este e-mail.</p>
-    </div>
+  <!DOCTYPE html>
+  <html lang="pt-BR">
+  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 0;">
+      <tr><td align="center">
+        <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#0e8f83 0%,#0a6b61 100%);padding:36px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:1px;">IntelliStock</h1>
+              <p style="margin:6px 0 0;color:#a7f3d0;font-size:13px;">Sistema de Gerenciamento de Estoque</p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Verificação de acesso</h2>
+              <p style="margin:0 0 20px;color:#6b7280;font-size:15px;">Olá${nome ? `, <strong style="color:#111827;">${nome}</strong>` : ''}.</p>
+              <p style="margin:0 0 24px;color:#374151;font-size:15px;">Use o código abaixo para concluir seu login no IntelliStock:</p>
+              <!-- Código -->
+              <div style="background:#f9fafb;border:2px dashed #0e8f83;border-radius:12px;padding:24px;text-align:center;margin:0 0 28px;">
+                <span style="font-size:40px;font-weight:800;letter-spacing:10px;color:#0e8f83;font-family:'Courier New',monospace;">${codigo}</span>
+              </div>
+              <p style="margin:0 0 8px;color:#6b7280;font-size:13px;text-align:center;">⏱ Este código expira em <strong>10 minutos</strong> e só pode ser usado uma vez.</p>
+            </td>
+          </tr>
+          <!-- Divider -->
+          <tr><td style="padding:0 40px;"><div style="height:1px;background:#e5e7eb;"></div></td></tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 40px;text-align:center;">
+              <p style="margin:0;color:#9ca3af;font-size:12px;">Se você não solicitou este acesso, ignore este e-mail. Sua conta permanece segura.</p>
+              <p style="margin:10px 0 0;color:#d1d5db;font-size:11px;">© ${new Date().getFullYear()} IntelliStock · Todos os direitos reservados</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+  </html>
   `;
 }
 
@@ -101,15 +132,47 @@ async function enviarLinkResetSenha({ para, nome, link }) {
   }
 
   const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1f2937;">
-      <h2 style="margin-bottom: 8px;">Redefinicao de senha</h2>
-      <p>Ola${nome ? `, ${nome}` : ''}.</p>
-      <p>Recebemos uma solicitacao para redefinir a senha da sua conta IntelliStock.</p>
-      <p>Clique no botao abaixo para criar uma nova senha:</p>
-      <a href="${link}" style="display:inline-block;margin:18px 0;padding:12px 24px;background:#0e8f83;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">Redefinir minha senha</a>
-      <p>Este link expira em 30 minutos e so pode ser usado uma vez.</p>
-      <p style="font-size:12px;color:#6b7280;">Se voce nao solicitou isso, ignore este e-mail. Sua senha nao sera alterada.</p>
-    </div>
+  <!DOCTYPE html>
+  <html lang="pt-BR">
+  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 0;">
+      <tr><td align="center">
+        <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#0e8f83 0%,#0a6b61 100%);padding:36px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:1px;">IntelliStock</h1>
+              <p style="margin:6px 0 0;color:#a7f3d0;font-size:13px;">Sistema de Gerenciamento de Estoque</p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Redefinição de senha</h2>
+              <p style="margin:0 0 20px;color:#6b7280;font-size:15px;">Olá${nome ? `, <strong style="color:#111827;">${nome}</strong>` : ''}.</p>
+              <p style="margin:0 0 24px;color:#374151;font-size:15px;">Recebemos uma solicitação para redefinir a senha da sua conta IntelliStock. Clique no botão abaixo para criar uma nova senha:</p>
+              <!-- Botão -->
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="${link}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0e8f83,#0a6b61);color:#ffffff;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.5px;">Redefinir minha senha</a>
+              </div>
+              <p style="margin:0 0 8px;color:#6b7280;font-size:13px;text-align:center;">⏱ Este link expira em <strong>30 minutos</strong> e só pode ser usado uma vez.</p>
+            </td>
+          </tr>
+          <!-- Divider -->
+          <tr><td style="padding:0 40px;"><div style="height:1px;background:#e5e7eb;"></div></td></tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 40px;text-align:center;">
+              <p style="margin:0;color:#9ca3af;font-size:12px;">Se você não solicitou isso, ignore este e-mail. Sua senha não será alterada.</p>
+              <p style="margin:10px 0 0;color:#d1d5db;font-size:11px;">© ${new Date().getFullYear()} IntelliStock · Todos os direitos reservados</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+  </html>
   `;
 
   try {

@@ -103,7 +103,7 @@
       <section class="full-panel reveal-section">
         <h2>Resumo geral por produto</h2>
         <p>
-          Aqui voc&#234; compara giro estimado, estoque atual, cobertura m&#237;nima, pre&#231;o de venda e tend&#234;ncia de cada item.
+          Aqui voc&#234; compara giro estimado, estoque atual, situa&#231;&#227;o em rela&#231;&#227;o ao m&#237;nimo, pre&#231;o de venda e tend&#234;ncia de cada item.
         </p>
         <div class="table-wrap">
           <table>
@@ -203,7 +203,7 @@
       if (estoque === 0) { tendenciaLabel = 'Sem estoque'; tendenciaClass = 'badge-down'; }
       else if (estoque < minimo) { tendenciaLabel = 'Reposição urgente'; tendenciaClass = 'badge-down'; }
       else if (cobertura < 1.5) { tendenciaLabel = 'Monitorar'; tendenciaClass = 'badge-down'; }
-      else if (cobertura > 3.2) { tendenciaLabel = 'Estoque folgado'; tendenciaClass = 'badge-up'; }
+      else if (cobertura > 3.2) { tendenciaLabel = 'Estoque estável'; tendenciaClass = 'badge-up'; }
       return { ...material, estoque, minimo, precoVenda, precoCusto, margem, saidasPeriodo, cobertura, lucroEstimado, capitalParado, tendenciaLabel, tendenciaClass };
     }
 
@@ -239,8 +239,18 @@
     function renderReportTable(analytics) {
       const target = document.getElementById('reportTableBody');
       if (!analytics.length) { target.innerHTML = '<tr><td colspan="6"><div class="empty-report">Nenhum produto disponível para o relatório.</div></td></tr>'; return; }
+
+      function formatCobertura(item) {
+        const minimo = Math.max(Number(item.minimo || 0), 1);
+        const estoque = Number(item.estoque || 0);
+        const diferenca = estoque - minimo;
+        if (diferenca > 0) return diferenca + ' un. acima do mínimo';
+        if (diferenca === 0) return 'No mínimo (0 un. acima)';
+        return Math.abs(diferenca) + ' un. abaixo do mínimo';
+      }
+
       target.innerHTML = analytics.map(item =>
-        '<tr><td>' + escHtml(item.nome) + '</td><td>' + item.saidasPeriodo + ' un.</td><td>' + item.estoque + ' un.</td><td>' + (item.minimo > 0 ? item.cobertura.toFixed(1) : '0.0') + 'x mínimo</td><td>' + fmtMoney(item.precoVenda) + '</td><td><span class="badge ' + item.tendenciaClass + '">' + item.tendenciaLabel + '</span></td></tr>'
+        '<tr><td>' + escHtml(item.nome) + '</td><td>' + item.saidasPeriodo + ' un.</td><td>' + item.estoque + ' un.</td><td>' + formatCobertura(item) + '</td><td>' + fmtMoney(item.precoVenda) + '</td><td><span class="badge ' + item.tendenciaClass + '">' + item.tendenciaLabel + '</span></td></tr>'
       ).join('');
     }
 

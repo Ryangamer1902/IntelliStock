@@ -41,6 +41,12 @@
           Visualize, pesquise e acompanhe o saldo e custo dos insumos do estoque em tempo real.
         </p>
         <span class="hero-note" id="sourceNote">Fonte dos dados: carregando...</span>
+        <div class="hero-actions">
+          <button class="btn btn-main" id="btnAddMaterial">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Adcionar materiais
+          </button>
+        </div>
       </section>
 
       <section class="kpi-row">
@@ -100,6 +106,56 @@
     </div>
   </main>
 
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <div class="overlay" id="modalOverlay">
+    <div class="modal">
+      <h2 id="modalTitle">Novo material</h2>
+      <p class="sub" id="modalSub">Preencha os dados do novo item de estoque.</p>
+      <div class="modal-feedback" id="modalFeedback"></div>
+      <div class="field">
+        <label>Nome do material *</label>
+        <input type="text" id="fieldNome" placeholder="Ex: Parafuso M6 inox">
+      </div>
+      <div class="field">
+        <label>Código de barras (13 dígitos) *</label>
+        <input type="text" id="fieldCodigo" placeholder="Ex: 7891234567890" maxlength="13" pattern="\\d{13}" required>
+      </div>
+      <div class="field">
+        <label>Fornecedor *</label>
+        <input type="text" id="fieldFornecedor" placeholder="Ex: ACME Ltda" required>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Quantidade de chegada</label>
+          <input type="number" id="fieldQtd" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Quantidade mínima *</label>
+          <input type="number" id="fieldQtdMin" placeholder="10" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Preço de custo (R$) *</label>
+        <input type="number" id="fieldCusto" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Margem de lucro (%)</label>
+          <input type="number" id="fieldMargem" placeholder="Ex: 30" step="0.1" min="0" value="30">
+        </div>
+        <div class="field">
+          <label>Preço de venda (R$)</label>
+          <input type="number" id="fieldPreco" class="field-preco-readonly" placeholder="0.00" step="0.01" min="0" readonly>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-soft" id="btnCancelModal">Cancelar</button>
+        <button class="btn btn-main" id="btnSaveModal">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
     if (!usuario) {
@@ -119,19 +175,20 @@
       window.location.href = '/login.html';
     });
 
-    const MOCK_STORAGE_KEY = 'intellistock_mock_insumos_v1';
-
-    const defaultMockInsumos = [
-      { id: 1, nome: 'Resina Epóxi', preco_custo_un: 42.75, qtd_atual: 180.5, unidade: 'kg', fornecedor_nome: 'Pesca Química LTDA', ponto_pedido: 120 },
-      { id: 2, nome: 'Corante Fluorescente Azul', preco_custo_un: 9.8, qtd_atual: 52, unidade: 'ml', fornecedor_nome: 'ColorMix Brasil', ponto_pedido: 40 },
-      { id: 3, nome: 'Anzol Nº 4', preco_custo_un: 0.74, qtd_atual: 900, unidade: 'un', fornecedor_nome: 'Aço Forte Insumos', ponto_pedido: 500 },
-      { id: 4, nome: 'Glitter Holográfico', preco_custo_un: 18.2, qtd_atual: 0, unidade: 'g', fornecedor_nome: 'ColorMix Brasil', ponto_pedido: 30 },
-      { id: 5, nome: 'Embalagem ZIP 12x18', preco_custo_un: 0.39, qtd_atual: 320, unidade: 'un', fornecedor_nome: 'PackSul', ponto_pedido: 250 }
-    ];
+    const MOCK_MATERIAIS_STORAGE_KEY = 'intellistock_mock_materiais_v1';
+    const MOCK_MATERIAIS_NEXT_ID_KEY = 'intellistock_mock_next_id_v1';
 
     function getMode() {
       const saved = localStorage.getItem('auth_mode');
       return saved === 'mock' ? 'mock' : 'api';
+    }
+
+    function showToast(msg, type = 'success') {
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      document.getElementById('toastWrap').appendChild(el);
+      setTimeout(() => el.remove(), 3500);
     }
 
     function fmtMoney(value) {
@@ -153,12 +210,29 @@
         .replace(/"/g, '&quot;');
     }
 
-    function readMockInsumos() {
+    function readMockMateriais() {
       try {
-        const saved = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) || 'null');
-        if (Array.isArray(saved) && saved.length) return saved;
+        const saved = JSON.parse(localStorage.getItem(MOCK_MATERIAIS_STORAGE_KEY) || 'null');
+        if (Array.isArray(saved)) return saved;
       } catch (_) {}
-      return defaultMockInsumos.map((item) => ({ ...item }));
+      return [];
+    }
+
+    function mapMaterialToInsumo(item) {
+      return {
+        id: item.id,
+        nome: item.nome,
+        preco_custo_un: item.preco_custo,
+        qtd_atual: item.quantidade_atual,
+        unidade: item.unidade || 'un',
+        fornecedor_nome: item.fornecedor,
+        ponto_pedido: item.quantidade_minima
+      };
+    }
+
+    function persistMockMateriais(lista, nextId) {
+      localStorage.setItem(MOCK_MATERIAIS_STORAGE_KEY, JSON.stringify(lista));
+      localStorage.setItem(MOCK_MATERIAIS_NEXT_ID_KEY, String(nextId));
     }
 
     function badge(estoque, pontoPedido) {
@@ -229,18 +303,18 @@
 
       try {
         if (mode === 'api') {
-          const response = await fetch('/api/insumos');
+          const response = await fetch('/api/materiais');
           const data = await response.json();
 
           if (!data.success || !Array.isArray(data.data)) {
             throw new Error(data.message || 'Resposta inválida da API');
           }
 
-          allInsumos = data.data;
-          sourceNote.textContent = 'Fonte dos dados: banco de dados (API /api/insumos)';
+          allInsumos = data.data.map(mapMaterialToInsumo);
+          sourceNote.textContent = 'Fonte dos dados: materiais integrados (API /api/materiais)';
         } else {
-          allInsumos = readMockInsumos();
-          sourceNote.textContent = 'Fonte dos dados: modo mock (localStorage)';
+          allInsumos = readMockMateriais().map(mapMaterialToInsumo);
+          sourceNote.textContent = 'Fonte dos dados: materiais integrados (localStorage)';
         }
 
         updateKpis(allInsumos);
@@ -270,6 +344,126 @@
     });
 
     document.getElementById('btnRefresh').addEventListener('click', carregarInsumos);
+
+    const modalOverlay = document.getElementById('modalOverlay');
+
+    function calcVenda() {
+      const custo = parseFloat(document.getElementById('fieldCusto').value) || 0;
+      const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
+      const venda = custo > 0 ? +(custo * (1 + margem / 100)).toFixed(2) : '';
+      document.getElementById('fieldPreco').value = venda;
+      return venda;
+    }
+
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = 'Novo material';
+      document.getElementById('modalSub').textContent = 'Preencha os dados do novo item de estoque.';
+      document.getElementById('btnSaveModal').textContent = 'Salvar';
+      document.getElementById('fieldNome').value = '';
+      document.getElementById('fieldCodigo').value = '';
+      document.getElementById('fieldFornecedor').value = '';
+      document.getElementById('fieldQtd').value = '';
+      document.getElementById('fieldQtdMin').value = '';
+      document.getElementById('fieldCusto').value = '';
+      document.getElementById('fieldMargem').value = '30';
+      document.getElementById('fieldPreco').value = '';
+      document.getElementById('modalFeedback').className = 'modal-feedback';
+      calcVenda();
+      modalOverlay.classList.add('open');
+      setTimeout(() => document.getElementById('fieldNome').focus(), 80);
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('open');
+    }
+
+    document.getElementById('btnAddMaterial').addEventListener('click', openAddModal);
+    document.getElementById('fieldCusto').addEventListener('input', calcVenda);
+    document.getElementById('fieldMargem').addEventListener('input', calcVenda);
+    document.getElementById('btnCancelModal').addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+    document.getElementById('btnSaveModal').addEventListener('click', async () => {
+      const nome = document.getElementById('fieldNome').value.trim();
+      const codigo = document.getElementById('fieldCodigo').value.trim();
+      const fornecedor = document.getElementById('fieldFornecedor').value.trim();
+      const qtd = parseInt(document.getElementById('fieldQtd').value, 10) || 0;
+      const qtdMin = parseInt(document.getElementById('fieldQtdMin').value, 10);
+      const custo = parseFloat(document.getElementById('fieldCusto').value);
+      const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
+      const preco = calcVenda();
+      const fb = document.getElementById('modalFeedback');
+      const btn = document.getElementById('btnSaveModal');
+
+      if (!nome || !codigo || !fornecedor || Number.isNaN(qtdMin) || Number.isNaN(custo) || Number.isNaN(preco)) {
+        fb.textContent = 'Preencha todos os campos obrigatórios.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      if (!/^\d{13}$/.test(codigo)) {
+        fb.textContent = 'O código de barras deve ter exatamente 13 dígitos numéricos.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        if (getMode() === 'api') {
+          const res = await fetch('/api/materiais', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-usuario-nome': usuario?.nome || 'Sistema'
+            },
+            body: JSON.stringify({
+              nome,
+              codigo_barras: codigo,
+              fornecedor,
+              quantidade_atual: qtd,
+              quantidade_minima: qtdMin,
+              preco_custo: custo,
+              margem_lucro: margem,
+              preco_manual: preco,
+              usuario_nome: usuario?.nome || 'Sistema'
+            })
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message || 'Falha ao cadastrar material');
+        } else {
+          const lista = readMockMateriais();
+          const nextId = Math.max(
+            parseInt(localStorage.getItem(MOCK_MATERIAIS_NEXT_ID_KEY) || '0', 10) || 0,
+            ...lista.map((item) => (Number(item.id) || 0) + 1),
+            1
+          );
+          lista.unshift({
+            id: nextId,
+            codigo_barras: codigo,
+            nome,
+            fornecedor,
+            quantidade_atual: qtd,
+            quantidade_minima: qtdMin,
+            preco_custo: custo,
+            margem_lucro: margem,
+            preco_manual: preco
+          });
+          persistMockMateriais(lista, nextId + 1);
+        }
+
+        closeModal();
+        await carregarInsumos();
+        showToast('Material cadastrado!');
+      } catch (error) {
+        fb.textContent = `Erro: ${error.message}`;
+        fb.className = 'modal-feedback error';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Salvar';
+      }
+    });
 
     carregarInsumos();
 

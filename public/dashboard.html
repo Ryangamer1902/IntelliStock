@@ -44,10 +44,6 @@
           <h1>Gestão de Estoque</h1>
           <p>Bem-vindo, <strong id="greetName"></strong>! Controle e movimentação de materiais em tempo real.</p>
         </div>
-        <button class="btn btn-main" id="btnAddMaterial">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Novo material
-        </button>
       </div>
 
       <!-- KPIs -->
@@ -101,12 +97,11 @@
                 <th>Custo unit.</th>
                 <th>Margem</th>
                 <th>Preço venda</th>
-                <th>Ações</th>
               </tr>
             </thead>
             <tbody id="tableBody">
               <tr>
-                <td colspan="10">
+                <td colspan="9">
                   <div class="empty-state">
                     <p>Carregando materiais...</p>
                   </div>
@@ -283,7 +278,7 @@
     function renderTable(lista) {
       const tbody = document.getElementById('tableBody');
       if (!lista || lista.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">
+        tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           <p>Nenhum material encontrado.</p></div></td></tr>`;
         return;
@@ -306,12 +301,6 @@
           <td class="cell-bold">${fmt(m.preco_custo ?? m.preco_manual ?? 0)}</td>
           <td class="cell-muted-md">${m.margem_lucro != null ? m.margem_lucro + '%' : '—'}</td>
           <td class="cell-brand-strong">${fmt(m.preco_manual ?? m.preco_venda ?? 0)}</td>
-          <td>
-            <div class="td-actions">
-              <button class="btn btn-soft btn-sm" onclick="openEditModal(${m.id})">Editar</button>
-              <button class="btn btn-danger btn-sm" onclick="deletarMaterial(${m.id})">Excluir</button>
-            </div>
-          </td>
         </tr>
       `).join('');
     }
@@ -417,8 +406,6 @@
     // ===== MODAL ADICIONAR/EDITAR =====
     const modalOverlay = document.getElementById('modalOverlay');
     let editingId = null;
-
-    document.getElementById('btnAddMaterial').addEventListener('click', () => openAddModal());
 
     function calcVenda() {
       const custo = parseFloat(document.getElementById('fieldCusto').value) || 0;
