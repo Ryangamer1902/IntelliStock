@@ -2,6 +2,7 @@
 // Controller para gerenciar operacoes com materiais
 
 const Material = require('../models/Material');
+const { enviarAlertaEstoqueBaixo } = require('../services/emailService');
 
 function calcularPrecoVenda(precoCusto, margemLucro) {
   const custo = Number(precoCusto) || 0;
@@ -9,6 +10,89 @@ function calcularPrecoVenda(precoCusto, margemLucro) {
   return Number((custo * (1 + margem / 100)).toFixed(2));
 }
 
+function usuarioDaRequisicao(req) {
+  return String(req.body?.usuario_nome || req.headers['x-usuario-nome'] || 'Sistema').slice(0, 100);
+}
+
+function toNumber(value, defaultValue = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : defaultValue;
+}
+
+function calcularDeficit(material) {
+  const atual = toNumber(material?.quantidade_atual, 0);
+  const minimo = toNumber(material?.quantidade_minima, 0);
+  return Math.max(0, minimo - atual);
+}
+
+function precisaNotificarBaixoEstoque(materialAntes, materialDepois) {
+  const deficitDepois = calcularDeficit(materialDepois);
+  if (deficitDepois <= 0) return false;
+
+  if (!materialAntes) return true;
+
+  const deficitAntes = calcularDeficit(materialAntes);
+  if (deficitAntes <= 0) return true;
+
+  const qtdAntes = toNumber(materialAntes?.quantidade_atual, 0);
+  const qtdDepois = toNumber(materialDepois?.quantidade_atual, 0);
+  return qtdDepois < qtdAntes;
+}
+
+async function listarEmailsClientesAtivos(usuarioId) {
+  if (!global.db) return [];
+  const id = Number(usuarioId);
+  if (!Number.isInteger(id) || id <= 0) return [];
+
+  const connection = await global.db.getConnection();
+  try {
+    const [rows] = await connection.query('SELECT email FROM usuarios WHERE ativo = 1 AND id = ?', [id]);
+    const emails = (rows || []).map((row) => String(row.email || '').trim()).filter(Boolean);
+    return [...new Set(emails)];
+  } finally {
+    connection.release();
+  }
+}
+
+async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
+  if (!precisaNotificarBaixoEstoque(materialAntes, materialDepois)) return;
+
+  const destinatarios = await listarEmailsClientesAtivos(usuarioId);
+  if (!destinatarios.length) {
+    console.warn('Alerta de estoque baixo nao enviado (usuario sem email ativo para notificacao)');
+    return;
+  }
+
+  let snapshot = materialDepois;
+  const materialId = Number(materialDepois?.id || 0);
+  if (Number.isInteger(materialId) && materialId > 0) {
+    try {
+      const atualDoBanco = await Material.findById(materialId, usuarioId);
+      if (atualDoBanco) snapshot = atualDoBanco;
+    } catch (err) {
+      console.warn(`Nao foi possivel atualizar snapshot do material para alerta (${err?.message || 'erro_desconhecido'})`);
+    }
+  }
+
+  const quantidadeAtual = toNumber(snapshot?.quantidade_atual, 0);
+  const quantidadeMinima = toNumber(snapshot?.quantidade_minima, 0);
+  const deficit = Math.max(0, quantidadeMinima - quantidadeAtual);
+
+  const resultado = await enviarAlertaEstoqueBaixo({
+    destinatarios,
+    materialNome: String(snapshot?.nome || materialDepois?.nome || 'Material'),
+    quantidadeAtual,
+    quantidadeMinima,
+    deficit
+  });
+
+  if (!resultado?.sent) {
+    console.warn(`Alerta de estoque baixo nao enviado (${resultado?.reason || 'motivo_desconhecido'})`);
+    return;
+  }
+
+  console.log(`Alerta de estoque baixo enviado para ${resultado.recipients?.length || 0} destinatario(s) - material: ${String(snapshot?.nome || materialDepois?.nome || 'Material')} - atual: ${quantidadeAtual} - minimo: ${quantidadeMinima}`);
+}
 class MateriaisController {
   /**
    * GET /api/materiais
@@ -139,6 +223,8 @@ class MateriaisController {
         observacao: 'Cadastro de novo material'
       });
 
+      await notificarBaixoEstoque(null, novoMaterial, usuarioId);
+
       res.status(201).json({
         success: true,
         message: 'Material criado com sucesso',
@@ -215,6 +301,8 @@ class MateriaisController {
         observacao: 'Edicao de dados do material'
       });
 
+      await notificarBaixoEstoque(material, materialAtualizado, usuarioId);
+
       res.status(200).json({
         success: true,
         message: 'Material atualizado com sucesso',
@@ -280,8 +368,8 @@ class MateriaisController {
   static async atualizarQuantidade(req, res) {
     try {
       const { id } = req.params;
-      const { diferenca } = req.body;
       const usuarioId = req.usuario_id;
+      const { diferenca, observacao, motivo } = req.body;
 
       if (diferenca === undefined || typeof diferenca !== 'number') {
         return res.status(400).json({
@@ -298,7 +386,24 @@ class MateriaisController {
         });
       }
 
-      const materialAtualizado = await Material.atualizarQuantidade(id, diferenca, usuarioId);
+      const isVenda = /venda/i.test(String(observacao || '')) || String(motivo || '').toUpperCase() === 'VENDA';
+      if (isVenda && Number(diferenca) >= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Venda deve reduzir o estoque (diferenca negativa)'
+        });
+      }
+
+      const quantidadeAtualAntes = Number(materialAntes.quantidade_atual || 0);
+      const tentativaNovaQuantidade = quantidadeAtualAntes + Number(diferenca || 0);
+      if (tentativaNovaQuantidade < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Quantidade insuficiente em estoque para esta operacao'
+        });
+      }
+
+            const materialAtualizado = await Material.atualizarQuantidade(id, diferenca, usuarioId);
 
       await Material.registrarMovimentacao({
         usuario_id: usuarioId,
@@ -308,9 +413,11 @@ class MateriaisController {
         quantidade_delta: Number(diferenca),
         quantidade_anterior: Number(materialAntes.quantidade_atual || 0),
         quantidade_atual: Number(materialAtualizado.quantidade_atual || 0),
-        usuario_nome: req.usuario_nome || 'Sistema',
-        observacao: 'Ajuste manual de quantidade'
+        usuario_nome: usuarioDaRequisicao(req),
+        observacao: observacao || (isVenda ? 'Venda registrada' : 'Ajuste manual de quantidade')
       });
+
+      await notificarBaixoEstoque(materialAntes, materialAtualizado, usuarioId);
 
       res.status(200).json({
         success: true,

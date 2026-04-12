@@ -52,7 +52,7 @@ class AuthController {
     if (!db) {
       return res.status(503).json({
         success: false,
-        message: 'Banco de dados não configurado. Execute npm run setup:db e reinicie o servidor.'
+        message: 'Estamos tendo problemas técnicos. Contate o suporte.'
       });
     }
 
@@ -95,7 +95,7 @@ class AuthController {
     if (!db) {
       return res.status(503).json({
         success: false,
-        message: 'Banco de dados não configurado. Execute npm run setup:db e reinicie o servidor.'
+        message: 'Estamos tendo problemas técnicos. Contate o suporte.'
       });
     }
 

@@ -198,7 +198,7 @@
     if (_usuario) {
       const area = document.getElementById('userArea');
       area.style.display = 'flex';
-      document.getElementById('userName').textContent = _usuario.nome || 'Usuario';
+      document.getElementById('userName').textContent = _usuario.nome || 'Usuário';
       const ini = (_usuario.nome || 'U').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
       document.getElementById('avatarInitial').textContent = ini;
       document.getElementById('btnLogout').addEventListener('click', async () => {
@@ -264,9 +264,9 @@
         return { badge: '<span class="badge badge-in">Entrada</span>', chegou: '+' + Math.abs(Number(delta || 0)), saiu: '-' };
       }
       if (tipo === 'REMOCAO') {
-        return { badge: '<span class="badge badge-out">Remocao</span>', chegou: '-', saiu: Math.abs(Number(delta || 0)) };
+        return { badge: '<span class="badge badge-out">Remoção</span>', chegou: '-', saiu: Math.abs(Number(delta || 0)) };
       }
-      return { badge: '<span class="badge badge-out">Saida</span>', chegou: '-', saiu: Math.abs(Number(delta || 0)) };
+      return { badge: '<span class="badge badge-out">Saída</span>', chegou: '-', saiu: Math.abs(Number(delta || 0)) };
     }
 
     function classeSaldo(saldo) {
@@ -276,7 +276,7 @@
     function renderTable(rows) {
       const tbody = document.getElementById('historicoBody');
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="7">Nenhuma movimentacao encontrada.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7">Nenhuma movimentação encontrada.</td></tr>';
         return;
       }
 
@@ -311,11 +311,11 @@
       const saldoTotal = Array.from(saldoMap.values()).reduce((s, n) => s + n, 0);
 
       document.getElementById('kpiCadastradas').textContent = materiais.size;
-      document.getElementById('kpiCadastradasSub').textContent = materiais.size === 1 ? '1 item no historico' : `${materiais.size} itens no historico`;
+      document.getElementById('kpiCadastradasSub').textContent = materiais.size === 1 ? '1 item no histórico' : `${materiais.size} itens no histórico`;
       document.getElementById('kpiEntradas').textContent = fmtQtd(entradas);
-      document.getElementById('kpiEntradasSub').textContent = 'somatorio de entradas';
+      document.getElementById('kpiEntradasSub').textContent = 'somatório de entradas';
       document.getElementById('kpiSaidas').textContent = fmtQtd(saidas);
-      document.getElementById('kpiSaidasSub').textContent = 'somatorio de saidas';
+      document.getElementById('kpiSaidasSub').textContent = 'somatório de saídas';
       document.getElementById('kpiSaldo').textContent = fmtQtd(saldoTotal);
       document.getElementById('kpiSaldoSub').textContent = 'saldo consolidado dos itens';
     }

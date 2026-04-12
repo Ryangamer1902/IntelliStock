@@ -6,7 +6,7 @@
   const defaultMockUsers = [
     {
       id: 1,
-      nome: 'Usuario Demo',
+      nome: 'Usuário Demo',
       email: 'demo@intellistock.com',
       senha: '123456'
     }

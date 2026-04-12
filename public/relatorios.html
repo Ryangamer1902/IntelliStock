@@ -19,7 +19,7 @@
       </a>
       <nav>
         <a href="/dashboard.html">Estoque</a>
-        <a href="/relatorios.html" class="active">Relat&#243;rios</a>
+        <a href="/relatorios.html" class="active">Relatórios</a>
         <a href="/insumos.html">Insumos</a>
       </nav>
       <div class="user-area is-hidden" id="userArea">
@@ -35,13 +35,20 @@
   <main>
     <div class="shell">
       <div class="page-head reveal-section">
-        <span class="pill">Relat&#243;rios inteligentes do estoque</span>
+        <span class="pill">Relatórios inteligentes do estoque</span>
         <h1>Veja com clareza o que mais sai, o que est&#225; parado e onde o estoque precisa da sua aten&#231;&#227;o</h1>
         <p id="heroCopy">
           O painel abaixo cruza giro estimado, estoque atual, margem e cobertura para mostrar ao gestor o que mais vende,
           o que menos vende e quais itens precisam de a&#231;&#227;o comercial ou reposi&#231;&#227;o.
         </p>
       </div>
+
+      <section class="period-filters reveal-section">
+        <span>Período de vendas:</span>
+        <button class="period-btn active" data-period="today">Hoje</button>
+        <button class="period-btn" data-period="7d">7 dias</button>
+        <button class="period-btn" data-period="30d">30 dias</button>
+      </section>
 
       <div class="kpi-row">
         <div class="kpi reveal-section">
@@ -50,12 +57,12 @@
           <div class="kpi-sub" id="kpiItensSub">cat&#225;logo carregado</div>
         </div>
         <div class="kpi reveal-section">
-          <div class="kpi-label">Sa&#237;da estimada no per&#237;odo</div>
+          <div class="kpi-label">Vendido no período</div>
           <div class="kpi-value" id="kpiSaidas">0 un.</div>
-          <div class="kpi-sub" id="kpiSaidasSub">giro consolidado</div>
+          <div class="kpi-sub" id="kpiSaidasSub">vendas registradas</div>
         </div>
         <div class="kpi reveal-section">
-          <div class="kpi-label">Item com maior giro</div>
+          <div class="kpi-label">Item mais vendido</div>
           <div class="kpi-value" id="kpiTop">-</div>
           <div class="kpi-sub" id="kpiTopSub">sem leitura ainda</div>
         </div>
@@ -68,13 +75,13 @@
 
       <div class="grid">
         <article class="panel reveal-section">
-          <h2>Itens que mais sa&#237;ram</h2>
-          <p>Priorize reposi&#231;&#227;o e exposi&#231;&#227;o comercial dos produtos com maior giro no per&#237;odo.</p>
+          <h2>Itens mais vendidos</h2>
+          <p>Veja quais materiais tiveram maior saída real no período.</p>
           <div class="rank-list" id="topSoldList"></div>
         </article>
         <article class="panel reveal-section">
-          <h2>Itens com menor sa&#237;da</h2>
-          <p>Encontre os produtos mais lentos para ajustar promo&#231;&#227;o, compra e capital parado.</p>
+          <h2>Itens com menor venda</h2>
+          <p>Identifique materiais sem giro para revisar compra e reposição.</p>
           <div class="rank-list" id="lowSoldList"></div>
         </article>
       </div>
@@ -110,7 +117,7 @@
             <thead>
               <tr>
                 <th>Produto</th>
-                <th>Sa&#237;da estimada</th>
+                <th>Vendido</th>
                 <th>Estoque atual</th>
                 <th>Cobertura</th>
                 <th>Pre&#231;o venda</th>
@@ -155,6 +162,8 @@
     }
 
     const MOCK_STORAGE_KEY = 'intellistock_mock_materiais_v1';
+    const MOCK_MOVIMENTACOES_STORAGE_KEY = 'intellistock_mock_movimentacoes_v1';
+    let selectedPeriod = 'today';
     const defaultMockMateriais = [
       { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
       { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
@@ -178,6 +187,14 @@
       return defaultMockMateriais.map(item => ({ ...item }));
     }
 
+    function readMockMovimentacoes() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(MOCK_MOVIMENTACOES_STORAGE_KEY) || 'null');
+        if (Array.isArray(saved)) return saved;
+      } catch (_) {}
+      return [];
+    }
+
     function fmtMoney(value) {
       return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
@@ -190,19 +207,72 @@
         .replace(/"/g, '&quot;');
     }
 
-    function hashMaterial(material) {
-      return Array.from(String(material.codigo_barras || '') + String(material.nome || '')).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    function isVendaMovimentacao(mov) {
+      const obs = String(mov?.observacao || '').toLowerCase();
+      if (obs.includes('venda')) return true;
+
+      const tipo = String(mov?.tipo_movimento || '').toUpperCase();
+      const delta = Number(mov?.quantidade_delta || 0);
+      return (tipo === 'AJUSTE' || tipo === 'VENDA') && delta < 0;
     }
 
-    function buildAnalytics(material) {
+    function buildVendasMap(movimentacoes) {
+      const map = new Map();
+
+      (movimentacoes || []).forEach((mov) => {
+        if (!isVendaMovimentacao(mov)) return;
+
+        const qtd = Math.abs(Number(mov.quantidade_delta || 0));
+        if (qtd <= 0) return;
+
+        const key = mov.material_id != null ? `id:${mov.material_id}` : `nome:${String(mov.material_nome || '').toLowerCase()}`;
+        map.set(key, (map.get(key) || 0) + qtd);
+      });
+
+      return map;
+    }
+
+    function sameDay(a, b) {
+      return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    }
+
+    function filtrarMovimentacoesPorPeriodo(movimentacoes, periodo) {
+      const now = new Date();
+      if (periodo === '30d') {
+        const start = new Date(now);
+        start.setDate(now.getDate() - 29);
+        start.setHours(0, 0, 0, 0);
+        return (movimentacoes || []).filter((mov) => {
+          const data = new Date(mov.created_at);
+          return !Number.isNaN(data.getTime()) && data >= start && data <= now;
+        });
+      }
+
+      if (periodo === '7d') {
+        const start = new Date(now);
+        start.setDate(now.getDate() - 6);
+        start.setHours(0, 0, 0, 0);
+        return (movimentacoes || []).filter((mov) => {
+          const data = new Date(mov.created_at);
+          return !Number.isNaN(data.getTime()) && data >= start && data <= now;
+        });
+      }
+
+      return (movimentacoes || []).filter((mov) => {
+        const data = new Date(mov.created_at);
+        return !Number.isNaN(data.getTime()) && sameDay(data, now);
+      });
+    }
+
+    function buildAnalytics(material, vendasMap) {
       const estoque = Number(material.quantidade_atual || 0);
       const minimo = Math.max(Number(material.quantidade_minima || 0), 1);
       const precoVenda = Number(material.preco_manual || 0);
       const precoCusto = Number(material.preco_custo != null ? material.preco_custo : (material.preco_manual || 0));
       const margem = Number(material.margem_lucro != null ? material.margem_lucro : (precoCusto > 0 ? ((precoVenda - precoCusto) / precoCusto) * 100 : 0));
-      const hash = hashMaterial(material);
-      const pressaoEstoque = estoque === 0 ? minimo * 1.8 : Math.max(minimo - estoque, 0) * 2.4;
-      const saidasPeriodo = Math.max(4, Math.round((minimo * 2.1) + pressaoEstoque + (margem * 0.55) + (hash % 29)));
+      const keyId = `id:${material.id}`;
+      const keyNome = `nome:${String(material.nome || '').toLowerCase()}`;
+      const saidasPeriodo = Number(vendasMap.get(keyId) || vendasMap.get(keyNome) || 0);
       const cobertura = estoque / minimo;
       const lucroUnitario = Math.max(precoVenda - precoCusto, 0);
       const lucroEstimado = lucroUnitario * saidasPeriodo;
@@ -224,7 +294,8 @@
       target.innerHTML = items.map(item => {
         const value = item[metricKey] || 0;
         const width = Math.max(8, Math.round((value / maxValue) * 100));
-        return '<div class="rank-item"><div class="rank-head"><span>' + escHtml(item.nome) + '</span><span>' + formatter(value, item) + '</span></div><div class="bar"><div class="fill ' + (lowVariant ? 'fill-low' : '') + '" style="width:' + width + '%"></div></div><div class="rank-foot">' + footBuilder(item) + '</div></div>';
+        const isLow = typeof lowVariant === 'function' ? !!lowVariant(item) : !!lowVariant;
+        return '<div class="rank-item"><div class="rank-head"><span>' + escHtml(item.nome) + '</span><span>' + formatter(value, item) + '</span></div><div class="bar"><div class="fill ' + (isLow ? 'fill-low' : '') + '" style="width:' + width + '%"></div></div><div class="rank-foot">' + footBuilder(item) + '</div></div>';
       }).join('');
     }
 
@@ -272,9 +343,9 @@
       document.getElementById('kpiItens').textContent = totalItens;
       document.getElementById('kpiItensSub').textContent = totalItens === 1 ? 'item monitorado' : 'itens monitorados';
       document.getElementById('kpiSaidas').textContent = totalSaidas + ' un.';
-      document.getElementById('kpiSaidasSub').textContent = 'estimativa baseada no giro atual';
+      document.getElementById('kpiSaidasSub').textContent = 'vendas registradas no histórico';
       document.getElementById('kpiTop').textContent = topItem ? topItem.nome : '-';
-      document.getElementById('kpiTopSub').textContent = topItem ? topItem.saidasPeriodo + ' un. de saída estimada' : 'sem leitura disponível';
+      document.getElementById('kpiTopSub').textContent = topItem ? topItem.saidasPeriodo + ' un. vendidas' : 'sem leitura disponível';
       document.getElementById('kpiCriticos').textContent = criticos;
       document.getElementById('kpiCriticosSub').textContent = criticos === 0 ? 'nenhum item crítico agora' : 'precisam de reposição';
     }
@@ -289,15 +360,51 @@
       return readMockMateriais();
     }
 
+    async function carregarMovimentacoes() {
+      if (getMode() === 'api') {
+        const res = await fetch('/api/materiais/historico', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Erro ao carregar histórico');
+        return data.data || [];
+      }
+      return readMockMovimentacoes();
+    }
+
     async function renderReports() {
       try {
-        const materiais = await carregarMateriais();
-        const analytics = materiais.map(buildAnalytics);
+        const [materiais, movimentacoes] = await Promise.all([carregarMateriais(), carregarMovimentacoes()]);
+        const movsPeriodo = filtrarMovimentacoesPorPeriodo(movimentacoes, selectedPeriod);
+        const vendasMap = buildVendasMap(movsPeriodo);
+        const analytics = materiais.map((item) => buildAnalytics(item, vendasMap));
         updateKpis(analytics);
-        renderRankList('topSoldList', [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo).slice(0, 4), 'saidasPeriodo', v => v + ' un.', item => 'Margem de ' + item.margem.toFixed(1) + '% e cobertura de ' + item.cobertura.toFixed(1) + 'x.', false);
-        renderRankList('lowSoldList', [...analytics].sort((a, b) => a.saidasPeriodo - b.saidasPeriodo).slice(0, 4), 'saidasPeriodo', v => v + ' un.', item => item.estoque === 0 ? 'Sem estoque no momento.' : 'Giro lento, ' + item.estoque + ' un. disponíveis.', true);
+        renderRankList('topSoldList', [...analytics].filter(a => a.saidasPeriodo > 0).sort((a, b) => b.saidasPeriodo - a.saidasPeriodo).slice(0, 4), 'saidasPeriodo', v => v + ' un.', item => 'Vendas registradas: ' + item.saidasPeriodo + ' un.', false);
+        const semVenda = analytics.filter(a => a.saidasPeriodo === 0).sort((a, b) => a.estoque - b.estoque);
+        const lowSoldRanking = semVenda.length > 0
+          ? semVenda.slice(0, 4)
+          : [...analytics].sort((a, b) => a.saidasPeriodo - b.saidasPeriodo).slice(0, 4);
+        if (lowSoldRanking.length) {
+          renderRankList('lowSoldList', lowSoldRanking, 'saidasPeriodo', v => v + ' un.', item => item.saidasPeriodo === 0 ? 'Sem nenhuma venda ainda — item parado.' : 'Baixo giro no período, considere ação comercial.', true);
+        } else {
+          document.getElementById('lowSoldList').innerHTML = '<div class="empty-report">Nenhum item cadastrado para analisar.</div>';
+        }
         renderRankList('highStockList', [...analytics].sort((a, b) => b.estoque - a.estoque).slice(0, 4), 'estoque', v => v + ' un.', item => 'Mínimo em ' + item.minimo + ' un. Preço venda ' + fmtMoney(item.precoVenda) + '.', false);
-        renderRankList('lowStockList', [...analytics].sort((a, b) => a.estoque - b.estoque).slice(0, 4), 'estoque', v => v + ' un.', item => item.estoque < item.minimo ? 'Abaixo do mínimo e com risco de ruptura.' : 'Cobertura atual de ' + item.cobertura.toFixed(1) + 'x do mínimo.', true);
+        const lowStockRanking = analytics
+          .filter((item) => item.estoque < item.minimo)
+          .sort((a, b) => a.estoque - b.estoque)
+          .slice(0, 4);
+
+        if (lowStockRanking.length) {
+          renderRankList(
+            'lowStockList',
+            lowStockRanking,
+            'estoque',
+            v => v + ' un.',
+            () => 'Abaixo do mínimo e com risco de ruptura.',
+            true
+          );
+        } else {
+          document.getElementById('lowStockList').innerHTML = '<div class="empty-report">Nenhum item abaixo do mínimo no momento.</div>';
+        }
         renderInsights(analytics);
         renderReportTable([...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo));
       } catch (error) {
@@ -320,6 +427,15 @@
       });
     }, { threshold: 0.08 });
     revealEls.forEach((el) => revealObserver.observe(el));
+
+    document.querySelectorAll('.period-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        selectedPeriod = btn.dataset.period;
+        document.querySelectorAll('.period-btn').forEach((el) => el.classList.remove('active'));
+        btn.classList.add('active');
+        await renderReports();
+      });
+    });
 
     renderReports();
   </script>

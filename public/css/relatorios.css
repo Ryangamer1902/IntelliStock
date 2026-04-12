@@ -172,6 +172,41 @@
       line-height: 1.6;
     }
 
+    .period-filters {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--card);
+      padding: 8px 10px;
+      margin-bottom: 18px;
+    }
+
+    .period-filters span {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+
+    .period-btn {
+      border: 1px solid rgba(14, 143, 131, 0.25);
+      background: rgba(14, 143, 131, 0.08);
+      color: var(--brand-strong);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .period-btn.active {
+      background: linear-gradient(135deg, var(--brand), #0fb8a9);
+      color: #fff;
+      border-color: transparent;
+    }
+
     .kpi-row {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
