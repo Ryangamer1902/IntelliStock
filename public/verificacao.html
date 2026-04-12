@@ -185,6 +185,9 @@
           feedback.textContent = `Acesso confirmado! Bem-vindo, ${data.usuario.nome}.`;
           feedback.classList.add('success');
           sessionStorage.setItem('is_usuario', JSON.stringify(data.usuario));
+          if (data.session_token) {
+            sessionStorage.setItem('is_session_token', data.session_token);
+          }
           sessionStorage.removeItem('is_2fa_session');
           setTimeout(() => { window.location.href = '/dashboard.html'; }, 1400);
         } else {

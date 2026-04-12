@@ -11,7 +11,7 @@ class InsumosController {
   static async listar(req, res) {
     try {
       const { busca } = req.query;
-      const insumos = await Insumo.findAll(busca);
+      const insumos = await Insumo.findAll(busca, req.usuario_id);
 
       return res.status(200).json({
         success: true,

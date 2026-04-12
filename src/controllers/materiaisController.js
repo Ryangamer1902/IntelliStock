@@ -9,10 +9,6 @@ function calcularPrecoVenda(precoCusto, margemLucro) {
   return Number((custo * (1 + margem / 100)).toFixed(2));
 }
 
-function usuarioDaRequisicao(req) {
-  return String(req.body?.usuario_nome || req.headers['x-usuario-nome'] || 'Sistema').slice(0, 100);
-}
-
 class MateriaisController {
   /**
    * GET /api/materiais
@@ -21,7 +17,10 @@ class MateriaisController {
   static async listar(req, res) {
     try {
       const { busca } = req.query;
-      const materiais = busca ? await Material.findByNome(busca) : await Material.findAll();
+      const usuarioId = req.usuario_id;
+      const materiais = busca
+        ? await Material.findByNome(busca, usuarioId)
+        : await Material.findAll(usuarioId);
 
       res.status(200).json({
         success: true,
@@ -39,11 +38,11 @@ class MateriaisController {
 
   /**
    * GET /api/materiais/historico
-   * Listar movimentacoes de estoque
+   * Listar movimentacoes de estoque do usuario
    */
   static async listarHistorico(req, res) {
     try {
-      const movimentacoes = await Material.listarMovimentacoes();
+      const movimentacoes = await Material.listarMovimentacoes(req.usuario_id);
 
       res.status(200).json({
         success: true,
@@ -61,12 +60,12 @@ class MateriaisController {
 
   /**
    * GET /api/materiais/:id
-   * Buscar material especifico por ID
+   * Buscar material especifico por ID (do usuario)
    */
   static async obter(req, res) {
     try {
       const { id } = req.params;
-      const material = await Material.findById(id);
+      const material = await Material.findById(id, req.usuario_id);
 
       if (!material) {
         return res.status(404).json({
@@ -96,6 +95,7 @@ class MateriaisController {
   static async criar(req, res) {
     try {
       const { codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
+      const usuarioId = req.usuario_id;
       const precoVenda = preco_manual !== undefined ? Number(preco_manual) : calcularPrecoVenda(preco_custo, margem_lucro);
 
       if (!codigo_barras || !nome || !fornecedor) {
@@ -105,7 +105,7 @@ class MateriaisController {
         });
       }
 
-      const materialExistente = await Material.findByCodigoBarras(codigo_barras);
+      const materialExistente = await Material.findByCodigoBarras(codigo_barras, usuarioId);
       if (materialExistente) {
         return res.status(409).json({
           success: false,
@@ -114,6 +114,7 @@ class MateriaisController {
       }
 
       const novoMaterialId = await Material.create({
+        usuario_id: usuarioId,
         codigo_barras,
         nome,
         fornecedor,
@@ -124,16 +125,17 @@ class MateriaisController {
         preco_manual: precoVenda
       });
 
-      const novoMaterial = await Material.findById(novoMaterialId);
+      const novoMaterial = await Material.findById(novoMaterialId, usuarioId);
 
       await Material.registrarMovimentacao({
+        usuario_id: usuarioId,
         material_id: novoMaterialId,
         material_nome_snapshot: String(novoMaterial?.nome || nome),
         tipo_movimento: 'CADASTRO',
         quantidade_delta: Number(quantidade_atual || 0),
         quantidade_anterior: 0,
         quantidade_atual: Number(quantidade_atual || 0),
-        usuario_nome: usuarioDaRequisicao(req),
+        usuario_nome: req.usuario_nome || 'Sistema',
         observacao: 'Cadastro de novo material'
       });
 
@@ -153,14 +155,15 @@ class MateriaisController {
 
   /**
    * PUT /api/materiais/:id
-   * Atualizar material completo
+   * Atualizar material completo (somente do usuario)
    */
   static async atualizar(req, res) {
     try {
       const { id } = req.params;
+      const usuarioId = req.usuario_id;
       const { codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
 
-      const material = await Material.findById(id);
+      const material = await Material.findById(id, usuarioId);
       if (!material) {
         return res.status(404).json({
           success: false,
@@ -169,7 +172,7 @@ class MateriaisController {
       }
 
       if (codigo_barras && codigo_barras !== material.codigo_barras) {
-        const materialComCodigo = await Material.findByCodigoBarras(codigo_barras);
+        const materialComCodigo = await Material.findByCodigoBarras(codigo_barras, usuarioId);
         if (materialComCodigo) {
           return res.status(409).json({
             success: false,
@@ -195,19 +198,20 @@ class MateriaisController {
         );
       }
 
-      await Material.update(id, dadosAtualizacao);
-      const materialAtualizado = await Material.findById(id);
+      await Material.update(id, dadosAtualizacao, usuarioId);
+      const materialAtualizado = await Material.findById(id, usuarioId);
 
       const qtdAnterior = Number(material.quantidade_atual || 0);
       const qtdAtual = Number(materialAtualizado.quantidade_atual || 0);
       await Material.registrarMovimentacao({
+        usuario_id: usuarioId,
         material_id: Number(id),
         material_nome_snapshot: String(materialAtualizado?.nome || material?.nome || 'Material'),
         tipo_movimento: 'EDICAO',
         quantidade_delta: qtdAtual - qtdAnterior,
         quantidade_anterior: qtdAnterior,
         quantidade_atual: qtdAtual,
-        usuario_nome: usuarioDaRequisicao(req),
+        usuario_nome: req.usuario_nome || 'Sistema',
         observacao: 'Edicao de dados do material'
       });
 
@@ -227,12 +231,13 @@ class MateriaisController {
 
   /**
    * DELETE /api/materiais/:id
-   * Deletar material
+   * Deletar material (somente do usuario)
    */
   static async deletar(req, res) {
     try {
       const { id } = req.params;
-      const material = await Material.findById(id);
+      const usuarioId = req.usuario_id;
+      const material = await Material.findById(id, usuarioId);
       if (!material) {
         return res.status(404).json({
           success: false,
@@ -241,17 +246,18 @@ class MateriaisController {
       }
 
       await Material.registrarMovimentacao({
+        usuario_id: usuarioId,
         material_id: Number(id),
         material_nome_snapshot: String(material?.nome || 'Material removido'),
         tipo_movimento: 'REMOCAO',
         quantidade_delta: -Number(material.quantidade_atual || 0),
         quantidade_anterior: Number(material.quantidade_atual || 0),
         quantidade_atual: 0,
-        usuario_nome: usuarioDaRequisicao(req),
+        usuario_nome: req.usuario_nome || 'Sistema',
         observacao: 'Exclusao de material'
       });
 
-      await Material.delete(id);
+      await Material.delete(id, usuarioId);
 
       res.status(200).json({
         success: true,
@@ -275,6 +281,7 @@ class MateriaisController {
     try {
       const { id } = req.params;
       const { diferenca } = req.body;
+      const usuarioId = req.usuario_id;
 
       if (diferenca === undefined || typeof diferenca !== 'number') {
         return res.status(400).json({
@@ -283,7 +290,7 @@ class MateriaisController {
         });
       }
 
-      const materialAntes = await Material.findById(id);
+      const materialAntes = await Material.findById(id, usuarioId);
       if (!materialAntes) {
         return res.status(404).json({
           success: false,
@@ -291,16 +298,17 @@ class MateriaisController {
         });
       }
 
-      const materialAtualizado = await Material.atualizarQuantidade(id, diferenca);
+      const materialAtualizado = await Material.atualizarQuantidade(id, diferenca, usuarioId);
 
       await Material.registrarMovimentacao({
+        usuario_id: usuarioId,
         material_id: Number(id),
         material_nome_snapshot: String(materialAtualizado?.nome || materialAntes?.nome || 'Material'),
         tipo_movimento: 'AJUSTE',
         quantidade_delta: Number(diferenca),
         quantidade_anterior: Number(materialAntes.quantidade_atual || 0),
         quantidade_atual: Number(materialAtualizado.quantidade_atual || 0),
-        usuario_nome: usuarioDaRequisicao(req),
+        usuario_nome: req.usuario_nome || 'Sistema',
         observacao: 'Ajuste manual de quantidade'
       });
 
@@ -320,11 +328,11 @@ class MateriaisController {
 
   /**
    * GET /api/materiais/estoque/baixo
-   * Listar materiais com estoque baixo
+   * Listar materiais com estoque baixo do usuario
    */
   static async listarBaixoEstoque(req, res) {
     try {
-      const materiais = await Material.findBaixoEstoque();
+      const materiais = await Material.findBaixoEstoque(req.usuario_id);
 
       res.status(200).json({
         success: true,

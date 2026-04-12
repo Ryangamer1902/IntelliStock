@@ -6,5 +6,6 @@ router.post('/login', AuthController.login);
 router.post('/verificar', AuthController.verificar);
 router.post('/solicitar-reset', AuthController.solicitarReset);
 router.post('/redefinir-senha', AuthController.redefinirSenha);
+router.post('/logout', AuthController.logout);
 
 module.exports = router;

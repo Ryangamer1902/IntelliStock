@@ -49,7 +49,12 @@ async function seedDemoUsers(connection) {
 }
 
 async function seedDemoMateriais(connection) {
-  const [countRows] = await connection.query('SELECT COUNT(*) AS total FROM materiais');
+  // Busca o primeiro usuario para associar os dados demo
+  const [userRows] = await connection.query('SELECT id FROM usuarios ORDER BY id ASC LIMIT 1');
+  if (userRows.length === 0) return false;
+  const usuarioId = userRows[0].id;
+
+  const [countRows] = await connection.query('SELECT COUNT(*) AS total FROM materiais WHERE usuario_id = ?', [usuarioId]);
   if (Number(countRows[0].total) > 0) {
     return false;
   }
@@ -57,9 +62,10 @@ async function seedDemoMateriais(connection) {
   for (const material of demoMateriais) {
     await connection.query(
       `INSERT INTO materiais
-       (codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (usuario_id, codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        usuarioId,
         material.codigo_barras,
         material.nome,
         material.fornecedor,
@@ -72,9 +78,9 @@ async function seedDemoMateriais(connection) {
     );
   }
 
-  const [movCountRows] = await connection.query('SELECT COUNT(*) AS total FROM movimentacoes_estoque');
+  const [movCountRows] = await connection.query('SELECT COUNT(*) AS total FROM movimentacoes_estoque WHERE usuario_id = ?', [usuarioId]);
   if (Number(movCountRows[0].total) === 0) {
-    const [materialRows] = await connection.query('SELECT id, codigo_barras, nome FROM materiais');
+    const [materialRows] = await connection.query('SELECT id, codigo_barras, nome FROM materiais WHERE usuario_id = ?', [usuarioId]);
     const materialByCodigo = new Map(materialRows.map((row) => [row.codigo_barras, row]));
 
     for (const mov of demoMovimentacoes) {
@@ -85,9 +91,10 @@ async function seedDemoMateriais(connection) {
 
       await connection.query(
         `INSERT INTO movimentacoes_estoque
-         (material_id, material_nome_snapshot, tipo_movimento, quantidade_delta, quantidade_anterior, quantidade_atual, usuario_nome, observacao)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (usuario_id, material_id, material_nome_snapshot, tipo_movimento, quantidade_delta, quantidade_anterior, quantidade_atual, usuario_nome, observacao)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
+          usuarioId,
           material.id,
           material.nome,
           mov.tipo_movimento,
@@ -105,7 +112,12 @@ async function seedDemoMateriais(connection) {
 }
 
 async function seedDemoInsumos(connection) {
-  const [countRows] = await connection.query('SELECT COUNT(*) AS total FROM insumos');
+  // Busca o primeiro usuario para associar os dados demo
+  const [userRows] = await connection.query('SELECT id FROM usuarios ORDER BY id ASC LIMIT 1');
+  if (userRows.length === 0) return false;
+  const usuarioId = userRows[0].id;
+
+  const [countRows] = await connection.query('SELECT COUNT(*) AS total FROM insumos WHERE usuario_id = ?', [usuarioId]);
   if (Number(countRows[0].total) > 0) {
     return false;
   }
@@ -124,9 +136,10 @@ async function seedDemoInsumos(connection) {
 
     const [insertInsumo] = await connection.query(
       `INSERT INTO insumos
-       (nome, preco_custo_un, qtd_atual, unidade, id_fornecedor_pref, descricao)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       (usuario_id, nome, preco_custo_un, qtd_atual, unidade, id_fornecedor_pref, descricao)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
+        usuarioId,
         insumo.nome,
         insumo.preco_custo_un,
         insumo.qtd_atual,

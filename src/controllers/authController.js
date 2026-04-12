@@ -182,8 +182,17 @@ class AuthController {
       // Marcar código como usado (uso único)
       await db.query('UPDATE codigos_verificacao SET usado = 1 WHERE id = ?', [reg.id]);
 
+      // Criar token de sessao duradouro (8 horas)
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      const sessionExpira = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      await db.query(
+        'INSERT INTO sessoes_ativas (usuario_id, token, expira_em) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token), expira_em = VALUES(expira_em)',
+        [reg.usuario_id, sessionToken, sessionExpira]
+      );
+
       return res.json({
         success: true,
+        session_token: sessionToken,
         usuario: { id: reg.usuario_id, nome: reg.nome, email: reg.email }
       });
 
@@ -191,6 +200,20 @@ class AuthController {
       console.error('Erro na verificação 2FA:', err);
       return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
     }
+  }
+
+  static async logout(req, res) {
+    const db = global.db;
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (token && db) {
+      try {
+        await db.query('DELETE FROM sessoes_ativas WHERE token = ?', [token]);
+      } catch (_) {}
+    }
+
+    return res.json({ success: true });
   }
 
   static async solicitarReset(req, res) {

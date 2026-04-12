@@ -1,18 +1,19 @@
 // src/models/Insumo.js
-// Modelo para operações de leitura da tabela insumos (schema sge_pesca)
+// Modelo para operações de leitura da tabela insumos
 
 class Insumo {
   /**
-   * Lista insumos com dados de fornecedor e ponto de pedido.
+   * Lista insumos do usuario com dados de fornecedor e ponto de pedido.
    * @param {string} busca - termo opcional de busca por nome
+   * @param {number} usuarioId - ID do usuario logado
    * @returns {Promise<Array>}
    */
-  static async findAll(busca) {
+  static async findAll(busca, usuarioId) {
     const connection = await global.db.getConnection();
 
     try {
-      const params = [];
-      let whereSql = 'WHERE i.ativo = TRUE';
+      const params = [usuarioId];
+      let whereSql = 'WHERE i.ativo = TRUE AND i.usuario_id = ?';
 
       if (busca) {
         whereSql += ' AND i.nome LIKE ?';
