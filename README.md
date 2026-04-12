@@ -81,11 +81,11 @@ Responda conforme abaixo:
 
 | Campo | Valor tipico |
 |-------|-------------|
-| Host do banco | `localhost` |
-| Usuario MySQL | `root` |
+| Host do banco | `gateway01.us-east-1.prod.aws.tidbcloud.com` |
+| Usuario MySQL | `2XDYENLZnueZPWm.root` |
 | Senha MySQL | sua senha |
 | Nome do banco | `estoque_db` |
-| Porta do banco | `3306` |
+| Porta do banco | `4000` |
 | Porta da aplicacao | `3001` |
 | Ambiente | `development` |
 | Enviar 2FA por e-mail? | `true` |
