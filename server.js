@@ -56,6 +56,31 @@ const initializeDatabase = async () => {
         INDEX idx_token_reset (token)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessoes_ativas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NOT NULL,
+        token VARCHAR(64) NOT NULL UNIQUE,
+        expira_em TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+        INDEX idx_sessoes_token (token),
+        INDEX idx_sessoes_usuario (usuario_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    await pool.query(`
+      ALTER TABLE materiais
+        MODIFY COLUMN codigo_barras VARCHAR(50) NOT NULL
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE materiais ADD COLUMN IF NOT EXISTS usuario_id INT NULL AFTER id
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE movimentacoes_estoque ADD COLUMN IF NOT EXISTS usuario_id INT NULL AFTER id
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE insumos ADD COLUMN IF NOT EXISTS usuario_id INT NULL AFTER id
+    `).catch(() => {});
     return true;
   } catch (error) {
     console.warn('⚠️ Banco de dados não conectado. Execute: npm run setup:db');

@@ -3,13 +3,12 @@
 
 class Material {
   /**
-   * Buscar todos os materiais
-   * @returns {Promise<Array>} Lista de materiais
+   * Buscar todos os materiais do usuario
    */
-  static async findAll() {
+  static async findAll(usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const [rows] = await connection.query('SELECT * FROM materiais ORDER BY id DESC');
+      const [rows] = await connection.query('SELECT * FROM materiais WHERE usuario_id = ? ORDER BY id DESC', [usuarioId]);
       return rows;
     } finally {
       connection.release();
@@ -17,14 +16,12 @@ class Material {
   }
 
   /**
-   * Buscar material por ID
-   * @param {number} id - ID do material
-   * @returns {Promise<Object>} Dados do material
+   * Buscar material por ID (pertencente ao usuario)
    */
-  static async findById(id) {
+  static async findById(id, usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const [rows] = await connection.query('SELECT * FROM materiais WHERE id = ?', [id]);
+      const [rows] = await connection.query('SELECT * FROM materiais WHERE id = ? AND usuario_id = ?', [id, usuarioId]);
       return rows[0] || null;
     } finally {
       connection.release();
@@ -32,14 +29,12 @@ class Material {
   }
 
   /**
-   * Buscar material por codigo de barras
-   * @param {string} codigoBarras - Codigo de barras
-   * @returns {Promise<Object>} Dados do material
+   * Buscar material por codigo de barras (pertencente ao usuario)
    */
-  static async findByCodigoBarras(codigoBarras) {
+  static async findByCodigoBarras(codigoBarras, usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const [rows] = await connection.query('SELECT * FROM materiais WHERE codigo_barras = ?', [codigoBarras]);
+      const [rows] = await connection.query('SELECT * FROM materiais WHERE codigo_barras = ? AND usuario_id = ?', [codigoBarras, usuarioId]);
       return rows[0] || null;
     } finally {
       connection.release();
@@ -47,14 +42,12 @@ class Material {
   }
 
   /**
-   * Buscar materiais por nome (like)
-   * @param {string} nome - Nome do material
-   * @returns {Promise<Array>} Lista de materiais encontrados
+   * Buscar materiais por nome (like) do usuario
    */
-  static async findByNome(nome) {
+  static async findByNome(nome, usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const [rows] = await connection.query('SELECT * FROM materiais WHERE nome LIKE ? ORDER BY id DESC', [`%${nome}%`]);
+      const [rows] = await connection.query('SELECT * FROM materiais WHERE nome LIKE ? AND usuario_id = ? ORDER BY id DESC', [`%${nome}%`, usuarioId]);
       return rows;
     } finally {
       connection.release();
@@ -62,14 +55,12 @@ class Material {
   }
 
   /**
-   * Criar novo material
-   * @param {Object} dados - Dados do material
-   * @returns {Promise<number>} ID do material criado
+   * Criar novo material vinculado ao usuario
    */
   static async create(dados) {
-    const { codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = dados;
+    const { usuario_id, codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = dados;
 
-    if (!codigo_barras || !nome || !fornecedor || quantidade_minima === undefined || preco_custo === undefined || preco_manual === undefined) {
+    if (!usuario_id || !codigo_barras || !nome || !fornecedor || quantidade_minima === undefined || preco_custo === undefined || preco_manual === undefined) {
       throw new Error('Campos obrigatorios faltando');
     }
 
@@ -77,9 +68,9 @@ class Material {
     try {
       const [result] = await connection.query(
         `INSERT INTO materiais
-          (codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [codigo_barras, nome, fornecedor, quantidade_atual || 0, quantidade_minima, preco_custo, margem_lucro || 0, preco_manual]
+          (usuario_id, codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [usuario_id, codigo_barras, nome, fornecedor, quantidade_atual || 0, quantidade_minima, preco_custo, margem_lucro || 0, preco_manual]
       );
       return result.insertId;
     } finally {
@@ -88,15 +79,14 @@ class Material {
   }
 
   /**
-   * Atualizar material
-   * @param {number} id - ID do material
-   * @param {Object} dados - Dados a atualizar
-   * @returns {Promise<boolean>} Sucesso da operacao
+   * Atualizar material (somente se pertencer ao usuario)
    */
-  static async update(id, dados) {
+  static async update(id, dados, usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const [result] = await connection.query('UPDATE materiais SET ? WHERE id = ?', [dados, id]);
+      const fields = Object.keys(dados).map(k => `${k} = ?`).join(', ');
+      const values = [...Object.values(dados), id, usuarioId];
+      const [result] = await connection.query(`UPDATE materiais SET ${fields} WHERE id = ? AND usuario_id = ?`, values);
       return result.affectedRows > 0;
     } finally {
       connection.release();
@@ -104,14 +94,12 @@ class Material {
   }
 
   /**
-   * Deletar material
-   * @param {number} id - ID do material
-   * @returns {Promise<boolean>} Sucesso da operacao
+   * Deletar material (somente se pertencer ao usuario)
    */
-  static async delete(id) {
+  static async delete(id, usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const [result] = await connection.query('DELETE FROM materiais WHERE id = ?', [id]);
+      const [result] = await connection.query('DELETE FROM materiais WHERE id = ? AND usuario_id = ?', [id, usuarioId]);
       return result.affectedRows > 0;
     } finally {
       connection.release();
@@ -119,23 +107,20 @@ class Material {
   }
 
   /**
-   * Atualizar quantidade de um material
-   * @param {number} id - ID do material
-   * @param {number} diferenca - Quantidade a adicionar/subtrair
-   * @returns {Promise<Object>} Material atualizado
+   * Atualizar quantidade de um material do usuario
    */
-  static async atualizarQuantidade(id, diferenca) {
+  static async atualizarQuantidade(id, diferenca, usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const [material] = await connection.query('SELECT quantidade_atual FROM materiais WHERE id = ?', [id]);
+      const [material] = await connection.query('SELECT quantidade_atual FROM materiais WHERE id = ? AND usuario_id = ?', [id, usuarioId]);
       if (!material || material.length === 0) {
         throw new Error('Material nao encontrado');
       }
 
       const novaQuantidade = Math.max(0, Number(material[0].quantidade_atual) + Number(diferenca));
-      await connection.query('UPDATE materiais SET quantidade_atual = ? WHERE id = ?', [novaQuantidade, id]);
+      await connection.query('UPDATE materiais SET quantidade_atual = ? WHERE id = ? AND usuario_id = ?', [novaQuantidade, id, usuarioId]);
 
-      const [materialAtualizado] = await connection.query('SELECT * FROM materiais WHERE id = ?', [id]);
+      const [materialAtualizado] = await connection.query('SELECT * FROM materiais WHERE id = ? AND usuario_id = ?', [id, usuarioId]);
       return materialAtualizado[0];
     } finally {
       connection.release();
@@ -143,13 +128,12 @@ class Material {
   }
 
   /**
-   * Buscar materiais com estoque baixo
-   * @returns {Promise<Array>} Materiais com quantidade abaixo do minimo
+   * Buscar materiais com estoque baixo do usuario
    */
-  static async findBaixoEstoque() {
+  static async findBaixoEstoque(usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const [rows] = await connection.query('SELECT * FROM materiais WHERE quantidade_atual < quantidade_minima ORDER BY id DESC');
+      const [rows] = await connection.query('SELECT * FROM materiais WHERE quantidade_atual < quantidade_minima AND usuario_id = ? ORDER BY id DESC', [usuarioId]);
       return rows;
     } finally {
       connection.release();
@@ -158,10 +142,10 @@ class Material {
 
   /**
    * Registrar movimentacao no historico
-   * @param {Object} mov - Dados da movimentacao
    */
   static async registrarMovimentacao(mov) {
     const {
+      usuario_id = null,
       material_id,
       tipo_movimento,
       quantidade_delta = 0,
@@ -176,9 +160,9 @@ class Material {
     try {
       await connection.query(
         `INSERT INTO movimentacoes_estoque
-          (material_id, material_nome_snapshot, tipo_movimento, quantidade_delta, quantidade_anterior, quantidade_atual, usuario_nome, observacao)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [material_id, material_nome_snapshot, tipo_movimento, quantidade_delta, quantidade_anterior, quantidade_atual, usuario_nome, observacao]
+          (usuario_id, material_id, material_nome_snapshot, tipo_movimento, quantidade_delta, quantidade_anterior, quantidade_atual, usuario_nome, observacao)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [usuario_id, material_id, material_nome_snapshot, tipo_movimento, quantidade_delta, quantidade_anterior, quantidade_atual, usuario_nome, observacao]
       );
     } finally {
       connection.release();
@@ -186,10 +170,9 @@ class Material {
   }
 
   /**
-   * Listar historico de movimentacoes
-   * @returns {Promise<Array>}
+   * Listar historico de movimentacoes do usuario
    */
-  static async listarMovimentacoes() {
+  static async listarMovimentacoes(usuarioId) {
     const connection = await global.db.getConnection();
     try {
       const [rows] = await connection.query(
@@ -206,8 +189,10 @@ class Material {
           m.created_at
         FROM movimentacoes_estoque m
         LEFT JOIN materiais mt ON mt.id = m.material_id
+        WHERE m.usuario_id = ?
         ORDER BY m.created_at DESC, m.id DESC
-        LIMIT 300`
+        LIMIT 300`,
+        [usuarioId]
       );
 
       return rows;

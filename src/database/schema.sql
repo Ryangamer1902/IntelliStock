@@ -3,7 +3,8 @@
 
 CREATE TABLE IF NOT EXISTS materiais (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  codigo_barras VARCHAR(50) NOT NULL UNIQUE,
+  usuario_id INT NULL,
+  codigo_barras VARCHAR(50) NOT NULL,
   nome VARCHAR(150) NOT NULL,
   fornecedor VARCHAR(150) NOT NULL DEFAULT 'Nao informado',
   quantidade_atual INT NOT NULL DEFAULT 0,
@@ -13,10 +14,28 @@ CREATE TABLE IF NOT EXISTS materiais (
   preco_manual DECIMAL(10, 2) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_codigo_barras (codigo_barras),
+  UNIQUE KEY uq_usuario_codigo (usuario_id, codigo_barras),
+  INDEX idx_usuario_id (usuario_id),
   INDEX idx_quantidade (quantidade_atual),
   INDEX idx_fornecedor (fornecedor)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Migracao: adicionar usuario_id em materiais (bancos existentes)
+SET @col_mat_uid_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'materiais'
+    AND COLUMN_NAME = 'usuario_id'
+);
+SET @sql_mat_uid := IF(
+  @col_mat_uid_exists = 0,
+  'ALTER TABLE materiais ADD COLUMN usuario_id INT NULL AFTER id, ADD INDEX idx_usuario_id (usuario_id)',
+  'SELECT 1'
+);
+PREPARE stmt_mat_uid FROM @sql_mat_uid;
+EXECUTE stmt_mat_uid;
+DEALLOCATE PREPARE stmt_mat_uid;
 
 -- Ajuste para bancos existentes antes desta coluna (compativel com MySQL 5.7+)
 SET @col_fornecedor_exists := (
@@ -47,6 +66,7 @@ CREATE TABLE IF NOT EXISTS alertas_estoque (
 
 CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NULL,
   material_id INT NULL,
   material_nome_snapshot VARCHAR(150) NOT NULL,
   tipo_movimento ENUM('CADASTRO', 'AJUSTE', 'EDICAO', 'REMOCAO') NOT NULL,
@@ -57,10 +77,28 @@ CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
   observacao VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE SET NULL,
+  INDEX idx_mov_usuario (usuario_id),
   INDEX idx_mov_material (material_id),
   INDEX idx_mov_data (created_at),
   INDEX idx_mov_tipo (tipo_movimento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Migracao: adicionar usuario_id em movimentacoes_estoque (bancos existentes)
+SET @col_mov_uid_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'movimentacoes_estoque'
+    AND COLUMN_NAME = 'usuario_id'
+);
+SET @sql_mov_uid := IF(
+  @col_mov_uid_exists = 0,
+  'ALTER TABLE movimentacoes_estoque ADD COLUMN usuario_id INT NULL AFTER id, ADD INDEX idx_mov_usuario (usuario_id)',
+  'SELECT 1'
+);
+PREPARE stmt_mov_uid FROM @sql_mov_uid;
+EXECUTE stmt_mov_uid;
+DEALLOCATE PREPARE stmt_mov_uid;
 
 DELIMITER $$
 
@@ -123,6 +161,17 @@ CREATE TABLE IF NOT EXISTS tokens_reset_senha (
   INDEX idx_token_reset (token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS sessoes_ativas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  token VARCHAR(64) NOT NULL UNIQUE,
+  expira_em TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+  INDEX idx_sessoes_token (token),
+  INDEX idx_sessoes_usuario (usuario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ==================== INSUMOS ====================
 
 CREATE TABLE IF NOT EXISTS fornecedores (
@@ -138,7 +187,8 @@ CREATE TABLE IF NOT EXISTS fornecedores (
 
 CREATE TABLE IF NOT EXISTS insumos (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(200) NOT NULL UNIQUE,
+  usuario_id INT NULL,
+  nome VARCHAR(200) NOT NULL,
   preco_custo_un DECIMAL(10, 4) NOT NULL,
   qtd_atual DECIMAL(12, 4) NOT NULL DEFAULT 0,
   unidade ENUM('kg', 'un', 'ml', 'l', 'g') NOT NULL DEFAULT 'un',
@@ -147,13 +197,32 @@ CREATE TABLE IF NOT EXISTS insumos (
   ativo TINYINT(1) NOT NULL DEFAULT 1,
   data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_usuario_insumo_nome (usuario_id, nome),
   INDEX idx_insumos_nome (nome),
   INDEX idx_insumos_ativo (ativo),
+  INDEX idx_insumos_usuario (usuario_id),
   INDEX idx_insumos_fornecedor (id_fornecedor_pref),
   FOREIGN KEY (id_fornecedor_pref) REFERENCES fornecedores(id)
     ON DELETE RESTRICT
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Migracao: adicionar usuario_id em insumos (bancos existentes)
+SET @col_ins_uid_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'insumos'
+    AND COLUMN_NAME = 'usuario_id'
+);
+SET @sql_ins_uid := IF(
+  @col_ins_uid_exists = 0,
+  'ALTER TABLE insumos ADD COLUMN usuario_id INT NULL AFTER id, ADD INDEX idx_insumos_usuario (usuario_id)',
+  'SELECT 1'
+);
+PREPARE stmt_ins_uid FROM @sql_ins_uid;
+EXECUTE stmt_ins_uid;
+DEALLOCATE PREPARE stmt_ins_uid;
 
 CREATE TABLE IF NOT EXISTS estoque_seguranca (
   id INT AUTO_INCREMENT PRIMARY KEY,

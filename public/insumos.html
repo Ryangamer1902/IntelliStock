@@ -169,11 +169,21 @@
       document.getElementById('avatarInitial').textContent = initials;
     }
 
-    document.getElementById('btnLogout').addEventListener('click', () => {
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      const token = sessionStorage.getItem('is_session_token');
+      if (token) {
+        try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
+      }
       sessionStorage.removeItem('is_usuario');
+      sessionStorage.removeItem('is_session_token');
       sessionStorage.removeItem('is_2fa_session');
       window.location.href = '/login.html';
     });
+
+    function getAuthHeaders() {
+      const token = sessionStorage.getItem('is_session_token');
+      return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
 
     const MOCK_MATERIAIS_STORAGE_KEY = 'intellistock_mock_materiais_v1';
     const MOCK_MATERIAIS_NEXT_ID_KEY = 'intellistock_mock_next_id_v1';
@@ -303,7 +313,7 @@
 
       try {
         if (mode === 'api') {
-          const response = await fetch('/api/materiais');
+          const response = await fetch('/api/materiais', { headers: getAuthHeaders() });
           const data = await response.json();
 
           if (!data.success || !Array.isArray(data.data)) {
@@ -416,7 +426,7 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-usuario-nome': usuario?.nome || 'Sistema'
+              ...getAuthHeaders()
             },
             body: JSON.stringify({
               nome,
@@ -426,8 +436,7 @@
               quantidade_minima: qtdMin,
               preco_custo: custo,
               margem_lucro: margem,
-              preco_manual: preco,
-              usuario_nome: usuario?.nome || 'Sistema'
+              preco_manual: preco
             })
           });
           const data = await res.json();

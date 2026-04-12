@@ -201,11 +201,21 @@
       document.getElementById('userName').textContent = _usuario.nome || 'Usuario';
       const ini = (_usuario.nome || 'U').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
       document.getElementById('avatarInitial').textContent = ini;
-      document.getElementById('btnLogout').addEventListener('click', () => {
+      document.getElementById('btnLogout').addEventListener('click', async () => {
+        const token = sessionStorage.getItem('is_session_token');
+        if (token) {
+          try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
+        }
         sessionStorage.removeItem('is_usuario');
+        sessionStorage.removeItem('is_session_token');
         sessionStorage.removeItem('is_2fa_session');
         window.location.href = '/login.html';
       });
+    }
+
+    function getAuthHeadersHist() {
+      const token = sessionStorage.getItem('is_session_token');
+      return token ? { 'Authorization': 'Bearer ' + token } : {};
     }
 
     const MOCK_STORAGE_KEY = 'intellistock_mock_historico_v1';
@@ -315,7 +325,7 @@
         let rows = [];
 
         if (getMode() === 'api') {
-          const response = await fetch('/api/materiais/historico');
+          const response = await fetch('/api/materiais/historico', { headers: getAuthHeadersHist() });
           const data = await response.json();
           if (!data.success || !Array.isArray(data.data)) {
             throw new Error(data.message || 'Resposta invalida da API');
