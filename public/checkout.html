@@ -58,92 +58,59 @@
         <form id="checkoutForm" novalidate>
           <div id="checkoutFeedback" class="form-feedback"></div>
 
-          <div class="grid-2">
-            <div class="field">
-              <label for="clienteNome">Nome completo</label>
-              <input id="clienteNome" type="text" placeholder="Nome do responsável" required>
-            </div>
-            <div class="field">
-              <label for="clienteEmail">E-mail</label>
-              <input id="clienteEmail" type="email" placeholder="seuemail@empresa.com" required>
-            </div>
-          </div>
+          <!-- Resultado do retorno do Mercado Pago -->
+          <div id="paymentResult" style="display:none; text-align:center; padding: 24px 0;"></div>
 
-          <div class="grid-2">
+          <div id="checkoutFormContent">
+            <div class="grid-2">
+              <div class="field">
+                <label for="clienteNome">Nome completo</label>
+                <input id="clienteNome" type="text" placeholder="Nome do responsável" required>
+              </div>
+              <div class="field">
+                <label for="clienteEmail">E-mail</label>
+                <input id="clienteEmail" type="email" placeholder="seuemail@empresa.com" required>
+              </div>
+            </div>
+
             <div class="field">
               <label for="clienteDocumento">CPF ou CNPJ</label>
               <input id="clienteDocumento" type="text" placeholder="000.000.000-00" required>
             </div>
-            <div class="field">
-              <label for="empresaNome">Empresa</label>
-              <input id="empresaNome" type="text" placeholder="Nome da empresa ou operação">
+
+            <!-- Campos de senha — visíveis apenas para novos usuários (não logados) -->
+            <div id="passwordSection">
+              <h2 class="checkout-title">Crie sua senha de acesso</h2>
+              <p class="panel-intro">Depois que o pagamento for confirmado, use este e-mail e senha para entrar no IntelliStock.</p>
+              <div class="grid-2">
+                <div class="field">
+                  <label for="clienteSenha">Senha</label>
+                  <input id="clienteSenha" type="password" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="field">
+                  <label for="clienteSenhaConfirm">Confirmar senha</label>
+                  <input id="clienteSenhaConfirm" type="password" placeholder="Repita a senha">
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div class="grid-2">
             <div class="field">
-              <label for="enderecoRua">Rua</label>
-              <input id="enderecoRua" type="text" placeholder="Nome da rua" required>
+              <label for="billingCycle">Plano escolhido</label>
+              <select id="billingCycle">
+                <option value="semanal">Semanal — R$ 59</option>
+                <option value="mensal">Mensal — R$ 179</option>
+                <option value="anual">Anual — R$ 1.690</option>
+              </select>
             </div>
-            <div class="field">
-              <label for="enderecoNumero">Número</label>
-              <input id="enderecoNumero" type="text" placeholder="123" required>
+
+            <div class="secure-box">
+              O pagamento é processado com segurança pelo <strong>Mercado Pago</strong>. Você será redirecionado para a página de pagamento após confirmar os dados acima.
             </div>
-          </div>
 
-          <div class="grid-2">
-            <div class="field">
-              <label for="enderecoBairro">Bairro</label>
-              <input id="enderecoBairro" type="text" placeholder="Nome do bairro" required>
+            <div class="btn-row">
+              <button id="confirmBtn" class="btn btn-main" type="submit">Continuar para pagamento</button>
+              <a class="btn btn-soft" href="/produtos.html">Voltar às assinaturas</a>
             </div>
-            <div class="field">
-              <label for="enderecoCidade">Cidade</label>
-              <input id="enderecoCidade" type="text" placeholder="Nome da cidade" required>
-            </div>
-          </div>
-
-          <h2 class="checkout-title">Cartão de pagamento</h2>
-          <p class="panel-intro">Os dados abaixo ficam mascarados depois da contratação para o usuário gerenciar em sua área de assinatura.</p>
-
-          <div class="field">
-            <label for="cardHolder">Nome impresso no cartão</label>
-            <input id="cardHolder" type="text" placeholder="Nome como está no cartão" required>
-          </div>
-
-          <div class="field">
-            <label for="cardNumber">Número do cartão</label>
-            <input id="cardNumber" type="text" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000" required>
-          </div>
-
-          <div class="grid-2">
-            <div class="field">
-              <label for="cardExpiry">Validade</label>
-              <input id="cardExpiry" type="text" inputmode="numeric" maxlength="5" placeholder="MM/AA" required>
-            </div>
-            <div class="field">
-              <label for="cardCvv">CVV</label>
-              <input id="cardCvv" type="password" inputmode="numeric" maxlength="4" placeholder="123" required>
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="billingCycle">Ciclo escolhido</label>
-            <select id="billingCycle">
-              <option value="semanal">Semanal</option>
-              <option value="mensal">Mensal</option>
-              <option value="anual">Anual</option>
-            </select>
-          </div>
-
-          <div class="helper">O usuário poderá trocar o cartão ou revisar a cobrança depois em sua área de assinatura.</div>
-
-          <div class="secure-box">
-            Ambiente demonstrativo: o checkout abaixo não envia dados para um gateway real. O objetivo é validar a experiência visual, o fluxo comercial e a área de gestão da assinatura.
-          </div>
-
-          <div class="btn-row">
-            <button id="confirmBtn" class="btn btn-main" type="submit">Confirmar assinatura</button>
-            <a class="btn btn-soft" href="/produtos.html">Voltar às assinaturas</a>
           </div>
         </form>
       </section>
@@ -188,233 +155,151 @@
 
   <script src="/js/auth-service.js"></script>
   <script>
-    const SUBSCRIPTION_KEY = 'intellistock_subscription_v1';
-    const INVOICES_KEY = 'intellistock_invoices_v1';
     const plans = {
-      semanal: {
-        id: 'semanal',
-        name: 'Assinatura Semanal',
-        price: 59,
-        intervalLabel: '/semana',
-        note: 'Ideal para testar a operação com acesso rápido e baixa barreira de entrada.',
-        chip: 'Entrada rápida',
-        features: [
-          'Acesso para 1 usuário',
-          'Até 150 produtos cadastrados',
-          'Relatório semanal simplificado'
-        ]
-      },
-      mensal: {
-        id: 'mensal',
-        name: 'Assinatura Mensal',
-        price: 179,
-        intervalLabel: '/mês',
-        note: 'Melhor equilíbrio entre previsibilidade, operação e custo.',
-        chip: 'Mais vendido',
-        features: [
-          'Até 5 usuários',
-          'Até 1.000 produtos',
-          'Alertas automáticos de estoque mínimo'
-        ]
-      },
-      anual: {
-        id: 'anual',
-        name: 'Assinatura Anual',
-        price: 1690,
-        intervalLabel: '/ano',
-        note: 'Melhor custo-benefício para quem quer reduzir churn e estabilizar o caixa.',
-        chip: 'Melhor valor',
-        features: [
-          'Usuários ilimitados',
-          'Produtos ilimitados',
-          'Dashboard executivo e suporte VIP'
-        ]
-      }
+      semanal: { id: 'semanal', name: 'Assinatura Semanal', price: 59,   intervalLabel: '/semana', note: 'Ideal para testar a operação.', chip: 'Entrada rápida',   features: ['Acesso para 1 usuário', 'Até 150 produtos cadastrados', 'Relatório semanal simplificado'] },
+      mensal:  { id: 'mensal',  name: 'Assinatura Mensal',  price: 179,  intervalLabel: '/mês',    note: 'Melhor equilíbrio entre previsibilidade e custo.', chip: 'Mais vendido', features: ['Até 5 usuários', 'Até 1.000 produtos', 'Alertas automáticos de estoque mínimo'] },
+      anual:   { id: 'anual',   name: 'Assinatura Anual',   price: 1690, intervalLabel: '/ano',    note: 'Melhor custo-benefício para uso contínuo.', chip: 'Melhor valor',  features: ['Usuários ilimitados', 'Produtos ilimitados', 'Dashboard executivo e suporte VIP'] }
     };
 
-    const usuario = window.AuthService.getCurrentUser();
-    const planParam = new URLSearchParams(window.location.search).get('plano');
-    const billingCycle = document.getElementById('billingCycle');
+    const usuario     = window.AuthService.getCurrentUser();
+    const planParam   = new URLSearchParams(window.location.search).get('plano');
+    const statusParam = new URLSearchParams(window.location.search).get('status');
+    const billingCycle     = document.getElementById('billingCycle');
     const checkoutFeedback = document.getElementById('checkoutFeedback');
-    const confirmBtn = document.getElementById('confirmBtn');
-
-    if (usuario) {
-      document.getElementById('clienteNome').value = usuario.nome || '';
-      document.getElementById('clienteEmail').value = usuario.email || '';
-      document.getElementById('cardHolder').value = usuario.nome || '';
-    }
+    const confirmBtn       = document.getElementById('confirmBtn');
+    const formContent      = document.getElementById('checkoutFormContent');
+    const paymentResult    = document.getElementById('paymentResult');
+    const passwordSection  = document.getElementById('passwordSection');
 
     function fmtMoney(value) {
       return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    function formatCardNumber(value) {
-      return String(value || '').replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+    // Pré-preenche campos se usuário já está logado
+    if (usuario) {
+      document.getElementById('clienteNome').value  = usuario.nome  || '';
+      document.getElementById('clienteEmail').value = usuario.email || '';
+      if (passwordSection) passwordSection.style.display = 'none';
     }
 
-    function formatExpiry(value) {
-      const digits = String(value || '').replace(/\D/g, '').slice(0, 4);
-      if (digits.length < 3) return digits;
-      return digits.slice(0, 2) + '/' + digits.slice(2);
-    }
+    // Mostra resultado do retorno do Mercado Pago
+    if (statusParam) {
+      formContent.style.display = 'none';
+      paymentResult.style.display = 'block';
 
-    function detectBrand(cardNumber) {
-      const digits = String(cardNumber || '').replace(/\D/g, '');
-      if (/^4/.test(digits)) return 'Visa';
-      if (/^(5[1-5]|2[2-7])/.test(digits)) return 'Mastercard';
-      if (/^3[47]/.test(digits)) return 'American Express';
-      if (/^(4011|4312|4389)/.test(digits)) return 'Elo';
-      return 'Cartão';
-    }
+      const msgs = {
+        success: { icon: '✅', title: 'Pagamento aprovado!',           body: 'Sua conta está sendo ativada. Em instantes você poderá fazer login.',                                              btn: '<a href="/login.html" class="btn btn-main" style="margin-top:20px;">Acessar minha conta</a>' },
+        failure: { icon: '❌', title: 'Pagamento não aprovado',         body: 'Seu pagamento não foi concluído. Tente novamente ou escolha outro método de pagamento.',                          btn: '<a href="/produtos.html" class="btn btn-soft" style="margin-top:20px;">Tentar novamente</a>' },
+        pending: { icon: '⏳', title: 'Pagamento em processamento',     body: 'Seu pagamento está sendo analisado. Assim que confirmado, sua conta será ativada e você receberá um e-mail.',    btn: '<a href="/login.html" class="btn btn-soft" style="margin-top:20px;">Ir para o login</a>' }
+      };
 
-    function addDays(date, days) {
-      const next = new Date(date);
-      next.setDate(next.getDate() + days);
-      return next;
-    }
-
-    function addMonths(date, months) {
-      const next = new Date(date);
-      next.setMonth(next.getMonth() + months);
-      return next;
-    }
-
-    function computeNextCharge(planId) {
-      const now = new Date();
-      if (planId === 'semanal') return addDays(now, 7);
-      if (planId === 'anual') return addMonths(now, 12);
-      return addMonths(now, 1);
+      const m = msgs[statusParam] || msgs.pending;
+      paymentResult.innerHTML = `
+        <div style="max-width:420px;margin:0 auto;padding:32px;background:#f8fbfa;border-radius:16px;border:1px solid #e0edeb;">
+          <div style="font-size:3rem;margin-bottom:12px;">${m.icon}</div>
+          <h2 style="font-family:'Sora',sans-serif;font-size:1.5rem;margin-bottom:8px;">${m.title}</h2>
+          <p style="color:#5d6b70;margin-bottom:4px;">${m.body}</p>
+          ${m.btn}
+        </div>`;
     }
 
     function renderPlan(planId) {
       const plan = plans[planId] || plans.mensal;
-      document.getElementById('planChip').textContent = plan.chip;
-      document.getElementById('planTitle').textContent = plan.name;
-      document.getElementById('planPrice').textContent = fmtMoney(plan.price);
+      document.getElementById('planChip').textContent     = plan.chip;
+      document.getElementById('planTitle').textContent    = plan.name;
+      document.getElementById('planPrice').textContent    = fmtMoney(plan.price);
       document.getElementById('planInterval').textContent = plan.intervalLabel;
-      document.getElementById('planNote').textContent = plan.note;
-      document.getElementById('summaryBase').textContent = fmtMoney(plan.price);
+      document.getElementById('planNote').textContent     = plan.note;
+      document.getElementById('summaryBase').textContent  = fmtMoney(plan.price);
       document.getElementById('summaryTotal').textContent = fmtMoney(plan.price);
-      document.getElementById('planFeatures').innerHTML = plan.features.map((item) => `<li>${item}</li>`).join('');
+      document.getElementById('planFeatures').innerHTML   = plan.features.map((i) => `<li>${i}</li>`).join('');
       billingCycle.value = plan.id;
     }
 
-    document.getElementById('cardNumber').addEventListener('input', (event) => {
-      event.target.value = formatCardNumber(event.target.value);
-    });
-
-    document.getElementById('cardExpiry').addEventListener('input', (event) => {
-      event.target.value = formatExpiry(event.target.value);
-    });
-
     billingCycle.addEventListener('change', () => renderPlan(billingCycle.value));
 
-    checkoutForm.addEventListener('submit', (event) => {
+    // Máscara de CPF/CNPJ
+    document.getElementById('clienteDocumento').addEventListener('input', (e) => {
+      const digits = e.target.value.replace(/\D/g, '').slice(0, 14);
+      if (digits.length <= 11) {
+        e.target.value = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, (_, a, b, c, d) =>
+          d ? `${a}.${b}.${c}-${d}` : c ? `${a}.${b}.${c}` : b ? `${a}.${b}` : a);
+      } else {
+        e.target.value = digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, (_, a, b, c, d, ee) =>
+          ee ? `${a}.${b}.${c}/${d}-${ee}` : d ? `${a}.${b}.${c}/${d}` : c ? `${a}.${b}.${c}` : b ? `${a}.${b}` : a);
+      }
+    });
+
+    document.getElementById('checkoutForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       checkoutFeedback.className = 'form-feedback';
 
-      const selectedPlan = plans[billingCycle.value] || plans.mensal;
-      const nome = document.getElementById('clienteNome').value.trim();
-      const email = document.getElementById('clienteEmail').value.trim().toLowerCase();
-      const documento = document.getElementById('clienteDocumento').value.trim();
-      const empresa = document.getElementById('empresaNome').value.trim();
-      const enderecoRua = document.getElementById('enderecoRua').value.trim();
-      const enderecoNumero = document.getElementById('enderecoNumero').value.trim();
-      const enderecoBairro = document.getElementById('enderecoBairro').value.trim();
-      const enderecoCidade = document.getElementById('enderecoCidade').value.trim();
-      const holder = document.getElementById('cardHolder').value.trim();
-      const cardNumber = document.getElementById('cardNumber').value.trim();
-      const cardExpiry = document.getElementById('cardExpiry').value.trim();
-      const cardCvv = document.getElementById('cardCvv').value.trim();
+      const nome      = document.getElementById('clienteNome').value.trim();
+      const email     = document.getElementById('clienteEmail').value.trim().toLowerCase();
+      const documento = document.getElementById('clienteDocumento').value.replace(/\D/g, '');
+      const planoId   = billingCycle.value;
 
       if (nome.length < 3) {
-        checkoutFeedback.textContent = 'Informe o nome do responsável pela assinatura.';
-        checkoutFeedback.classList.add('error');
-        return;
+        checkoutFeedback.textContent = 'Informe o nome do responsável (mínimo 3 caracteres).';
+        checkoutFeedback.classList.add('error'); return;
       }
-
       if (!/\S+@\S+\.\S+/.test(email)) {
-        checkoutFeedback.textContent = 'Informe um e-mail válido para a cobrança.';
-        checkoutFeedback.classList.add('error');
-        return;
+        checkoutFeedback.textContent = 'Informe um e-mail válido.';
+        checkoutFeedback.classList.add('error'); return;
+      }
+      if (documento.length < 11) {
+        checkoutFeedback.textContent = 'Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.';
+        checkoutFeedback.classList.add('error'); return;
       }
 
-      if (documento.replace(/\D/g, '').length < 11) {
-        checkoutFeedback.textContent = 'Informe um CPF ou CNPJ válido.';
-        checkoutFeedback.classList.add('error');
-        return;
-      }
-
-      if (!enderecoRua || !enderecoNumero || !enderecoBairro || !enderecoCidade) {
-        checkoutFeedback.textContent = 'Preencha rua, número, bairro e cidade para cobrança.';
-        checkoutFeedback.classList.add('error');
-        return;
-      }
-
-      if (holder.length < 3 || cardNumber.replace(/\D/g, '').length < 16 || !/^\d{2}\/\d{2}$/.test(cardExpiry) || cardCvv.length < 3) {
-        checkoutFeedback.textContent = 'Preencha corretamente os dados do cartão.';
-        checkoutFeedback.classList.add('error');
-        return;
-      }
-
-      confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Processando assinatura...';
-
-      const nextCharge = computeNextCharge(selectedPlan.id);
-      const cardLast4 = cardNumber.replace(/\D/g, '').slice(-4);
-      const subscription = {
-        planId: selectedPlan.id,
-        planName: selectedPlan.name,
-        planPrice: selectedPlan.price,
-        intervalLabel: selectedPlan.intervalLabel,
-        customerName: nome,
-        customerEmail: email,
-        customerDocument: documento,
-        companyName: empresa,
-        billingAddress: {
-          rua: enderecoRua,
-          numero: enderecoNumero,
-          bairro: enderecoBairro,
-          cidade: enderecoCidade
-        },
-        billingAddressText: `${enderecoRua}, ${enderecoNumero} - ${enderecoBairro}, ${enderecoCidade}`,
-        cardHolder: holder,
-        cardBrand: detectBrand(cardNumber),
-        cardLast4,
-        cardExpiry,
-        status: 'Ativa',
-        startedAt: new Date().toISOString(),
-        nextChargeAt: nextCharge.toISOString(),
-        autoRenew: true
-      };
-
-      const invoices = [
-        {
-          id: 'INV-' + Date.now(),
-          description: selectedPlan.name + ' - contratação inicial',
-          amount: selectedPlan.price,
-          status: 'Pago',
-          date: new Date().toISOString()
-        }
-      ];
-
-      localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
-      localStorage.setItem(INVOICES_KEY, JSON.stringify(invoices));
+      const body = { nome, email, cpf_cnpj: documento, plano: planoId };
 
       if (!usuario) {
-        window.AuthService.saveAuthSession({
-          id: 'checkout_' + Date.now(),
-          nome,
-          email
-        }, null, false);
+        const senha        = document.getElementById('clienteSenha').value;
+        const senhaConfirm = document.getElementById('clienteSenhaConfirm').value;
+        if (senha.length < 6) {
+          checkoutFeedback.textContent = 'Crie uma senha com pelo menos 6 caracteres.';
+          checkoutFeedback.classList.add('error'); return;
+        }
+        if (senha !== senhaConfirm) {
+          checkoutFeedback.textContent = 'As senhas não conferem.';
+          checkoutFeedback.classList.add('error'); return;
+        }
+        body.senha = senha;
       }
 
-      checkoutFeedback.textContent = 'Assinatura simulada com sucesso. Redirecionando para sua área...';
-      checkoutFeedback.classList.add('success');
+      confirmBtn.disabled    = true;
+      confirmBtn.textContent = 'Processando...';
 
-      setTimeout(() => {
-        window.location.href = '/assinatura.html';
-      }, 1200);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        const token   = window.AuthService.getSessionToken && window.AuthService.getSessionToken();
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const resp = await fetch('/api/assinaturas/iniciar-checkout', {
+          method: 'POST', headers, body: JSON.stringify(body)
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          checkoutFeedback.textContent = 'Redirecionando para o pagamento...';
+          checkoutFeedback.classList.add('success');
+          const url = (location.hostname === 'localhost' && data.sandbox_init_point)
+            ? data.sandbox_init_point : data.init_point;
+          window.location.href = url;
+        } else {
+          checkoutFeedback.textContent = data.message || 'Erro ao processar. Tente novamente.';
+          checkoutFeedback.classList.add('error');
+          if (data.redirect) setTimeout(() => { window.location.href = data.redirect; }, 2500);
+          confirmBtn.disabled    = false;
+          confirmBtn.textContent = 'Continuar para pagamento';
+        }
+      } catch (err) {
+        checkoutFeedback.textContent = 'Falha de conexão. Verifique sua internet e tente novamente.';
+        checkoutFeedback.classList.add('error');
+        confirmBtn.disabled    = false;
+        confirmBtn.textContent = 'Continuar para pagamento';
+      }
     });
 
     renderPlan(plans[planParam] ? planParam : 'mensal');

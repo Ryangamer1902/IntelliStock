@@ -12,15 +12,20 @@
     "start:tudo": "npm run setup:db && npm run dev",
     "start:all": "npm install && npm run start:tudo"
   },
-  "keywords": ["estoque", "inventory", "management"],
+  "keywords": [
+    "estoque",
+    "inventory",
+    "management"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mercadopago": "^2.12.0",
     "mysql2": "^3.6.0",
-    "bcryptjs": "^2.4.3",
     "nodemailer": "^6.9.15"
   },
   "devDependencies": {

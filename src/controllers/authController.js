@@ -91,50 +91,11 @@ class AuthController {
   }
 
   static async cadastrar(req, res) {
-    const db = global.db;
-    if (!db) {
-      return res.status(503).json({
-        success: false,
-        message: 'Estamos tendo problemas técnicos. Contate o suporte.'
-      });
-    }
-
-    const nome = String(req.body.nome || '').trim();
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const senha = String(req.body.senha || '');
-
-    if (nome.length < 3) {
-      return res.status(400).json({ success: false, message: 'Informe um nome com pelo menos 3 caracteres.' });
-    }
-
-    if (!emailValido(email)) {
-      return res.status(400).json({ success: false, message: 'Informe um e-mail válido.' });
-    }
-
-    if (senha.length < 6) {
-      return res.status(400).json({ success: false, message: 'A senha precisa ter pelo menos 6 caracteres.' });
-    }
-
-    try {
-      const [rows] = await db.query('SELECT id FROM usuarios WHERE email = ? LIMIT 1', [email]);
-      if (rows.length > 0) {
-        return res.status(409).json({ success: false, message: 'Já existe uma conta cadastrada com este e-mail.' });
-      }
-
-      const senhaHash = await bcrypt.hash(senha, 10);
-      await db.query(
-        'INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)',
-        [nome, email, senhaHash]
-      );
-
-      return res.status(201).json({
-        success: true,
-        message: 'Cadastro realizado com sucesso. Faça login com seu e-mail e senha.'
-      });
-    } catch (err) {
-      console.error('Erro no cadastro:', err);
-      return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
-    }
+    return res.status(403).json({
+      success: false,
+      message: 'Para criar uma conta, escolha primeiro um plano de assinatura.',
+      redirect: '/produtos.html'
+    });
   }
 
   static async verificar(req, res) {

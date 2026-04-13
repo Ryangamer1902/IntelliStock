@@ -43,6 +43,14 @@ function buildSslConfig() {
   };
 }
 
+function isLocalDatabaseConfig() {
+  const host = String(process.env.DB_HOST || 'localhost').trim().toLowerCase();
+  const user = String(process.env.DB_USER || 'root').trim().toLowerCase();
+  const port = String(process.env.DB_PORT || '3306').trim();
+
+  return (host === 'localhost' || host === '127.0.0.1') && user === 'root' && port === '3306';
+}
+
 // Função para inicializar conexão com banco (pode ser chamada depois)
 const initializeDatabase = async () => {
   try {
@@ -104,10 +112,47 @@ const initializeDatabase = async () => {
     await pool.query(`
       ALTER TABLE insumos ADD COLUMN IF NOT EXISTS usuario_id INT NULL AFTER id
     `).catch(() => {});
+
+    // Migração: adicionar is_admin em usuarios (bancos existentes)
+    await pool.query(`
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS is_admin TINYINT(1) NOT NULL DEFAULT 0
+    `).catch(() => {});
+
+    // Tabela de assinaturas
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS assinaturas (
+        id                   INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id           INT NOT NULL,
+        plano                ENUM('semanal','mensal','anual') NOT NULL,
+        status               ENUM('pendente','ativa','cancelada','suspensa','expirada') NOT NULL DEFAULT 'pendente',
+        mp_payment_id        VARCHAR(100) NULL,
+        valor_pago           DECIMAL(10,2) NULL,
+        data_inicio          TIMESTAMP NULL,
+        data_expiracao       TIMESTAMP NULL,
+        data_cancelamento    TIMESTAMP NULL,
+        renovacao_automatica TINYINT(1) NOT NULL DEFAULT 1,
+        created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_assinatura_usuario (usuario_id),
+        INDEX idx_assinaturas_status    (status),
+        INDEX idx_assinaturas_expiracao (data_expiracao),
+        INDEX idx_mp_payment            (mp_payment_id),
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Garante que o admin fixo seja sempre is_admin = 1
+    await pool.query(
+      `UPDATE usuarios SET is_admin = 1 WHERE email = 'admin@intellistock.com'`
+    ).catch(() => {});
+
     return true;
   } catch (error) {
     console.warn('⚠️ Banco de dados não conectado. Execute: npm run setup:db');
     console.warn('Erro:', error.message);
+    if (isLocalDatabaseConfig()) {
+      console.warn('Dica: o .env está apontando para MySQL local. Se seu banco é na nuvem, ajuste DB_HOST, DB_USER e DB_PORT com os dados do provedor.');
+    }
     dbConnected = false;
     return false;
   }
@@ -118,14 +163,16 @@ initializeDatabase();
 
 // ==================== ROTAS ====================
 // Importar rotas
-const materiaisRoutes = require('./src/routes/materiais.routes');
-const insumosRoutes = require('./src/routes/insumos.routes');
-const authRoutes = require('./src/routes/auth.routes');
-const seedAdmin = require('./src/utils/seedAdmin');
+const materiaisRoutes   = require('./src/routes/materiais.routes');
+const insumosRoutes     = require('./src/routes/insumos.routes');
+const authRoutes        = require('./src/routes/auth.routes');
+const assinaturasRoutes = require('./src/routes/assinaturas.routes');
+const seedAdmin         = require('./src/utils/seedAdmin');
 
-app.use('/api/materiais', materiaisRoutes);
-app.use('/api/insumos', insumosRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/materiais',   materiaisRoutes);
+app.use('/api/insumos',     insumosRoutes);
+app.use('/api/auth',        authRoutes);
+app.use('/api/assinaturas', assinaturasRoutes);
 
 // Rota padrão para teste
 app.get('/api/health', (req, res) => {

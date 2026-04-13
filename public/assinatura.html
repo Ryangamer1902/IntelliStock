@@ -181,20 +181,12 @@
 
   <script src="/js/auth-service.js"></script>
   <script>
-    const SUBSCRIPTION_KEY = 'intellistock_subscription_v1';
-    const INVOICES_KEY = 'intellistock_invoices_v1';
     const usuario = window.AuthService.getCurrentUser();
+    if (!usuario) { window.location.href = '/login.html'; }
 
-    if (!usuario) {
-      window.location.href = '/login.html';
-    }
-
-    if (usuario) {
-      const nome = usuario.nome || 'Usuário';
-      document.getElementById('userName').textContent = nome;
-      const initials = nome.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-      document.getElementById('avatarInitial').textContent = initials;
-    }
+    const nome = usuario ? (usuario.nome || 'Usuário') : 'Usuário';
+    document.getElementById('userName').textContent = nome;
+    document.getElementById('avatarInitial').textContent = nome.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
     document.getElementById('btnLogout').addEventListener('click', async () => {
       const token = window.AuthService.getSessionToken();
@@ -205,166 +197,107 @@
       window.location.href = '/login.html';
     });
 
-    function fmtMoney(value) {
-      return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    function fmtMoney(v) { return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+    function fmtDate(v)  {
+      if (!v) return '-';
+      return new Date(v).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     }
 
-    function fmtDate(value) {
-      return new Date(value).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      });
-    }
+    const PLANO_LABELS = { semanal: 'Semanal', mensal: 'Mensal', anual: 'Anual' };
+    const PLANO_PRECO  = { semanal: 59, mensal: 179, anual: 1690 };
+    const PLANO_INTER  = { semanal: '/semana', mensal: '/mês', anual: '/ano' };
+    const STATUS_LABELS = { pendente: 'Pendente', ativa: 'Ativa', cancelada: 'Cancelada', suspensa: 'Suspensa', expirada: 'Expirada' };
 
-    function readSubscription() {
+    async function carregar() {
+      const token = window.AuthService.getSessionToken();
+      if (!token) { window.location.href = '/login.html'; return; }
+
       try {
-        return JSON.parse(localStorage.getItem(SUBSCRIPTION_KEY) || 'null');
-      } catch (_) {
-        return null;
-      }
-    }
+        const resp = await fetch('/api/assinaturas/status', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await resp.json();
 
-    function readInvoices() {
-      try {
-        return JSON.parse(localStorage.getItem(INVOICES_KEY) || '[]');
-      } catch (_) {
-        return [];
-      }
-    }
+        if (!data.success || !data.assinatura) {
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('subscriptionContent').style.display = 'none';
+          return;
+        }
 
-    function formatCardNumber(value) {
-      return String(value || '').replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-    }
+        const a = data.assinatura;
+        document.getElementById('subscriptionContent').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
 
-    function formatExpiry(value) {
-      const digits = String(value || '').replace(/\D/g, '').slice(0, 4);
-      if (digits.length < 3) return digits;
-      return digits.slice(0, 2) + '/' + digits.slice(2);
-    }
+        document.getElementById('planStatus').textContent   = STATUS_LABELS[a.status] || a.status;
+        document.getElementById('planName').textContent     = PLANO_LABELS[a.plano]   || a.plano;
+        document.getElementById('planPrice').textContent    = fmtMoney(PLANO_PRECO[a.plano] || a.valor_pago);
+        document.getElementById('planInterval').textContent = PLANO_INTER[a.plano]    || '';
+        document.getElementById('planSummary').textContent  = a.status === 'ativa'
+          ? 'Sua assinatura está ativa e o acesso ao sistema está liberado.'
+          : 'Sua assinatura está ' + (STATUS_LABELS[a.status] || a.status).toLowerCase() + '. Renove para continuar usando o IntelliStock.';
 
-    function detectBrand(cardNumber) {
-      const digits = String(cardNumber || '').replace(/\D/g, '');
-      if (/^4/.test(digits)) return 'Visa';
-      if (/^(5[1-5]|2[2-7])/.test(digits)) return 'Mastercard';
-      if (/^3[47]/.test(digits)) return 'American Express';
-      if (/^(4011|4312|4389)/.test(digits)) return 'Elo';
-      return 'Cartão';
-    }
+        document.getElementById('nextCharge').textContent      = fmtDate(a.data_expiracao);
+        document.getElementById('customerName').textContent    = usuario.nome  || '-';
+        document.getElementById('customerEmail').textContent   = usuario.email || '-';
+        document.getElementById('customerDocument').textContent = '-';
+        document.getElementById('autoRenew').textContent       = a.renovacao_automatica ? 'Ativada' : 'Desativada';
 
-    function render() {
-      const subscription = readSubscription();
-      if (!subscription) {
+        // Cartão e endereço são gerenciados pelo Mercado Pago
+        document.getElementById('cardBrand').textContent    = 'Gerenciado pelo Mercado Pago';
+        document.getElementById('cardLast4').textContent    = '-';
+        document.getElementById('cardHolder').textContent   = usuario.nome || '-';
+        document.getElementById('cardExpiry').textContent   = '-';
+        document.getElementById('companyName').textContent  = '-';
+        document.getElementById('billingStreet').textContent   = '-';
+        document.getElementById('billingNumber').textContent   = '-';
+        document.getElementById('billingDistrict').textContent = '-';
+        document.getElementById('billingCity').textContent     = '-';
+        document.getElementById('subscriptionStatus').textContent = STATUS_LABELS[a.status] || a.status;
+
+        // Histórico: exibe os dados da assinatura atual
+        document.getElementById('invoiceList').innerHTML = a.mp_payment_id ? `
+          <div class="invoice-item">
+            <div class="invoice-head">
+              <strong>Assinatura ${PLANO_LABELS[a.plano] || a.plano}</strong>
+              <span class="badge">Pago</span>
+            </div>
+            <div class="invoice-meta">${fmtDate(a.data_inicio)} • ${fmtMoney(a.valor_pago)}</div>
+            <div class="invoice-meta">ID MP: ${a.mp_payment_id}</div>
+          </div>` : '<p style="color:#5d6b70;font-size:.92rem;">Nenhum pagamento registrado ainda.</p>';
+
+        // Botões dinâmicos conforme status
+        const btnRow = document.querySelector('.plan-banner + .status-row') && document.querySelector('.btn-row');
+        if (a.status !== 'ativa') {
+          document.getElementById('btnChangeCard').textContent = 'Renovar assinatura';
+        }
+
+      } catch (err) {
         document.getElementById('emptyState').style.display = 'block';
-        return;
+        document.getElementById('subscriptionContent').style.display = 'none';
+        console.error('Erro ao carregar assinatura:', err);
       }
-
-      document.getElementById('subscriptionContent').style.display = 'block';
-      document.getElementById('planStatus').textContent = subscription.status || 'Ativa';
-      document.getElementById('planName').textContent = subscription.planName;
-      document.getElementById('planPrice').textContent = fmtMoney(subscription.planPrice);
-      document.getElementById('planInterval').textContent = subscription.intervalLabel;
-      document.getElementById('planSummary').textContent = 'Sua assinatura está pronta para renovação automática e gerenciamento do cartão.';
-      document.getElementById('nextCharge').textContent = fmtDate(subscription.nextChargeAt);
-      document.getElementById('customerName').textContent = subscription.customerName;
-      document.getElementById('customerEmail').textContent = subscription.customerEmail;
-      document.getElementById('customerDocument').textContent = subscription.customerDocument;
-      document.getElementById('autoRenew').textContent = subscription.autoRenew ? 'Ativada' : 'Desativada';
-      document.getElementById('cardBrand').textContent = subscription.cardBrand;
-      document.getElementById('cardLast4').textContent = '•••• ' + subscription.cardLast4;
-      document.getElementById('cardHolder').textContent = subscription.cardHolder;
-      document.getElementById('cardExpiry').textContent = subscription.cardExpiry;
-      document.getElementById('companyName').textContent = subscription.companyName || 'Não informado';
-      const billing = (typeof subscription.billingAddress === 'object' && subscription.billingAddress !== null)
-        ? subscription.billingAddress
-        : {
-            rua: subscription.billingAddress || subscription.billingAddressText || '-',
-            numero: '-',
-            bairro: '-',
-            cidade: '-'
-          };
-      document.getElementById('billingStreet').textContent = billing.rua || '-';
-      document.getElementById('billingNumber').textContent = billing.numero || '-';
-      document.getElementById('billingDistrict').textContent = billing.bairro || '-';
-      document.getElementById('billingCity').textContent = billing.cidade || '-';
-      document.getElementById('subscriptionStatus').textContent = subscription.status || 'Ativa';
-
-      const invoices = readInvoices();
-      const invoiceList = document.getElementById('invoiceList');
-      invoiceList.innerHTML = invoices.map((invoice) => `
-        <div class="invoice-item">
-          <div class="invoice-head">
-            <strong>${invoice.description}</strong>
-            <span class="badge">${invoice.status}</span>
-          </div>
-          <div class="invoice-meta">${fmtDate(invoice.date)} • ${fmtMoney(invoice.amount)}</div>
-          <div class="invoice-meta">ID ${invoice.id}</div>
-        </div>
-      `).join('');
     }
 
-    const cardOverlay = document.getElementById('cardOverlay');
-    const modalNumber = document.getElementById('modalNumber');
-    const modalExpiry = document.getElementById('modalExpiry');
-    const cardFeedback = document.getElementById('cardFeedback');
-
-    modalNumber.addEventListener('input', (event) => {
-      event.target.value = formatCardNumber(event.target.value);
+    // Botão "Alterar assinatura" → redireciona para produtos
+    document.querySelector('a[href="/produtos.html"]') && document.querySelectorAll('a[href="/produtos.html"]').forEach((a) => {
+      a.href = '/checkout.html';
     });
 
-    modalExpiry.addEventListener('input', (event) => {
-      event.target.value = formatExpiry(event.target.value);
-    });
-
+    // Botão principal do card (Trocar cartão → Renovar se expirada)
     document.getElementById('btnChangeCard').addEventListener('click', () => {
-      const subscription = readSubscription();
-      if (!subscription) return;
-      cardFeedback.className = 'form-feedback';
-      document.getElementById('modalHolder').value = subscription.cardHolder || '';
-      document.getElementById('modalNumber').value = '';
-      document.getElementById('modalExpiry').value = subscription.cardExpiry || '';
-      document.getElementById('modalCvv').value = '';
-      cardOverlay.classList.add('open');
+      window.location.href = '/checkout.html';
     });
 
-    document.getElementById('btnCancelCard').addEventListener('click', () => {
-      cardOverlay.classList.remove('open');
+    // Modal de trocar cartão → redireciona para checkout (MP gerencia o cartão)
+    document.getElementById('btnCancelCard') && document.getElementById('btnCancelCard').addEventListener('click', () => {
+      document.getElementById('cardOverlay').classList.remove('open');
+    });
+    document.getElementById('btnSaveCard') && document.getElementById('btnSaveCard').addEventListener('click', () => {
+      window.location.href = '/checkout.html';
+    });
+    document.getElementById('cardOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('cardOverlay')) document.getElementById('cardOverlay').classList.remove('open');
     });
 
-    cardOverlay.addEventListener('click', (event) => {
-      if (event.target === cardOverlay) {
-        cardOverlay.classList.remove('open');
-      }
-    });
-
-    document.getElementById('btnSaveCard').addEventListener('click', () => {
-      const subscription = readSubscription();
-      if (!subscription) return;
-
-      const holder = document.getElementById('modalHolder').value.trim();
-      const number = document.getElementById('modalNumber').value.trim();
-      const expiry = document.getElementById('modalExpiry').value.trim();
-      const cvv = document.getElementById('modalCvv').value.trim();
-
-      cardFeedback.className = 'form-feedback';
-
-      if (holder.length < 3 || number.replace(/\D/g, '').length < 16 || !/^\d{2}\/\d{2}$/.test(expiry) || cvv.length < 3) {
-        cardFeedback.textContent = 'Preencha corretamente os dados do novo cartão.';
-        cardFeedback.classList.add('error');
-        return;
-      }
-
-      subscription.cardHolder = holder;
-      subscription.cardBrand = detectBrand(number);
-      subscription.cardLast4 = number.replace(/\D/g, '').slice(-4);
-      subscription.cardExpiry = expiry;
-      localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
-
-      cardOverlay.classList.remove('open');
-      render();
-    });
-
-    render();
+    carregar();
 
     const revealEls = document.querySelectorAll('.reveal-section');
     const revealObserver = new IntersectionObserver((entries) => {

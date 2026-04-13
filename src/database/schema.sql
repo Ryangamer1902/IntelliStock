@@ -172,6 +172,44 @@ CREATE TABLE IF NOT EXISTS sessoes_ativas (
   INDEX idx_sessoes_usuario (usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Migração: adicionar is_admin em usuarios (bancos existentes)
+SET @col_is_admin_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'usuarios'
+    AND COLUMN_NAME = 'is_admin'
+);
+SET @sql_is_admin := IF(
+  @col_is_admin_exists = 0,
+  'ALTER TABLE usuarios ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0',
+  'SELECT 1'
+);
+PREPARE stmt_is_admin FROM @sql_is_admin;
+EXECUTE stmt_is_admin;
+DEALLOCATE PREPARE stmt_is_admin;
+
+-- Assinaturas (planos pagos via Mercado Pago)
+CREATE TABLE IF NOT EXISTS assinaturas (
+  id                   INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id           INT NOT NULL,
+  plano                ENUM('semanal','mensal','anual') NOT NULL,
+  status               ENUM('pendente','ativa','cancelada','suspensa','expirada') NOT NULL DEFAULT 'pendente',
+  mp_payment_id        VARCHAR(100) NULL,
+  valor_pago           DECIMAL(10,2) NULL,
+  data_inicio          TIMESTAMP NULL,
+  data_expiracao       TIMESTAMP NULL,
+  data_cancelamento    TIMESTAMP NULL,
+  renovacao_automatica TINYINT(1) NOT NULL DEFAULT 1,
+  created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_assinatura_usuario (usuario_id),
+  INDEX idx_assinaturas_status    (status),
+  INDEX idx_assinaturas_expiracao (data_expiracao),
+  INDEX idx_mp_payment            (mp_payment_id),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ==================== INSUMOS ====================
 
 CREATE TABLE IF NOT EXISTS fornecedores (

@@ -264,11 +264,11 @@
     toggleRegisterPass.addEventListener('click', () => togglePasswordVisibility(cadastroSenhaInput, toggleRegisterPass));
     toggleRegisterPassConfirm.addEventListener('click', () => togglePasswordVisibility(cadastroSenhaConfirmInput, toggleRegisterPassConfirm));
     tabLogin.addEventListener('click', () => setAuthMode('login'));
-    tabCadastro.addEventListener('click', () => setAuthMode('cadastro'));
+    tabCadastro.addEventListener('click', () => { window.location.href = '/produtos.html'; });
     if (openCadastroLink) {
       openCadastroLink.addEventListener('click', (event) => {
         event.preventDefault();
-        setAuthMode('cadastro');
+        window.location.href = '/produtos.html';
       });
     }
     if (openForgotLink) {
