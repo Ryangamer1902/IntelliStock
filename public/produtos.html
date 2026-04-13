@@ -188,8 +188,9 @@
 
   </main>
 
+  <script src="/js/auth-service.js"></script>
   <script>
-    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const __menuUser = window.AuthService.getCurrentUser();
     if (__menuUser) {
       document.querySelectorAll('.nav-auth-link').forEach((link) => {
         link.style.display = '';
@@ -197,7 +198,7 @@
     }
 
     // Sessão opcional: a página pode ser acessada sem login.
-    const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const _usuario = window.AuthService.getCurrentUser();
     if (_usuario) {
       const area = document.getElementById('userArea');
       area.style.display = 'flex';
@@ -205,7 +206,7 @@
       const ini = (_usuario.nome || 'U').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
       document.getElementById('avatarInitial').textContent = ini;
       document.getElementById('btnLogout').addEventListener('click', () => {
-        sessionStorage.removeItem('is_usuario');
+        window.AuthService.clearAuthState();
         window.location.href = '/login.html';
       });
     }

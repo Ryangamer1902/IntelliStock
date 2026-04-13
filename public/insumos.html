@@ -75,7 +75,7 @@
       <section class="toolbar reveal-section">
         <div class="search-wrap">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="searchInput" placeholder="Buscar por nome, fornecedor ou unidade...">
+          <input type="text" id="searchInput" placeholder="Buscar por nome, fornecedor, unidade ou código de barras...">
         </div>
         <button class="btn btn-soft" id="btnRefresh">Atualizar</button>
       </section>
@@ -178,8 +178,9 @@
     </div>
   </div>
 
+  <script src="/js/auth-service.js"></script>
   <script>
-    const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const usuario = window.AuthService.getCurrentUser();
     if (!usuario) {
       window.location.href = '/login.html';
     }
@@ -192,18 +193,16 @@
     }
 
     document.getElementById('btnLogout').addEventListener('click', async () => {
-      const token = sessionStorage.getItem('is_session_token');
+      const token = window.AuthService.getSessionToken();
       if (token) {
         try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
       }
-      sessionStorage.removeItem('is_usuario');
-      sessionStorage.removeItem('is_session_token');
-      sessionStorage.removeItem('is_2fa_session');
+      window.AuthService.clearAuthState();
       window.location.href = '/login.html';
     });
 
     function getAuthHeaders() {
-      const token = sessionStorage.getItem('is_session_token');
+      const token = window.AuthService.getSessionToken();
       return token ? { 'Authorization': 'Bearer ' + token } : {};
     }
 
@@ -290,6 +289,39 @@
     }
 
     let allInsumos = [];
+
+    function applySearchFilter() {
+      const input = document.getElementById('searchInput');
+      const term = String(input?.value || '').trim().toLowerCase();
+
+      if (!term) {
+        renderTable(allInsumos);
+        return;
+      }
+
+      const onlyDigits = term.replace(/\D/g, '');
+      const isBarcodeSearch = onlyDigits.length >= 8;
+
+      const filtered = allInsumos.filter((item) => {
+        const nome = String(item.nome || '').toLowerCase();
+        const fornecedor = String(item.fornecedor_nome || '').toLowerCase();
+        const unidade = String(item.unidade || '').toLowerCase();
+        const codigoBarras = String(item.codigo_barras || '').toLowerCase();
+
+        if (isBarcodeSearch) {
+          return codigoBarras.includes(onlyDigits);
+        }
+
+        return (
+          nome.includes(term) ||
+          fornecedor.includes(term) ||
+          unidade.includes(term) ||
+          codigoBarras.includes(term)
+        );
+      });
+
+      renderTable(filtered);
+    }
 
     function updateKpis(items) {
       const total = items.length;
@@ -404,7 +436,7 @@
         }
 
         updateKpis(allInsumos);
-        renderTable(allInsumos);
+        applySearchFilter();
       } catch (error) {
         sourceNote.textContent = 'Fonte dos dados: falha ao consultar API';
         updateKpis([]);
@@ -412,22 +444,7 @@
       }
     }
 
-    document.getElementById('searchInput').addEventListener('input', function () {
-      const term = this.value.trim().toLowerCase();
-      if (!term) {
-        renderTable(allInsumos);
-        return;
-      }
-
-      const filtered = allInsumos.filter((item) => {
-        const nome = String(item.nome || '').toLowerCase();
-        const fornecedor = String(item.fornecedor_nome || '').toLowerCase();
-        const unidade = String(item.unidade || '').toLowerCase();
-        return nome.includes(term) || fornecedor.includes(term) || unidade.includes(term);
-      });
-
-      renderTable(filtered);
-    });
+    document.getElementById('searchInput').addEventListener('input', applySearchFilter);
 
     document.getElementById('btnRefresh').addEventListener('click', carregarInsumos);
 

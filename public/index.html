@@ -270,8 +270,16 @@
     IntelliStock - Gerenciador de Estoque | Versão 1.0
   </footer>
 
+  <script src="/js/auth-service.js"></script>
   <script>
-    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const __menuUser = window.AuthService.getCurrentUser();
+    const __sessionToken = window.AuthService.getSessionToken();
+    const __authMode = (localStorage.getItem('auth_mode') === 'mock') ? 'mock' : 'api';
+
+    if (__menuUser && (__authMode === 'mock' || __sessionToken)) {
+      window.location.href = '/dashboard.html';
+    }
+
     if (__menuUser) {
       document.querySelectorAll('.nav-auth-link').forEach((link) => {
         link.style.display = '';

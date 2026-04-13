@@ -23,19 +23,38 @@ app.use(express.static(path.join(__dirname, 'public')));
 let pool = null;
 let dbConnected = false;
 
+function toBool(value, defaultValue = false) {
+  if (value === undefined || value === null || value === '') return defaultValue;
+  return String(value).trim().toLowerCase() === 'true';
+}
+
+function buildSslConfig() {
+  const host = String(process.env.DB_HOST || 'localhost').trim().toLowerCase();
+  const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+
+  // Em localhost, SSL deve ficar desligado por padrao.
+  // Em banco remoto (ex: TiDB Cloud), SSL fica ligado por padrao.
+  const useSsl = toBool(process.env.DB_SSL, !isLocalHost);
+  if (!useSsl) return undefined;
+
+  return {
+    minVersion: process.env.DB_SSL_MIN_VERSION || 'TLSv1.2',
+    rejectUnauthorized: toBool(process.env.DB_SSL_REJECT_UNAUTHORIZED, false)
+  };
+}
+
 // Função para inicializar conexão com banco (pode ser chamada depois)
 const initializeDatabase = async () => {
   try {
+    const sslConfig = buildSslConfig();
+
     pool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'estoque_db',
       port: process.env.DB_PORT || 3306,
-      ssl: {
-        minVersion: 'TLSv1.2',
-        rejectUnauthorized: true
-      },
+      ...(sslConfig ? { ssl: sslConfig } : {}),
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0

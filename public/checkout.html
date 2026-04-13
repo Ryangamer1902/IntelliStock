@@ -186,6 +186,7 @@
     </div>
   </main>
 
+  <script src="/js/auth-service.js"></script>
   <script>
     const SUBSCRIPTION_KEY = 'intellistock_subscription_v1';
     const INVOICES_KEY = 'intellistock_invoices_v1';
@@ -231,7 +232,7 @@
       }
     };
 
-    const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const usuario = window.AuthService.getCurrentUser();
     const planParam = new URLSearchParams(window.location.search).get('plano');
     const billingCycle = document.getElementById('billingCycle');
     const checkoutFeedback = document.getElementById('checkoutFeedback');
@@ -401,11 +402,11 @@
       localStorage.setItem(INVOICES_KEY, JSON.stringify(invoices));
 
       if (!usuario) {
-        sessionStorage.setItem('is_usuario', JSON.stringify({
+        window.AuthService.saveAuthSession({
           id: 'checkout_' + Date.now(),
           nome,
           email
-        }));
+        }, null, false);
       }
 
       checkoutFeedback.textContent = 'Assinatura simulada com sucesso. Redirecionando para sua área...';

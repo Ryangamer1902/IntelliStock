@@ -210,8 +210,8 @@
   <script src="/js/auth-service.js"></script>
   <script>
     // ===== AUTH GUARD =====
-    const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
-    const _sessionToken = sessionStorage.getItem('is_session_token');
+    const usuario = window.AuthService.getCurrentUser();
+    const _sessionToken = window.AuthService.getSessionToken();
     const _authMode = (localStorage.getItem('auth_mode') === 'mock') ? 'mock' : 'api';
     if (!usuario || (_authMode === 'api' && !_sessionToken)) {
       window.location.href = '/login.html';
@@ -228,18 +228,16 @@
 
     // Logout
     document.getElementById('btnLogout').addEventListener('click', async () => {
-      const token = sessionStorage.getItem('is_session_token');
+      const token = window.AuthService.getSessionToken();
       if (token) {
         try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
       }
-      sessionStorage.removeItem('is_usuario');
-      sessionStorage.removeItem('is_session_token');
-      sessionStorage.removeItem('is_2fa_session');
+      window.AuthService.clearAuthState();
       window.location.href = '/login.html';
     });
 
     function getAuthHeaders() {
-      const token = sessionStorage.getItem('is_session_token');
+      const token = window.AuthService.getSessionToken();
       return token ? { 'Authorization': 'Bearer ' + token } : {};
     }
 

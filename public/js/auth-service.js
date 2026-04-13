@@ -2,6 +2,10 @@
   const MODE_KEY = 'auth_mode';
   const DEFAULT_MODE = 'api';
   const MOCK_USERS_KEY = 'mock_auth_users_v1';
+  const USER_KEY = 'is_usuario';
+  const TOKEN_KEY = 'is_session_token';
+  const TWO_FA_KEY = 'is_2fa_session';
+  const REMEMBER_KEY = 'is_remember_me';
 
   const defaultMockUsers = [
     {
@@ -11,6 +15,116 @@
       senha: '123456'
     }
   ];
+
+  function safeParse(raw) {
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function isRememberEnabled() {
+    return localStorage.getItem(REMEMBER_KEY) === '1';
+  }
+
+  function setRememberEnabled(enabled) {
+    localStorage.setItem(REMEMBER_KEY, enabled ? '1' : '0');
+  }
+
+  function getCurrentUser() {
+    const sessionUser = safeParse(sessionStorage.getItem(USER_KEY) || 'null');
+    if (sessionUser) return sessionUser;
+    return safeParse(localStorage.getItem(USER_KEY) || 'null');
+  }
+
+  function getSessionToken() {
+    const sessionToken = sessionStorage.getItem(TOKEN_KEY);
+    if (sessionToken) return sessionToken;
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  function get2FASession() {
+    const session2fa = safeParse(sessionStorage.getItem(TWO_FA_KEY) || 'null');
+    if (session2fa) return session2fa;
+    return safeParse(localStorage.getItem(TWO_FA_KEY) || 'null');
+  }
+
+  function hydrateAuthState() {
+    if (!isRememberEnabled()) return;
+
+    const persistedUser = localStorage.getItem(USER_KEY);
+    const persistedToken = localStorage.getItem(TOKEN_KEY);
+    const persisted2fa = localStorage.getItem(TWO_FA_KEY);
+
+    if (!sessionStorage.getItem(USER_KEY) && persistedUser) {
+      sessionStorage.setItem(USER_KEY, persistedUser);
+    }
+
+    if (!sessionStorage.getItem(TOKEN_KEY) && persistedToken) {
+      sessionStorage.setItem(TOKEN_KEY, persistedToken);
+    }
+
+    if (!sessionStorage.getItem(TWO_FA_KEY) && persisted2fa) {
+      sessionStorage.setItem(TWO_FA_KEY, persisted2fa);
+    }
+  }
+
+  function clear2FASession() {
+    sessionStorage.removeItem(TWO_FA_KEY);
+    localStorage.removeItem(TWO_FA_KEY);
+  }
+
+  function save2FASession(sessionData, remember) {
+    const safeSession = {
+      ...sessionData,
+      remember: remember === true
+    };
+
+    sessionStorage.setItem(TWO_FA_KEY, JSON.stringify(safeSession));
+    setRememberEnabled(remember === true);
+
+    if (remember === true) {
+      localStorage.setItem(TWO_FA_KEY, JSON.stringify(safeSession));
+    } else {
+      localStorage.removeItem(TWO_FA_KEY);
+    }
+  }
+
+  function saveAuthSession(usuario, sessionToken, remember) {
+    sessionStorage.setItem(USER_KEY, JSON.stringify(usuario));
+    if (sessionToken) {
+      sessionStorage.setItem(TOKEN_KEY, sessionToken);
+    } else {
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+
+    setRememberEnabled(remember === true);
+
+    if (remember === true) {
+      localStorage.setItem(USER_KEY, JSON.stringify(usuario));
+      if (sessionToken) {
+        localStorage.setItem(TOKEN_KEY, sessionToken);
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
+      }
+    } else {
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+    }
+
+    clear2FASession();
+  }
+
+  function clearAuthState() {
+    sessionStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TWO_FA_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TWO_FA_KEY);
+    localStorage.removeItem(REMEMBER_KEY);
+  }
 
   function getMode() {
     const saved = localStorage.getItem(MODE_KEY);
@@ -258,6 +372,8 @@
     return getMode() === 'api' ? apiRedefinirSenha(payload) : mockRedefinirSenha(payload);
   }
 
+  hydrateAuthState();
+
   window.AuthService = {
     getMode,
     setMode,
@@ -265,6 +381,15 @@
     register,
     verify,
     solicitarReset,
-    redefinirSenha
+    redefinirSenha,
+    isRememberEnabled,
+    getCurrentUser,
+    getSessionToken,
+    get2FASession,
+    save2FASession,
+    clear2FASession,
+    saveAuthSession,
+    clearAuthState,
+    hydrateAuthState
   };
 })();

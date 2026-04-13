@@ -179,10 +179,11 @@
     </div>
   </div>
 
+  <script src="/js/auth-service.js"></script>
   <script>
     const SUBSCRIPTION_KEY = 'intellistock_subscription_v1';
     const INVOICES_KEY = 'intellistock_invoices_v1';
-    const usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const usuario = window.AuthService.getCurrentUser();
 
     if (!usuario) {
       window.location.href = '/login.html';
@@ -195,9 +196,12 @@
       document.getElementById('avatarInitial').textContent = initials;
     }
 
-    document.getElementById('btnLogout').addEventListener('click', () => {
-      sessionStorage.removeItem('is_usuario');
-      sessionStorage.removeItem('is_2fa_session');
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      const token = window.AuthService.getSessionToken();
+      if (token) {
+        try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
+      }
+      window.AuthService.clearAuthState();
       window.location.href = '/login.html';
     });
 

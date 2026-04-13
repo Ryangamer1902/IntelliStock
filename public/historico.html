@@ -186,15 +186,16 @@
 
   </main>
 
+  <script src="/js/auth-service.js"></script>
   <script>
-    const __menuUser = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const __menuUser = window.AuthService.getCurrentUser();
     if (__menuUser) {
       document.querySelectorAll('.nav-auth-link').forEach((link) => {
         link.style.display = '';
       });
     }
 
-    const _usuario = JSON.parse(sessionStorage.getItem('is_usuario') || 'null');
+    const _usuario = window.AuthService.getCurrentUser();
     if (_usuario) {
       const area = document.getElementById('userArea');
       area.style.display = 'flex';
@@ -202,19 +203,17 @@
       const ini = (_usuario.nome || 'U').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
       document.getElementById('avatarInitial').textContent = ini;
       document.getElementById('btnLogout').addEventListener('click', async () => {
-        const token = sessionStorage.getItem('is_session_token');
+        const token = window.AuthService.getSessionToken();
         if (token) {
           try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
         }
-        sessionStorage.removeItem('is_usuario');
-        sessionStorage.removeItem('is_session_token');
-        sessionStorage.removeItem('is_2fa_session');
+        window.AuthService.clearAuthState();
         window.location.href = '/login.html';
       });
     }
 
     function getAuthHeadersHist() {
-      const token = sessionStorage.getItem('is_session_token');
+      const token = window.AuthService.getSessionToken();
       return token ? { 'Authorization': 'Bearer ' + token } : {};
     }
 

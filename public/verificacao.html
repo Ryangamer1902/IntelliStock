@@ -68,8 +68,9 @@
 
   <script>
     // ----- Validar sessão -----
-    const session = JSON.parse(sessionStorage.getItem('is_2fa_session') || 'null');
+    const session = window.AuthService.get2FASession();
     if (!session || !session.token_temp) {
+      window.AuthService.clear2FASession();
       window.location.href = '/login.html';
     }
 
@@ -184,11 +185,7 @@
           clearInterval(timerInterval);
           feedback.textContent = `Acesso confirmado! Bem-vindo, ${data.usuario.nome}.`;
           feedback.classList.add('success');
-          sessionStorage.setItem('is_usuario', JSON.stringify(data.usuario));
-          if (data.session_token) {
-            sessionStorage.setItem('is_session_token', data.session_token);
-          }
-          sessionStorage.removeItem('is_2fa_session');
+          window.AuthService.saveAuthSession(data.usuario, data.session_token, session.remember === true);
           setTimeout(() => { window.location.href = '/dashboard.html'; }, 1400);
         } else {
           feedback.textContent = data.message || 'Código incorreto.';
