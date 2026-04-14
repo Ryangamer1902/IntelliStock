@@ -77,11 +77,14 @@
         <p class="hero-description">
           Visualize, pesquise e acompanhe o saldo e custo dos insumos do estoque em tempo real.
         </p>
-        <span class="hero-note" id="sourceNote">Fonte dos dados: carregando...</span>
         <div class="hero-actions">
           <button class="btn btn-main" id="btnAddMaterial">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Adicionar materiais
+          </button>
+          <button class="btn btn-soft" id="btnOpenProduction" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10l4 4v14H3V3h4z"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>
+            Registrar produção
           </button>
         </div>
       </section>
@@ -211,6 +214,40 @@
       <div class="modal-actions">
         <button class="btn btn-soft" id="btnCancelSale">Cancelar</button>
         <button class="btn btn-main" id="btnSaveSale">Confirmar venda</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="productionOverlay">
+    <div class="modal">
+      <h2>Registrar produção</h2>
+      <p class="sub">Crie um item final pelo nome e monte a receita com quantos componentes quiser. O sistema dá baixa nos componentes e entrada no item final.</p>
+      <div class="modal-feedback" id="productionFeedback"></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Nome do novo item final *</label>
+          <input type="text" id="prodFinalName" placeholder="Ex: Kit Chave Estrela Premium">
+        </div>
+        <div class="field">
+          <label>Quantidade produzida *</label>
+          <input type="number" id="prodQtd" min="1" step="1" placeholder="Ex: 10">
+        </div>
+      </div>
+
+      <div class="field production-components-field">
+        <label>Componentes da produção *</label>
+        <div id="prodComponentsList" class="prod-components-list"></div>
+        <button class="btn btn-soft" id="btnAddProdComponent" type="button">+ Adicionar componente</button>
+      </div>
+
+      <div class="production-summary" id="prodCostSummary">Custo unitário estimado: R$ 0,00</div>
+
+      <p class="production-hint">Exemplo: para produzir 10 unidades, informe em cada componente o consumo total do lote (nao por unidade).</p>
+
+      <div class="modal-actions">
+        <button class="btn btn-soft" id="btnCancelProduction">Cancelar</button>
+        <button class="btn btn-main" id="btnSaveProduction">Confirmar produção</button>
       </div>
     </div>
   </div>
@@ -609,8 +646,159 @@
       }
     }
 
+    let productionRowSeq = 0;
+
+    function generateProductionBarcode(existingCodes = new Set()) {
+      let code = '';
+      do {
+        const seed = `${Date.now()}${Math.floor(Math.random() * 1000)}`.replace(/\D/g, '');
+        code = seed.slice(-13).padStart(13, '0');
+      } while (existingCodes.has(code));
+      return code;
+    }
+
+    function buildProductionSelectOptions({ placeholder = 'Selecione o componente' } = {}) {
+      const options = [`<option value="">${escHtml(placeholder)}</option>`];
+      allInsumos.forEach((item) => {
+        const id = Number(item.id || 0);
+        options.push(`<option value="${id}">${escHtml(item.nome || 'Material')}</option>`);
+      });
+      return options.join('');
+    }
+
+    function getProductionRows() {
+      return Array.from(document.querySelectorAll('#prodComponentsList .prod-component-row'));
+    }
+
+    function addProductionComponentRow(defaultData = null) {
+      productionRowSeq += 1;
+      const rowId = String(productionRowSeq);
+      const list = document.getElementById('prodComponentsList');
+
+      const row = document.createElement('div');
+      row.className = 'prod-component-row';
+      row.dataset.rowId = rowId;
+      row.innerHTML = `
+        <div class="prod-row-main">
+          <div class="prod-row-inputs">
+            <select class="prod-comp-select" aria-label="Componente"></select>
+            <input type="number" class="prod-comp-qty" min="0.001" step="0.001" placeholder="Qtde total do lote" aria-label="Quantidade total do lote">
+          </div>
+          <button type="button" class="btn btn-soft prod-comp-remove" title="Remover componente">Remover</button>
+        </div>
+        <div class="prod-component-price">
+          <span>Estoque disponível: <strong class="prod-comp-stock">-</strong></span>
+          <span>Preço unitário: <strong class="prod-comp-unit-price">-</strong></span>
+          <span>Custo no lote: <strong class="prod-comp-total-price">-</strong></span>
+        </div>
+      `;
+
+      const selectEl = row.querySelector('.prod-comp-select');
+      selectEl.innerHTML = buildProductionSelectOptions({ placeholder: 'Selecione o componente' });
+
+      if (defaultData?.materialId) {
+        selectEl.value = String(defaultData.materialId);
+      }
+
+      const qtyEl = row.querySelector('.prod-comp-qty');
+      qtyEl.value = defaultData?.qtyTotal || '';
+
+      list.appendChild(row);
+      updateProductionRowPrice(row);
+      updateProductionSummary();
+    }
+
+    function updateProductionRowPrice(row) {
+      const selectEl = row.querySelector('.prod-comp-select');
+      const qtyEl = row.querySelector('.prod-comp-qty');
+      const stockEl = row.querySelector('.prod-comp-stock');
+      const unitPriceEl = row.querySelector('.prod-comp-unit-price');
+      const totalPriceEl = row.querySelector('.prod-comp-total-price');
+
+      const materialId = Number(selectEl.value || 0);
+      const qtyTotal = Number(qtyEl.value || 0);
+      const item = allInsumos.find((m) => Number(m.id) === materialId);
+
+      const stock = Number(item?.qtd_atual || 0);
+      const unitPrice = Number(item?.preco_custo_un || 0);
+      const totalPrice = unitPrice * (Number.isFinite(qtyTotal) ? qtyTotal : 0);
+
+      stockEl.textContent = item ? fmtNum(stock) : '-';
+      unitPriceEl.textContent = item ? fmtMoney(unitPrice) : '-';
+      totalPriceEl.textContent = item && qtyTotal > 0 ? fmtMoney(totalPrice) : '-';
+    }
+
+    function updateProductionSummary() {
+      const producedQty = Number(document.getElementById('prodQtd').value || 0);
+      let batchCost = 0;
+
+      getProductionRows().forEach((row) => {
+        const materialId = Number(row.querySelector('.prod-comp-select').value || 0);
+        const qtyTotal = Number(row.querySelector('.prod-comp-qty').value || 0);
+        const item = allInsumos.find((m) => Number(m.id) === materialId);
+        if (item && Number.isFinite(qtyTotal) && qtyTotal > 0) {
+          batchCost += Number(item.preco_custo_un || 0) * qtyTotal;
+        }
+      });
+
+      const estimatedUnitCost = producedQty > 0 ? batchCost / producedQty : 0;
+      const summaryEl = document.getElementById('prodCostSummary');
+      summaryEl.textContent = `Custo unitário estimado: ${fmtMoney(estimatedUnitCost)} | Custo total do lote: ${fmtMoney(batchCost)}`;
+    }
+
+    function openProductionModal() {
+      if (!allInsumos.length) {
+        showToast('Cadastre ao menos 1 material para registrar produção.', 'error');
+        return;
+      }
+
+      document.getElementById('prodFinalName').value = '';
+      document.getElementById('prodQtd').value = '';
+      document.getElementById('prodComponentsList').innerHTML = '';
+      addProductionComponentRow();
+
+      const fb = document.getElementById('productionFeedback');
+      fb.className = 'modal-feedback';
+      fb.textContent = '';
+
+      updateProductionSummary();
+      const productionOverlay = document.getElementById('productionOverlay');
+      productionOverlay.classList.add('open');
+      setTimeout(() => document.getElementById('prodFinalName').focus(), 80);
+    }
+
+    function closeProductionModal() {
+      document.getElementById('productionOverlay').classList.remove('open');
+    }
+
+    function parseProductionRecipe() {
+      const ingredients = [];
+
+      getProductionRows().forEach((row) => {
+        const materialIdRaw = row.querySelector('.prod-comp-select').value;
+        const qtyRaw = row.querySelector('.prod-comp-qty').value;
+
+        if (!materialIdRaw && !qtyRaw) return;
+
+        const qtyTotal = Number(qtyRaw);
+        if (!materialIdRaw || !Number.isFinite(qtyTotal) || qtyTotal <= 0) {
+          throw new Error('Preencha material e quantidade válidos para cada componente informado.');
+        }
+
+        ingredients.push({
+          materialId: Number(materialIdRaw),
+          qtyTotal
+        });
+      });
+
+      if (!ingredients.length) {
+        throw new Error('Adicione ao menos 1 componente para a produção.');
+      }
+
+      return ingredients;
+    }
+
     async function carregarInsumos() {
-      const sourceNote = document.getElementById('sourceNote');
       const mode = getMode();
 
       try {
@@ -623,16 +811,13 @@
           }
 
           allInsumos = data.data.map(mapMaterialToInsumo);
-          sourceNote.textContent = 'Fonte dos dados: materiais integrados (API /api/materiais)';
         } else {
           allInsumos = readMockMateriais().map(mapMaterialToInsumo);
-          sourceNote.textContent = 'Fonte dos dados: materiais integrados (localStorage)';
         }
 
         updateKpis(allInsumos);
         applySearchFilter();
       } catch (error) {
-        sourceNote.textContent = 'Fonte dos dados: falha ao consultar API';
         updateKpis([]);
         renderTable([]);
       }
@@ -648,6 +833,7 @@
 
     const modalOverlay = document.getElementById('modalOverlay');
     const saleOverlay = document.getElementById('saleOverlay');
+    const productionOverlay = document.getElementById('productionOverlay');
     let saleMaterialId = null;
 
     function calcVenda() {
@@ -700,6 +886,7 @@
     }
 
     document.getElementById('btnAddMaterial').addEventListener('click', openAddModal);
+    document.getElementById('btnOpenProduction').addEventListener('click', openProductionModal);
     document.getElementById('fieldCusto').addEventListener('input', calcVenda);
     document.getElementById('fieldMargem').addEventListener('input', calcVenda);
     document.getElementById('btnCancelModal').addEventListener('click', closeModal);
@@ -741,6 +928,44 @@
     });
     document.getElementById('btnCancelSale').addEventListener('click', closeSaleModal);
     saleOverlay.addEventListener('click', (e) => { if (e.target === saleOverlay) closeSaleModal(); });
+    document.getElementById('btnCancelProduction').addEventListener('click', closeProductionModal);
+    productionOverlay.addEventListener('click', (e) => { if (e.target === productionOverlay) closeProductionModal(); });
+    document.getElementById('btnAddProdComponent').addEventListener('click', () => {
+      addProductionComponentRow();
+    });
+    document.getElementById('prodQtd').addEventListener('input', updateProductionSummary);
+    document.getElementById('prodComponentsList').addEventListener('input', (event) => {
+      const row = event.target.closest('.prod-component-row');
+      if (!row) return;
+      if (event.target.classList.contains('prod-comp-select') || event.target.classList.contains('prod-comp-qty')) {
+        updateProductionRowPrice(row);
+        updateProductionSummary();
+      }
+    });
+    document.getElementById('prodComponentsList').addEventListener('change', (event) => {
+      const row = event.target.closest('.prod-component-row');
+      if (!row) return;
+      if (event.target.classList.contains('prod-comp-select') || event.target.classList.contains('prod-comp-qty')) {
+        updateProductionRowPrice(row);
+        updateProductionSummary();
+      }
+    });
+    document.getElementById('prodComponentsList').addEventListener('click', (event) => {
+      const removeBtn = event.target.closest('.prod-comp-remove');
+      if (!removeBtn) return;
+
+      const row = removeBtn.closest('.prod-component-row');
+      if (!row) return;
+
+      const rows = getProductionRows();
+      if (rows.length <= 1) {
+        showToast('A produção precisa de pelo menos 1 componente.', 'error');
+        return;
+      }
+
+      row.remove();
+      updateProductionSummary();
+    });
 
     document.getElementById('tableBody').addEventListener('click', (event) => {
       const sellBtn = event.target.closest('.btn-sell');
@@ -797,6 +1022,7 @@
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
+              ...getAuthHeaders(),
               'x-usuario-nome': usuario?.nome || 'Sistema'
             },
             body: JSON.stringify({
@@ -846,6 +1072,243 @@
       } finally {
         btn.disabled = false;
         btn.textContent = 'Confirmar venda';
+      }
+    });
+
+    document.getElementById('btnSaveProduction').addEventListener('click', async () => {
+      const btn = document.getElementById('btnSaveProduction');
+      const fb = document.getElementById('productionFeedback');
+
+      const finalName = document.getElementById('prodFinalName').value.trim();
+      const producedQty = Number(document.getElementById('prodQtd').value);
+
+      if (!finalName) {
+        fb.textContent = 'Informe o nome do item final.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      if (!Number.isFinite(producedQty) || producedQty <= 0) {
+        fb.textContent = 'Informe uma quantidade produzida válida.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      let ingredients;
+      try {
+        ingredients = parseProductionRecipe();
+      } catch (error) {
+        fb.textContent = error.message;
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      const mergedIngredientsMap = new Map();
+      ingredients.forEach((ing) => {
+        const prev = mergedIngredientsMap.get(ing.materialId) || 0;
+        mergedIngredientsMap.set(ing.materialId, prev + ing.qtyTotal);
+      });
+
+      const mergedIngredients = Array.from(mergedIngredientsMap.entries()).map(([materialId, qtyTotal]) => ({ materialId, qtyTotal }));
+      const finalItemByName = allInsumos.find((row) => String(row.nome || '').trim().toLowerCase() === finalName.toLowerCase());
+
+      if (finalItemByName && mergedIngredients.some((ing) => ing.materialId === Number(finalItemByName.id))) {
+        fb.textContent = 'O item final não pode ser usado como componente na mesma produção.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      let totalCostEstimate = 0;
+
+      for (const ing of mergedIngredients) {
+        const item = allInsumos.find((row) => Number(row.id) === ing.materialId);
+        const stock = Number(item?.qtd_atual || 0);
+        const totalNeeded = Number(ing.qtyTotal || 0);
+        if (!item) {
+          fb.textContent = 'Um dos componentes informados não foi encontrado.';
+          fb.className = 'modal-feedback error';
+          return;
+        }
+        if (totalNeeded > stock) {
+          fb.textContent = `Estoque insuficiente para ${item.nome}. Necessário: ${fmtNum(totalNeeded)} | Disponível: ${fmtNum(stock)}.`;
+          fb.className = 'modal-feedback error';
+          return;
+        }
+
+        totalCostEstimate += Number(item.preco_custo_un || 0) * Number(ing.qtyTotal || 0);
+      }
+
+      const finalUnitCost = +(producedQty > 0 ? (totalCostEstimate / producedQty) : 0).toFixed(2);
+
+      btn.disabled = true;
+      btn.textContent = 'Processando...';
+
+      try {
+        let finalItemId = finalItemByName ? Number(finalItemByName.id) : null;
+        let finalItemNome = finalItemByName?.nome || finalName;
+
+        if (getMode() === 'api') {
+          if (!finalItemId) {
+            const existingCodes = new Set(allInsumos.map((row) => String(row.codigo_barras || '')).filter(Boolean));
+            const generatedBarcode = generateProductionBarcode(existingCodes);
+            const createResponse = await fetch('/api/materiais', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+              },
+              body: JSON.stringify({
+                nome: finalName,
+                codigo_barras: generatedBarcode,
+                fornecedor: 'Produção Interna',
+                quantidade_atual: 0,
+                quantidade_minima: 0,
+                preco_custo: finalUnitCost,
+                margem_lucro: 0,
+                preco_manual: finalUnitCost
+              })
+            });
+            const createData = await createResponse.json();
+            if (!createData.success || !createData.data?.id) {
+              throw new Error(createData.message || 'Não foi possível criar o item final da produção.');
+            }
+
+            finalItemId = Number(createData.data.id);
+            finalItemNome = createData.data.nome || finalName;
+          }
+
+          for (const ing of mergedIngredients) {
+            const consumoTotal = +Number(ing.qtyTotal || 0).toFixed(3);
+            const item = allInsumos.find((row) => Number(row.id) === ing.materialId);
+
+            const response = await fetch(`/api/materiais/${ing.materialId}/quantidade`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+                'x-usuario-nome': usuario?.nome || 'Sistema'
+              },
+              body: JSON.stringify({
+                diferenca: -consumoTotal,
+                motivo: 'PRODUCAO',
+                observacao: `Consumo para produzir ${fmtNum(producedQty)} un. de ${finalItemNome}`,
+                usuario_nome: usuario?.nome || 'Sistema'
+              })
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+              throw new Error(data.message || `Falha ao dar baixa no componente ${item?.nome || ing.materialId}`);
+            }
+          }
+
+          const finalResponse = await fetch(`/api/materiais/${finalItemId}/quantidade`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeaders(),
+              'x-usuario-nome': usuario?.nome || 'Sistema'
+            },
+            body: JSON.stringify({
+              diferenca: +producedQty,
+              motivo: 'PRODUCAO',
+              observacao: `Entrada por produção com ${mergedIngredients.length} componente(s)`,
+              usuario_nome: usuario?.nome || 'Sistema'
+            })
+          });
+          const finalData = await finalResponse.json();
+          if (!finalData.success) {
+            throw new Error(finalData.message || 'Falha ao lançar entrada do item final.');
+          }
+        } else {
+          const lista = readMockMateriais();
+          const movs = readMockMovimentacoes();
+
+          if (!finalItemId) {
+            const nextIdForCreate = Math.max(
+              parseInt(localStorage.getItem(MOCK_MATERIAIS_NEXT_ID_KEY) || '0', 10) || 0,
+              ...lista.map((item) => (Number(item.id) || 0) + 1),
+              1
+            );
+            const existingCodes = new Set(lista.map((row) => String(row.codigo_barras || '')).filter(Boolean));
+            const generatedBarcode = generateProductionBarcode(existingCodes);
+
+            lista.unshift({
+              id: nextIdForCreate,
+              codigo_barras: generatedBarcode,
+              nome: finalName,
+              fornecedor: 'Produção Interna',
+              quantidade_atual: 0,
+              quantidade_minima: 0,
+              preco_custo: finalUnitCost,
+              margem_lucro: 0,
+              preco_manual: finalUnitCost
+            });
+
+            finalItemId = nextIdForCreate;
+            finalItemNome = finalName;
+          }
+
+          for (const ing of mergedIngredients) {
+            const idx = lista.findIndex((mat) => Number(mat.id) === ing.materialId);
+            if (idx < 0) throw new Error('Componente não encontrado no modo local.');
+
+            const consumoTotal = +Number(ing.qtyTotal || 0).toFixed(3);
+            const qtdAnterior = Number(lista[idx].quantidade_atual || 0);
+            const qtdAtualizada = +(qtdAnterior - consumoTotal).toFixed(3);
+            if (qtdAtualizada < 0) throw new Error(`Estoque insuficiente para ${lista[idx].nome}.`);
+
+            lista[idx].quantidade_atual = qtdAtualizada;
+            movs.unshift({
+              id: Date.now() + idx,
+              material_id: Number(lista[idx].id),
+              material_nome: String(lista[idx].nome || 'Material'),
+              tipo_movimento: 'AJUSTE',
+              quantidade_delta: -consumoTotal,
+              quantidade_anterior: qtdAnterior,
+              quantidade_atual: qtdAtualizada,
+              usuario_nome: usuario?.nome || 'Sistema',
+              observacao: `Consumo para produzir ${fmtNum(producedQty)} un. de ${finalItemNome}`,
+              created_at: new Date().toISOString()
+            });
+          }
+
+          const idxFinal = lista.findIndex((mat) => Number(mat.id) === finalItemId);
+          if (idxFinal < 0) throw new Error('Item final não encontrado no modo local.');
+
+          const qtdFinalAnterior = Number(lista[idxFinal].quantidade_atual || 0);
+          const qtdFinalAtual = +(qtdFinalAnterior + producedQty).toFixed(3);
+          lista[idxFinal].quantidade_atual = qtdFinalAtual;
+          lista[idxFinal].preco_custo = finalUnitCost;
+          lista[idxFinal].preco_manual = finalUnitCost;
+
+          movs.unshift({
+            id: Date.now() + 999,
+            material_id: Number(lista[idxFinal].id),
+            material_nome: String(lista[idxFinal].nome || 'Material'),
+            tipo_movimento: 'AJUSTE',
+            quantidade_delta: +producedQty,
+            quantidade_anterior: qtdFinalAnterior,
+            quantidade_atual: qtdFinalAtual,
+            usuario_nome: usuario?.nome || 'Sistema',
+            observacao: `Entrada por produção com ${mergedIngredients.length} componente(s)`,
+            created_at: new Date().toISOString()
+          });
+
+          const nextId = parseInt(localStorage.getItem(MOCK_MATERIAIS_NEXT_ID_KEY) || '1', 10) || 1;
+          persistMockMateriais(lista, nextId);
+          persistMockMovimentacoes(movs);
+        }
+
+        closeProductionModal();
+        await carregarInsumos();
+        showToast(`Produção registrada: +${fmtNum(producedQty)} em ${finalItemNome}. Custo unitário: ${fmtMoney(finalUnitCost)}.`);
+      } catch (error) {
+        fb.textContent = `Erro: ${error.message}`;
+        fb.className = 'modal-feedback error';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar produção';
       }
     });
 
