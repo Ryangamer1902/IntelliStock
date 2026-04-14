@@ -196,6 +196,9 @@ CREATE TABLE IF NOT EXISTS assinaturas (
   plano                ENUM('semanal','mensal','anual') NOT NULL,
   status               ENUM('pendente','ativa','cancelada','suspensa','expirada') NOT NULL DEFAULT 'pendente',
   mp_payment_id        VARCHAR(100) NULL,
+  cpf_cnpj             VARCHAR(14) NULL,
+  card_brand           VARCHAR(40) NULL,
+  card_last4           VARCHAR(4) NULL,
   valor_pago           DECIMAL(10,2) NULL,
   data_inicio          TIMESTAMP NULL,
   data_expiracao       TIMESTAMP NULL,
@@ -209,6 +212,55 @@ CREATE TABLE IF NOT EXISTS assinaturas (
   INDEX idx_mp_payment            (mp_payment_id),
   FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Migração: adicionar campos de cobrança em assinaturas (bancos existentes)
+SET @col_ass_cpf_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'assinaturas'
+    AND COLUMN_NAME = 'cpf_cnpj'
+);
+SET @sql_ass_cpf := IF(
+  @col_ass_cpf_exists = 0,
+  'ALTER TABLE assinaturas ADD COLUMN cpf_cnpj VARCHAR(14) NULL AFTER mp_payment_id',
+  'SELECT 1'
+);
+PREPARE stmt_ass_cpf FROM @sql_ass_cpf;
+EXECUTE stmt_ass_cpf;
+DEALLOCATE PREPARE stmt_ass_cpf;
+
+SET @col_ass_brand_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'assinaturas'
+    AND COLUMN_NAME = 'card_brand'
+);
+SET @sql_ass_brand := IF(
+  @col_ass_brand_exists = 0,
+  'ALTER TABLE assinaturas ADD COLUMN card_brand VARCHAR(40) NULL AFTER cpf_cnpj',
+  'SELECT 1'
+);
+PREPARE stmt_ass_brand FROM @sql_ass_brand;
+EXECUTE stmt_ass_brand;
+DEALLOCATE PREPARE stmt_ass_brand;
+
+SET @col_ass_last4_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'assinaturas'
+    AND COLUMN_NAME = 'card_last4'
+);
+SET @sql_ass_last4 := IF(
+  @col_ass_last4_exists = 0,
+  'ALTER TABLE assinaturas ADD COLUMN card_last4 VARCHAR(4) NULL AFTER card_brand',
+  'SELECT 1'
+);
+PREPARE stmt_ass_last4 FROM @sql_ass_last4;
+EXECUTE stmt_ass_last4;
+DEALLOCATE PREPARE stmt_ass_last4;
 
 -- ==================== INSUMOS ====================
 

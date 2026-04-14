@@ -10,6 +10,24 @@ const PLANOS = {
   anual:   { nome: 'Assinatura Anual IntelliStock',   preco: 1690.00, dias: 365 }
 };
 
+function maskCpfCnpj(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.length === 11) {
+    return `${digits.slice(0, 3)}.***.***-${digits.slice(-2)}`;
+  }
+  if (digits.length === 14) {
+    return `${digits.slice(0, 2)}.***.***/****-${digits.slice(-2)}`;
+  }
+  return null;
+}
+
+function calcularDiasRestantes(dataExpiracao, status) {
+  if (!dataExpiracao || status !== 'ativa') return 0;
+  const diffMs = new Date(dataExpiracao).getTime() - Date.now();
+  if (diffMs <= 0) return 0;
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
 function getMpClient() {
   return new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN || '',
@@ -163,6 +181,17 @@ class AssinaturasController {
 
       const pref = await criarPreferenciaMp(usuarioId, email, nome, cpfCnpj, planoId);
 
+      await db.query(
+        `INSERT INTO assinaturas (usuario_id, plano, status, cpf_cnpj)
+         VALUES (?, ?, 'pendente', ?)
+         ON DUPLICATE KEY UPDATE
+           plano = VALUES(plano),
+           cpf_cnpj = VALUES(cpf_cnpj),
+           status = IF(status = 'ativa' AND data_expiracao > NOW(), status, 'pendente'),
+           updated_at = NOW()`,
+        [usuarioId, planoId, cpfCnpj]
+      );
+
       return res.json({
         success: true,
         init_point: pref.init_point,
@@ -207,6 +236,17 @@ class AssinaturasController {
 
       const { nome, email } = userRows[0];
       const pref = await criarPreferenciaMp(req.usuario_id, email, nome, cpfCnpj, planoId);
+
+      await db.query(
+        `INSERT INTO assinaturas (usuario_id, plano, status, cpf_cnpj)
+         VALUES (?, ?, 'pendente', ?)
+         ON DUPLICATE KEY UPDATE
+           plano = VALUES(plano),
+           cpf_cnpj = VALUES(cpf_cnpj),
+           status = IF(status = 'ativa' AND data_expiracao > NOW(), status, 'pendente'),
+           updated_at = NOW()`,
+        [req.usuario_id, planoId, cpfCnpj]
+      );
 
       return res.json({
         success: true,
@@ -253,6 +293,9 @@ class AssinaturasController {
 
       const planoId = payment.metadata?.plano || 'mensal';
       const plano   = PLANOS[planoId] || PLANOS.mensal;
+      const cpfCnpj = String(payment.payer?.identification?.number || '').replace(/\D/g, '');
+      const cardBrand = String(payment.payment_method_id || '').trim() || null;
+      const cardLast4 = String(payment.card?.last_four_digits || '').replace(/\D/g, '').slice(-4) || null;
 
       if (payment.status === 'approved') {
         const dataInicio      = new Date();
@@ -263,8 +306,8 @@ class AssinaturasController {
 
         await db.query(
           `INSERT INTO assinaturas
-             (usuario_id, plano, status, mp_payment_id, valor_pago, data_inicio, data_expiracao)
-           VALUES (?, ?, 'ativa', ?, ?, ?, ?)
+             (usuario_id, plano, status, mp_payment_id, valor_pago, data_inicio, data_expiracao, cpf_cnpj, card_brand, card_last4)
+           VALUES (?, ?, 'ativa', ?, ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE
              plano            = VALUES(plano),
              status           = 'ativa',
@@ -272,9 +315,12 @@ class AssinaturasController {
              valor_pago       = VALUES(valor_pago),
              data_inicio      = VALUES(data_inicio),
              data_expiracao   = VALUES(data_expiracao),
+             cpf_cnpj         = COALESCE(VALUES(cpf_cnpj), cpf_cnpj),
+             card_brand       = COALESCE(VALUES(card_brand), card_brand),
+             card_last4       = COALESCE(VALUES(card_last4), card_last4),
              data_cancelamento = NULL,
              updated_at       = NOW()`,
-          [usuarioId, planoId, String(payment.id), plano.preco, dataInicio, dataExpiracao]
+          [usuarioId, planoId, String(payment.id), plano.preco, dataInicio, dataExpiracao, cpfCnpj || null, cardBrand, cardLast4]
         );
 
         console.log(
@@ -299,18 +345,35 @@ class AssinaturasController {
 
     try {
       const [rows] = await db.query(
-        `SELECT plano, status, mp_payment_id, valor_pago,
+        `SELECT u.nome, u.email,
+                a.plano, a.status, a.mp_payment_id, a.valor_pago,
+                a.cpf_cnpj, a.card_brand, a.card_last4,
                 data_inicio, data_expiracao, data_cancelamento,
-                renovacao_automatica, created_at, updated_at
-         FROM assinaturas WHERE usuario_id = ? LIMIT 1`,
+                renovacao_automatica, a.created_at, a.updated_at
+         FROM usuarios u
+         LEFT JOIN assinaturas a ON a.usuario_id = u.id
+         WHERE u.id = ? LIMIT 1`,
         [req.usuario_id]
       );
 
       if (rows.length === 0) {
-        return res.json({ success: true, assinatura: null });
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
       }
 
       const a = rows[0];
+
+      if (!a.plano) {
+        return res.json({
+          success: true,
+          assinatura: null,
+          cliente: {
+            nome: a.nome,
+            email: a.email,
+            cpf_cnpj: null,
+            cpf_mask: null
+          }
+        });
+      }
 
       // Auto-expirar se passou da data de expiração
       if (a.status === 'ativa' && a.data_expiracao && new Date(a.data_expiracao) < new Date()) {
@@ -321,7 +384,35 @@ class AssinaturasController {
         a.status = 'expirada';
       }
 
-      return res.json({ success: true, assinatura: a });
+      const diasRestantes = calcularDiasRestantes(a.data_expiracao, a.status);
+
+      return res.json({
+        success: true,
+        assinatura: {
+          plano: a.plano,
+          status: a.status,
+          mp_payment_id: a.mp_payment_id,
+          valor_pago: a.valor_pago,
+          data_inicio: a.data_inicio,
+          data_expiracao: a.data_expiracao,
+          data_cancelamento: a.data_cancelamento,
+          renovacao_automatica: a.renovacao_automatica,
+          created_at: a.created_at,
+          updated_at: a.updated_at,
+          dias_restantes: diasRestantes,
+          cartao: {
+            bandeira: a.card_brand || null,
+            final: a.card_last4 || null,
+            mascarado: a.card_last4 ? `**** **** **** ${a.card_last4}` : null
+          }
+        },
+        cliente: {
+          nome: a.nome,
+          email: a.email,
+          cpf_cnpj: a.cpf_cnpj || null,
+          cpf_mask: maskCpfCnpj(a.cpf_cnpj)
+        }
+      });
 
     } catch (err) {
       console.error('Erro ao buscar status de assinatura:', err);

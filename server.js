@@ -126,6 +126,9 @@ const initializeDatabase = async () => {
         plano                ENUM('semanal','mensal','anual') NOT NULL,
         status               ENUM('pendente','ativa','cancelada','suspensa','expirada') NOT NULL DEFAULT 'pendente',
         mp_payment_id        VARCHAR(100) NULL,
+        cpf_cnpj             VARCHAR(14) NULL,
+        card_brand           VARCHAR(40) NULL,
+        card_last4           VARCHAR(4) NULL,
         valor_pago           DECIMAL(10,2) NULL,
         data_inicio          TIMESTAMP NULL,
         data_expiracao       TIMESTAMP NULL,
@@ -140,6 +143,15 @@ const initializeDatabase = async () => {
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    await pool.query(`
+      ALTER TABLE assinaturas ADD COLUMN IF NOT EXISTS cpf_cnpj VARCHAR(14) NULL AFTER mp_payment_id
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE assinaturas ADD COLUMN IF NOT EXISTS card_brand VARCHAR(40) NULL AFTER cpf_cnpj
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE assinaturas ADD COLUMN IF NOT EXISTS card_last4 VARCHAR(4) NULL AFTER card_brand
+    `).catch(() => {});
 
     // Garante que o admin fixo seja sempre is_admin = 1
     await pool.query(
