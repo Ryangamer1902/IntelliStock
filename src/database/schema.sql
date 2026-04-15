@@ -100,31 +100,10 @@ PREPARE stmt_mov_uid FROM @sql_mov_uid;
 EXECUTE stmt_mov_uid;
 DEALLOCATE PREPARE stmt_mov_uid;
 
-DELIMITER $$
-
-DROP TRIGGER IF EXISTS tr_verificar_quantidade_minima_insert$$
-CREATE TRIGGER tr_verificar_quantidade_minima_insert
-AFTER INSERT ON materiais
-FOR EACH ROW
-BEGIN
-  IF NEW.quantidade_atual < NEW.quantidade_minima THEN
-    INSERT INTO alertas_estoque (material_id, tipo_alerta, mensagem, data_alerta)
-    VALUES (NEW.id, 'BAIXA_QUANTIDADE', CONCAT('Material ', NEW.nome, ' abaixo do minimo'), NOW());
-  END IF;
-END$$
-
-DROP TRIGGER IF EXISTS tr_verificar_quantidade_minima_update$$
-CREATE TRIGGER tr_verificar_quantidade_minima_update
-AFTER UPDATE ON materiais
-FOR EACH ROW
-BEGIN
-  IF NEW.quantidade_atual < NEW.quantidade_minima AND OLD.quantidade_atual >= OLD.quantidade_minima THEN
-    INSERT INTO alertas_estoque (material_id, tipo_alerta, mensagem, data_alerta)
-    VALUES (NEW.id, 'BAIXA_QUANTIDADE', CONCAT('Material ', NEW.nome, ' abaixo do minimo'), NOW());
-  END IF;
-END$$
-
-DELIMITER ;
+-- Compatibilidade TiDB:
+-- TiDB nao suporta TRIGGER (nem comandos de cliente como DELIMITER) da mesma forma que MySQL.
+-- O controle de alerta de quantidade minima deve ser feito pela aplicacao
+-- (ex.: ao inserir/atualizar materiais, gravar em alertas_estoque quando necessario).
 
 -- ==================== AUTENTICACAO ====================
 
