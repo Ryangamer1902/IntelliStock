@@ -158,6 +158,39 @@ const initializeDatabase = async () => {
       `UPDATE usuarios SET is_admin = 1 WHERE email = 'admin@intellistock.com'`
     ).catch(() => {});
 
+    // Migrações: tabela fornecedores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS fornecedores (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NULL,
+        nome VARCHAR(150) NOT NULL,
+        email VARCHAR(150),
+        telefone VARCHAR(20),
+        endereco TEXT,
+        cidade VARCHAR(100),
+        estado VARCHAR(2),
+        cep VARCHAR(9),
+        tempo_espera_dias INT NOT NULL DEFAULT 7,
+        contato VARCHAR(255),
+        observacoes TEXT,
+        ativo TINYINT(1) NOT NULL DEFAULT 1,
+        data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_fornecedores_nome (nome),
+        INDEX idx_fornecedores_usuario (usuario_id),
+        INDEX idx_fornecedores_ativo (ativo)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS usuario_id INT NULL AFTER id`).catch(() => {});
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS email VARCHAR(150) AFTER nome`).catch(() => {});
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS telefone VARCHAR(20) AFTER email`).catch(() => {});
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS endereco TEXT AFTER telefone`).catch(() => {});
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS cidade VARCHAR(100) AFTER endereco`).catch(() => {});
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS estado VARCHAR(2) AFTER cidade`).catch(() => {});
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS cep VARCHAR(9) AFTER estado`).catch(() => {});
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS observacoes TEXT AFTER contato`).catch(() => {});
+    await pool.query(`ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).catch(() => {});
+
     return true;
   } catch (error) {
     console.warn('⚠️ Banco de dados não conectado. Execute: npm run setup:db');
