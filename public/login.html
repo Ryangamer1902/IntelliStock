@@ -222,6 +222,11 @@
       const isForgot = mode === 'esqueci';
       const isLogin = mode === 'login';
 
+      if (isCadastro && window.AuthService.getMode() !== 'mock') {
+        window.location.href = '/produtos.html';
+        return;
+      }
+
       tabLogin.classList.toggle('active', isLogin);
       tabCadastro.classList.toggle('active', isCadastro);
       
@@ -240,14 +245,16 @@
       } else {
         cardTitle.textContent = 'Login';
         cardIntro.textContent = 'Use seu e-mail corporativo para acessar a plataforma.';
-        authSmallText.innerHTML = 'Ainda não tem acesso? <a href="#" id="openCadastroLink">Crie seu cadastro</a>';
+        authSmallText.innerHTML = 'Ainda não tem acesso? <a href="/produtos.html" id="openCadastroLink">Escolha um plano</a>';
       }
 
       const dynamicLink = document.getElementById(isCadastro || isForgot ? 'openLoginLink' : 'openCadastroLink');
       if (dynamicLink) {
         dynamicLink.addEventListener('click', (event) => {
-          event.preventDefault();
-          setAuthMode(isCadastro || isForgot ? 'login' : 'cadastro');
+          if (isCadastro || isForgot) {
+            event.preventDefault();
+            setAuthMode('login');
+          }
         });
       }
 

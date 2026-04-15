@@ -161,9 +161,11 @@
       anual:   { id: 'anual',   name: 'Assinatura Anual',   price: 1690, intervalLabel: '/ano',    note: 'Melhor custo-benefício para uso contínuo.', chip: 'Melhor valor',  features: ['Usuários ilimitados', 'Produtos ilimitados', 'Dashboard executivo e suporte VIP'] }
     };
 
+    const urlParams = new URLSearchParams(window.location.search);
     const usuario     = window.AuthService.getCurrentUser();
-    const planParam   = new URLSearchParams(window.location.search).get('plano');
-    const statusParam = new URLSearchParams(window.location.search).get('status');
+    const planParam   = urlParams.get('plano');
+    const statusParam = urlParams.get('status');
+    const paymentIdParam = urlParams.get('payment_id') || urlParams.get('collection_id');
     const billingCycle     = document.getElementById('billingCycle');
     const checkoutFeedback = document.getElementById('checkoutFeedback');
     const confirmBtn       = document.getElementById('confirmBtn');
@@ -173,6 +175,22 @@
 
     function fmtMoney(value) {
       return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    async function confirmarPagamentoRetornado(paymentId) {
+      if (!paymentId) return null;
+
+      try {
+        const response = await fetch('/api/assinaturas/confirmar-retorno', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_id: paymentId })
+        });
+
+        return response.json();
+      } catch (_) {
+        return null;
+      }
     }
 
     // Pré-preenche campos se usuário já está logado
@@ -198,9 +216,36 @@
         <div style="max-width:420px;margin:0 auto;padding:32px;background:#f8fbfa;border-radius:16px;border:1px solid #e0edeb;">
           <div style="font-size:3rem;margin-bottom:12px;">${m.icon}</div>
           <h2 style="font-family:'Sora',sans-serif;font-size:1.5rem;margin-bottom:8px;">${m.title}</h2>
-          <p style="color:#5d6b70;margin-bottom:4px;">${m.body}</p>
+          <p id="paymentResultBody" style="color:#5d6b70;margin-bottom:4px;">${m.body}</p>
+          <div id="paymentResultExtra" style="color:#5d6b70;font-size:.95rem;margin:12px 0 4px;"></div>
           ${m.btn}
         </div>`;
+
+      if (paymentIdParam && (statusParam === 'success' || statusParam === 'pending')) {
+        const extraEl = document.getElementById('paymentResultExtra');
+        const bodyEl = document.getElementById('paymentResultBody');
+        if (extraEl) extraEl.textContent = 'Confirmando o pagamento com o IntelliStock...';
+
+        confirmarPagamentoRetornado(paymentIdParam).then((data) => {
+          if (!extraEl || !data) {
+            return;
+          }
+
+          if (data.success && data.approved) {
+            bodyEl.textContent = 'Pagamento confirmado e conta ativada. Você já pode fazer login.';
+            extraEl.textContent = 'Ativação concluída com sucesso.';
+            return;
+          }
+
+          if (data.success) {
+            bodyEl.textContent = 'O pagamento ainda está em análise pelo Mercado Pago.';
+            extraEl.textContent = data.message || 'A conta será liberada assim que o pagamento for aprovado.';
+            return;
+          }
+
+          extraEl.textContent = data.message || 'Não foi possível confirmar o pagamento automaticamente agora.';
+        });
+      }
     }
 
     function renderPlan(planId) {

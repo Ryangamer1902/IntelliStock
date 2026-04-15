@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 // ─── Rotas públicas (sem autenticação) ───────────────────────────────────────
 router.post('/iniciar-checkout', AssinaturasController.iniciarCheckout);
 router.post('/webhook',          AssinaturasController.webhook);
+router.post('/confirmar-retorno', AssinaturasController.confirmarRetorno);
 
 // ─── Rotas protegidas (requerem sessão) ──────────────────────────────────────
 router.get('/status',       authMiddleware, AssinaturasController.status);

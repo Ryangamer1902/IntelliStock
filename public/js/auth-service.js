@@ -128,7 +128,11 @@
 
   function getMode() {
     const saved = localStorage.getItem(MODE_KEY);
-    return saved === 'api' ? 'api' : DEFAULT_MODE;
+      if (saved === 'mock' || saved === 'api') {
+        return saved;
+      }
+
+      return DEFAULT_MODE;
   }
 
   function setMode(mode) {

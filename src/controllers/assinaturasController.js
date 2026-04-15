@@ -48,6 +48,91 @@ function emailValido(email) {
   return /\S+@\S+\.\S+/.test(String(email || '').trim());
 }
 
+function getPaymentIdFromPayload(payload = {}) {
+  const candidates = [
+    payload.payment_id,
+    payload.collection_id,
+    payload.id,
+    payload.data?.id
+  ];
+
+  const paymentId = candidates.find((value) => value !== undefined && value !== null && value !== '');
+  if (!paymentId) return null;
+
+  return String(paymentId).trim();
+}
+
+async function ativarAssinaturaPorPagamento(db, paymentId) {
+  if (!paymentId || !/^\d+$/.test(String(paymentId))) {
+    return { success: false, status: 'invalid_payment_id', message: 'Pagamento inválido.' };
+  }
+
+  const client = getMpClient();
+  const paymentClient = new Payment(client);
+  const payment = await paymentClient.get({ id: String(paymentId) });
+
+  if (!payment) {
+    return { success: false, status: 'not_found', message: 'Pagamento não encontrado.' };
+  }
+
+  const usuarioId = parseInt(payment.external_reference, 10);
+  if (!usuarioId || Number.isNaN(usuarioId)) {
+    return { success: false, status: 'invalid_reference', message: 'Pagamento sem referência de usuário válida.' };
+  }
+
+  const planoId = payment.metadata?.plano || 'mensal';
+  const plano = PLANOS[planoId] || PLANOS.mensal;
+  const cpfCnpj = String(payment.payer?.identification?.number || '').replace(/\D/g, '');
+  const cardBrand = String(payment.payment_method_id || '').trim() || null;
+  const cardLast4 = String(payment.card?.last_four_digits || '').replace(/\D/g, '').slice(-4) || null;
+
+  if (payment.status !== 'approved') {
+    return {
+      success: true,
+      status: String(payment.status || 'pending'),
+      approved: false,
+      usuarioId,
+      planoId,
+      paymentId: String(payment.id || paymentId)
+    };
+  }
+
+  const dataInicio = new Date();
+  const dataExpiracao = new Date(dataInicio);
+  dataExpiracao.setDate(dataExpiracao.getDate() + plano.dias);
+
+  await db.query('UPDATE usuarios SET ativo = 1 WHERE id = ?', [usuarioId]);
+
+  await db.query(
+    `INSERT INTO assinaturas
+       (usuario_id, plano, status, mp_payment_id, valor_pago, data_inicio, data_expiracao, cpf_cnpj, card_brand, card_last4)
+     VALUES (?, ?, 'ativa', ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       plano             = VALUES(plano),
+       status            = 'ativa',
+       mp_payment_id     = VALUES(mp_payment_id),
+       valor_pago        = VALUES(valor_pago),
+       data_inicio       = VALUES(data_inicio),
+       data_expiracao    = VALUES(data_expiracao),
+       cpf_cnpj          = COALESCE(VALUES(cpf_cnpj), cpf_cnpj),
+       card_brand        = COALESCE(VALUES(card_brand), card_brand),
+       card_last4        = COALESCE(VALUES(card_last4), card_last4),
+       data_cancelamento = NULL,
+       updated_at        = NOW()`,
+    [usuarioId, planoId, String(payment.id), plano.preco, dataInicio, dataExpiracao, cpfCnpj || null, cardBrand, cardLast4]
+  );
+
+  return {
+    success: true,
+    status: 'approved',
+    approved: true,
+    usuarioId,
+    planoId,
+    paymentId: String(payment.id),
+    dataExpiracao
+  };
+}
+
 async function criarPreferenciaMp(usuarioId, email, nome, cpfCnpj, planoId) {
   const plano = PLANOS[planoId];
   if (!plano) throw new Error('Plano inválido: ' + planoId);
@@ -272,67 +357,76 @@ class AssinaturasController {
     if (!db || !process.env.MP_ACCESS_TOKEN) return;
 
     const { type, data } = req.body || {};
-    const paymentId = data?.id || req.query.id;
+    const paymentId = getPaymentIdFromPayload({ ...req.query, data });
 
     // Só processa notificações de pagamento com ID numérico
     if (!paymentId || !/^\d+$/.test(String(paymentId))) return;
     if (type && type !== 'payment') return;
 
     try {
-      const client = getMpClient();
-      const paymentClient = new Payment(client);
-      const payment = await paymentClient.get({ id: String(paymentId) });
-
-      if (!payment) return;
-
-      const usuarioId = parseInt(payment.external_reference, 10);
-      if (!usuarioId || isNaN(usuarioId)) {
-        console.warn('[MP Webhook] external_reference inválido:', payment.external_reference);
+      const resultado = await ativarAssinaturaPorPagamento(db, paymentId);
+      if (!resultado.success) {
+        console.warn('[MP Webhook] Falha ao processar pagamento:', resultado.message);
         return;
       }
 
-      const planoId = payment.metadata?.plano || 'mensal';
-      const plano   = PLANOS[planoId] || PLANOS.mensal;
-      const cpfCnpj = String(payment.payer?.identification?.number || '').replace(/\D/g, '');
-      const cardBrand = String(payment.payment_method_id || '').trim() || null;
-      const cardLast4 = String(payment.card?.last_four_digits || '').replace(/\D/g, '').slice(-4) || null;
-
-      if (payment.status === 'approved') {
-        const dataInicio      = new Date();
-        const dataExpiracao   = new Date(dataInicio);
-        dataExpiracao.setDate(dataExpiracao.getDate() + plano.dias);
-
-        await db.query('UPDATE usuarios SET ativo = 1 WHERE id = ?', [usuarioId]);
-
-        await db.query(
-          `INSERT INTO assinaturas
-             (usuario_id, plano, status, mp_payment_id, valor_pago, data_inicio, data_expiracao, cpf_cnpj, card_brand, card_last4)
-           VALUES (?, ?, 'ativa', ?, ?, ?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE
-             plano            = VALUES(plano),
-             status           = 'ativa',
-             mp_payment_id    = VALUES(mp_payment_id),
-             valor_pago       = VALUES(valor_pago),
-             data_inicio      = VALUES(data_inicio),
-             data_expiracao   = VALUES(data_expiracao),
-             cpf_cnpj         = COALESCE(VALUES(cpf_cnpj), cpf_cnpj),
-             card_brand       = COALESCE(VALUES(card_brand), card_brand),
-             card_last4       = COALESCE(VALUES(card_last4), card_last4),
-             data_cancelamento = NULL,
-             updated_at       = NOW()`,
-          [usuarioId, planoId, String(payment.id), plano.preco, dataInicio, dataExpiracao, cpfCnpj || null, cardBrand, cardLast4]
-        );
-
+      if (resultado.approved) {
         console.log(
-          `✓ [MP Webhook] Assinatura ativada: usuário ${usuarioId}, plano ${planoId}, expira ${dataExpiracao.toISOString()}`
+          `✓ [MP Webhook] Assinatura ativada: usuário ${resultado.usuarioId}, plano ${resultado.planoId}, expira ${resultado.dataExpiracao.toISOString()}`
         );
-
       } else {
-        console.log(`ℹ [MP Webhook] Pagamento status "${payment.status}": usuário ${usuarioId}`);
+        console.log(`ℹ [MP Webhook] Pagamento status "${resultado.status}": usuário ${resultado.usuarioId}`);
       }
 
     } catch (err) {
       console.error('[MP Webhook] Erro ao processar notificação:', err.message);
+    }
+  }
+
+  static async confirmarRetorno(req, res) {
+    const db = global.db;
+    if (!db) {
+      return res.status(503).json({ success: false, message: 'Banco de dados não disponível.' });
+    }
+
+    if (!process.env.MP_ACCESS_TOKEN) {
+      return res.status(503).json({ success: false, message: 'Gateway de pagamento não configurado.' });
+    }
+
+    const paymentId = getPaymentIdFromPayload(req.body || {});
+    if (!paymentId) {
+      return res.status(400).json({ success: false, message: 'payment_id é obrigatório.' });
+    }
+
+    try {
+      const resultado = await ativarAssinaturaPorPagamento(db, paymentId);
+
+      if (!resultado.success) {
+        const statusCode = resultado.status === 'not_found' ? 404 : 400;
+        return res.status(statusCode).json({ success: false, message: resultado.message });
+      }
+
+      if (!resultado.approved) {
+        return res.json({
+          success: true,
+          approved: false,
+          payment_status: resultado.status,
+          message: 'Pagamento ainda não aprovado. Aguarde a confirmação do Mercado Pago.'
+        });
+      }
+
+      return res.json({
+        success: true,
+        approved: true,
+        payment_status: resultado.status,
+        usuario_id: resultado.usuarioId,
+        plano: resultado.planoId,
+        expira_em: resultado.dataExpiracao,
+        message: 'Pagamento confirmado e conta ativada com sucesso.'
+      });
+    } catch (err) {
+      console.error('Erro ao confirmar retorno do pagamento:', err);
+      return res.status(500).json({ success: false, message: 'Erro ao confirmar pagamento.' });
     }
   }
 
