@@ -1,4 +1,4 @@
-
+﻿
     :root {
       --bg: #f3f7f7;
       --ink: #122127;
@@ -568,6 +568,54 @@
       color: #1f3840;
     }
 
+    .auto-consumo-box {
+      margin-top: 0;
+      margin-bottom: 10px;
+      padding: 12px 14px;
+      border: 1px solid rgba(14, 143, 131, 0.28);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(14, 143, 131, 0.09) 0%, rgba(14, 143, 131, 0.05) 100%);
+      display: grid;
+      gap: 7px;
+    }
+
+    .auto-consumo-toggle {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      align-items: start;
+      column-gap: 10px;
+      row-gap: 2px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #15343b;
+      cursor: pointer;
+      line-height: 1.3;
+    }
+
+    .auto-consumo-toggle input {
+      width: 16px;
+      height: 16px;
+      margin-top: 1px;
+      accent-color: var(--brand);
+    }
+
+    .auto-consumo-box small {
+      color: #4c5d62;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      padding-left: 28px;
+    }
+
+    .auto-consumo-toggle input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .auto-consumo-box:has(.auto-consumo-toggle input:disabled) {
+      border-color: rgba(18, 33, 39, 0.2);
+      background: linear-gradient(180deg, rgba(18, 33, 39, 0.07) 0%, rgba(18, 33, 39, 0.04) 100%);
+    }
+
     .field input {
       width: 100%;
       border: 1px solid var(--line);
@@ -613,6 +661,14 @@
       gap: 10px;
       justify-content: flex-end;
       margin-top: 20px;
+      border-top: 1px solid rgba(18, 33, 39, 0.08);
+      padding-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    #modalOverlay .modal-actions .btn {
+      min-height: 42px;
+      padding-inline: 18px;
     }
 
     .modal-feedback {
@@ -742,6 +798,8 @@
       .prod-row-main { grid-template-columns: 1fr; }
       .prod-row-inputs { grid-template-columns: 1fr; }
       .prod-comp-remove { width: 100%; }
+      .auto-consumo-box small { padding-left: 0; }
+      #modalOverlay .modal-actions .btn { flex: 1 1 100%; }
       #productionOverlay .modal {
         max-width: 100%;
         margin: 0;
@@ -755,3 +813,7 @@
     .kpi.reveal-section:nth-child(3) { transition-delay: 160ms; }
     .kpi.reveal-section:nth-child(4) { transition-delay: 240ms; }
   
+
+
+
+

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fornecedores | IntelliStock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/fornecedores.css">
+  <style>
+    .btn-new { background-color: var(--brand); color: white; padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .btn-new:hover { opacity: 0.9; }
+    .toolbar { display: flex; gap: 12px; align-items: center; }
+    .toolbar > div { flex: 1; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #333; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px; }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+    .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-save { background: var(--brand); color: white; }
+    .btn-cancel { background: #eee; color: #333; }
+    .btn-cancel:hover { background: #ddd; }
+    .table-actions { display: flex; gap: 8px; }
+    .btn-edit, .btn-delete { padding: 6px 12px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-edit { background: #f0f0f0; color: #333; }
+    .btn-delete { background: #fee; color: #c00; }
+    .btn-delete:hover { background: #fdd; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 16px; border-radius: 8px; z-index: 2000; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell topbar">
+      <a class="brand" href="/dashboard.html">
+        <span class="brand-badge">IS</span>
+        <span>IntelliStock</span>
+      </a>
+      <nav>
+        <a href="/dashboard.html">Estoque</a>
+        <a href="/relatorios.html">Relatórios</a>
+        <a href="/insumos.html">Insumos</a>
+        <a href="/fornecedores.html" class="active">Fornecedores</a>
+      </nav>
+      <div class="user-area">
+        <button class="user-chip" id="userChip" type="button">
+          <div class="avatar" id="avatarInitial">?</div>
+          <span>Olá, <strong id="userName">...</strong></span>
+        </button>
+        <button class="btn-logout" id="btnLogout">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="shell">
+      <section class="hero reveal-section">
+        <span class="pill">Fornecedores</span>
+        <h1>Relação de fornecedores</h1>
+        <p>Gerencie os parceiros que abastecem seu estoque com informações completas de contato.</p>
+      </section>
+
+      <section class="kpi-row">
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Total de fornecedores</div>
+          <div class="kpi-value" id="kpiTotal">0</div>
+          <div class="kpi-sub">fornecedores cadastrados</div>
+        </div>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Fornecedores ativos</div>
+          <div class="kpi-value" id="kpiAtivos">0</div>
+          <div class="kpi-sub">com materiais vinculados</div>
+        </div>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Tempo médio de espera</div>
+          <div class="kpi-value" id="kpiTempo">0</div>
+          <div class="kpi-sub">dias</div>
+        </div>
+        <div class="kpi reveal-section">
+          <div class="kpi-label">Último cadastro</div>
+          <div class="kpi-value" id="kpiUltimo">-</div>
+          <div class="kpi-sub">há quanto tempo</div>
+        </div>
+      </section>
+
+      <section class="toolbar reveal-section">
+        <div class="search-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Buscar fornecedor...">
+        </div>
+        <button class="btn btn-soft" id="btnRefresh">Atualizar</button>
+        <button class="btn-new" id="btnNovoFornecedor">+ Novo Fornecedor</button>
+      </section>
+
+      <section class="table-card reveal-section">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fornecedor</th>
+                <th>Contato</th>
+                <th>Tempo de espera</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="4" class="empty-state">Carregando fornecedores...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Modal de Novo/Editar Fornecedor -->
+  <div class="modal-overlay" id="fornecedorModal">
+    <div class="modal-content">
+      <div class="modal-header" id="modalTitle">Novo Fornecedor</div>
+      <form id="fornecedorForm">
+        <div class="form-group">
+          <label for="fornNome">Nome do fornecedor *</label>
+          <input type="text" id="fornNome" name="nome" required>
+        </div>
+        <div class="form-group">
+          <label for="fornEmail">Email</label>
+          <input type="email" id="fornEmail" name="email" placeholder="contato@fornecedor.com.br">
+        </div>
+        <div class="form-group">
+          <label for="fornTelefone">Telefone</label>
+          <input type="tel" id="fornTelefone" name="telefone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group">
+          <label for="fornEndereco">Endereço</label>
+          <input type="text" id="fornEndereco" name="endereco" placeholder="Rua, número">
+        </div>
+        <div class="form-group">
+          <label for="fornCidade">Cidade</label>
+          <input type="text" id="fornCidade" name="cidade" placeholder="São Paulo">
+        </div>
+        <div class="form-group">
+          <label for="fornEstado">Estado</label>
+          <input type="text" id="fornEstado" name="estado" placeholder="SP" maxlength="2">
+        </div>
+        <div class="form-group">
+          <label for="fornCep">CEP</label>
+          <input type="text" id="fornCep" name="cep" placeholder="01234-567">
+        </div>
+        <div class="form-group">
+          <label for="fornDias">Tempo de espera (dias)</label>
+          <input type="number" id="fornDias" name="tempo_espera_dias" value="7" min="1">
+        </div>
+        <div class="form-group">
+          <label for="fornObs">Observações</label>
+          <textarea id="fornObs" name="observacoes" placeholder="Informações adicionais..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="btnCancelar">Cancelar</button>
+          <button type="submit" class="btn-save">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/auth-service.js"></script>
+  <script>
+    'use strict';
+
+    const usuario = window.AuthService.getCurrentUser();
+    if (!usuario) {
+      window.location.href = '/login.html';
+    }
+
+    if (usuario) {
+      const nome = usuario.nome || 'Usuário';
+      document.getElementById('userName').textContent = nome;
+      const initials = nome.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+      document.getElementById('avatarInitial').textContent = initials || '?';
+    }
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      const token = window.AuthService.getSessionToken();
+      if (token) {
+        try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
+      }
+      window.AuthService.clearAuthState();
+      window.location.href = '/login.html';
+    });
+
+    function getAuthHeaders() {
+      const token = window.AuthService.getSessionToken();
+      return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
+
+    function fmtMoney(value) {
+      return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function fmtNum(value) {
+      return Number(value || 0).toLocaleString('pt-BR');
+    }
+
+    function daysAgo(date) {
+      if (!date) return '-';
+      const d = new Date(date);
+      const now = new Date();
+      const diff = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+      if (diff === 0) return 'hoje';
+      if (diff === 1) return '1 dia atrás';
+      if (diff < 7) return `${diff} dias atrás`;
+      if (diff < 30) return `${Math.floor(diff / 7)} semanas atrás`;
+      return `${Math.floor(diff / 30)} meses atrás`;
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.classList.add('toast');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    let fornecedores = [];
+    let editingId = null;
+
+    function updateKpis(lista) {
+      const total = lista.length;
+      const ativos = lista.filter(f => f.ativo).length;
+      const tempoMedio = lista.length > 0 ? Math.round(lista.reduce((a, f) => a + (f.tempo_espera_dias || 0), 0) / lista.length) : 0;
+      const recente = lista.length > 0 ? lista.reduce((a, b) => new Date(a.data_cadastro) > new Date(b.data_cadastro) ? a : b) : null;
+
+      document.getElementById('kpiTotal').textContent = fmtNum(total);
+      document.getElementById('kpiAtivos').textContent = fmtNum(ativos);
+      document.getElementById('kpiTempo').textContent = tempoMedio;
+      document.getElementById('kpiUltimo').textContent = recente ? daysAgo(recente.data_cadastro) : '-';
+    }
+
+    function renderTable(lista) {
+      const tbody = document.getElementById('tableBody');
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhum fornecedor encontrado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map((f) => `
+        <tr>
+          <td><strong>${escHtml(f.nome)}</strong></td>
+          <td>${f.email ? `<a href="mailto:${escHtml(f.email)}">${escHtml(f.email)}</a>` : (f.telefone || '-')}</td>
+          <td>${f.tempo_espera_dias || 7} dias</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn-edit" onclick="editarFornecedor(${f.id})">Editar</button>
+              <button class="btn-delete" onclick="deletarFornecedor(${f.id})">Deletar</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function applySearchFilter() {
+      const term = String(document.getElementById('searchInput').value || '').trim().toLowerCase();
+      if (!term) {
+        renderTable(fornecedores);
+        updateKpis(fornecedores);
+        return;
+      }
+
+      const filtered = fornecedores.filter((f) => 
+        String(f.nome || '').toLowerCase().includes(term) ||
+        String(f.email || '').toLowerCase().includes(term) ||
+        String(f.telefone || '').toLowerCase().includes(term)
+      );
+      renderTable(filtered);
+      updateKpis(filtered);
+    }
+
+    async function carregarFornecedores() {
+      try {
+        const res = await fetch('/api/fornecedores', { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar fornecedores');
+        fornecedores = await res.json();
+        renderTable(fornecedores);
+        updateKpis(fornecedores);
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao carregar fornecedores');
+        fornecedores = [];
+        renderTable([]);
+        updateKpis([]);
+      }
+    }
+
+    function abrirModal() {
+      editingId = null;
+      document.getElementById('modalTitle').textContent = 'Novo Fornecedor';
+      document.getElementById('fornecedorForm').reset();
+      document.getElementById('fornDias').value = 7;
+      document.getElementById('fornecedorModal').classList.add('active');
+    }
+
+    async function editarFornecedor(id) {
+      try {
+        const res = await fetch(`/api/fornecedores/${id}`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar fornecedor');
+        const f = await res.json();
+        
+        editingId = f.id;
+        document.getElementById('modalTitle').textContent = 'Editar Fornecedor';
+        document.getElementById('fornNome').value = f.nome || '';
+        document.getElementById('fornEmail').value = f.email || '';
+        document.getElementById('fornTelefone').value = f.telefone || '';
+        document.getElementById('fornEndereco').value = f.endereco || '';
+        document.getElementById('fornCidade').value = f.cidade || '';
+        document.getElementById('fornEstado').value = f.estado || '';
+        document.getElementById('fornCep').value = f.cep || '';
+        document.getElementById('fornDias').value = f.tempo_espera_dias || 7;
+        document.getElementById('fornObs').value = f.observacoes || '';
+        document.getElementById('fornecedorModal').classList.add('active');
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao carregar fornecedor');
+      }
+    }
+
+    async function deletarFornecedor(id) {
+      if (!confirm('Deseja remover este fornecedor?')) return;
+      try {
+        const res = await fetch(`/api/fornecedores/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Falha ao deletar');
+        showToast('Fornecedor removido');
+        await carregarFornecedores();
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao remover fornecedor');
+      }
+    }
+
+    document.getElementById('btnNovoFornecedor').addEventListener('click', abrirModal);
+    document.getElementById('btnRefresh').addEventListener('click', carregarFornecedores);
+    document.getElementById('searchInput').addEventListener('input', applySearchFilter);
+    document.getElementById('btnCancelar').addEventListener('click', () => {
+      document.getElementById('fornecedorModal').classList.remove('active');
+    });
+
+    document.getElementById('fornecedorForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const data = {
+          nome: document.getElementById('fornNome').value.trim(),
+          email: document.getElementById('fornEmail').value.trim() || null,
+          telefone: document.getElementById('fornTelefone').value.trim() || null,
+          endereco: document.getElementById('fornEndereco').value.trim() || null,
+          cidade: document.getElementById('fornCidade').value.trim() || null,
+          estado: document.getElementById('fornEstado').value.trim() || null,
+          cep: document.getElementById('fornCep').value.trim() || null,
+          tempo_espera_dias: Number(document.getElementById('fornDias').value) || 7,
+          observacoes: document.getElementById('fornObs').value.trim() || null
+        };
+
+        const method = editingId ? 'PUT' : 'POST';
+        const url = editingId ? `/api/fornecedores/${editingId}` : '/api/fornecedores';
+        
+        const res = await fetch(url, {
+          method,
+          headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.erro || 'Falha ao salvar');
+        }
+
+        showToast(editingId ? 'Fornecedor atualizado' : 'Fornecedor criado');
+        document.getElementById('fornecedorModal').classList.remove('active');
+        await carregarFornecedores();
+      } catch (err) {
+        console.error(err);
+        showToast(err.message);
+      }
+    });
+
+    carregarFornecedores();
+
+    const revealEls = document.querySelectorAll('.reveal-section');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), index * 80);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    revealEls.forEach((el) => revealObserver.observe(el));
+  </script>
+</body>
+</html>

@@ -179,12 +179,14 @@ const materiaisRoutes   = require('./src/routes/materiais.routes');
 const insumosRoutes     = require('./src/routes/insumos.routes');
 const authRoutes        = require('./src/routes/auth.routes');
 const assinaturasRoutes = require('./src/routes/assinaturas.routes');
+const fornecedoresRoutes = require('./src/routes/fornecedores.routes');
 const seedAdmin         = require('./src/utils/seedAdmin');
 
 app.use('/api/materiais',   materiaisRoutes);
 app.use('/api/insumos',     insumosRoutes);
 app.use('/api/auth',        authRoutes);
 app.use('/api/assinaturas', assinaturasRoutes);
+app.use('/api/fornecedores', fornecedoresRoutes);
 
 // Rota padrão para teste
 app.get('/api/health', (req, res) => {

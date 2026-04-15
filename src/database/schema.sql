@@ -266,14 +266,92 @@ DEALLOCATE PREPARE stmt_ass_last4;
 
 CREATE TABLE IF NOT EXISTS fornecedores (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(150) NOT NULL UNIQUE,
+  usuario_id INT NULL,
+  nome VARCHAR(150) NOT NULL,
+  email VARCHAR(150),
+  telefone VARCHAR(20),
+  endereco TEXT,
+  cidade VARCHAR(100),
+  estado VARCHAR(2),
+  cep VARCHAR(9),
   tempo_espera_dias INT NOT NULL DEFAULT 7,
   contato VARCHAR(255),
+  observacoes TEXT,
   ativo TINYINT(1) NOT NULL DEFAULT 1,
   data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_usuario_fornecedor (usuario_id, nome),
   INDEX idx_fornecedores_nome (nome),
-  INDEX idx_fornecedores_ativo (ativo)
+  INDEX idx_fornecedores_usuario (usuario_id),
+  INDEX idx_fornecedores_ativo (ativo),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Migracao: adicionar usuario_id em fornecedores (bancos existentes)
+SET @col_forn_uid_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'fornecedores'
+    AND COLUMN_NAME = 'usuario_id'
+);
+SET @sql_forn_uid := IF(
+  @col_forn_uid_exists = 0,
+  'ALTER TABLE fornecedores ADD COLUMN usuario_id INT NULL AFTER id, ADD UNIQUE KEY uq_usuario_fornecedor (usuario_id, nome), ADD INDEX idx_fornecedores_usuario (usuario_id), ADD CONSTRAINT fk_fornecedores_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE',
+  'SELECT 1'
+);
+PREPARE stmt_forn_uid FROM @sql_forn_uid;
+EXECUTE stmt_forn_uid;
+DEALLOCATE PREPARE stmt_forn_uid;
+
+-- Migracao: adicionar campos de contato em fornecedores (bancos existentes)
+SET @col_forn_email_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'fornecedores'
+    AND COLUMN_NAME = 'email'
+);
+SET @sql_forn_email := IF(
+  @col_forn_email_exists = 0,
+  'ALTER TABLE fornecedores ADD COLUMN email VARCHAR(150) AFTER nome',
+  'SELECT 1'
+);
+PREPARE stmt_forn_email FROM @sql_forn_email;
+EXECUTE stmt_forn_email;
+DEALLOCATE PREPARE stmt_forn_email;
+
+SET @col_forn_telefone_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'fornecedores'
+    AND COLUMN_NAME = 'telefone'
+);
+SET @sql_forn_telefone := IF(
+  @col_forn_telefone_exists = 0,
+  'ALTER TABLE fornecedores ADD COLUMN telefone VARCHAR(20) AFTER email',
+  'SELECT 1'
+);
+PREPARE stmt_forn_telefone FROM @sql_forn_telefone;
+EXECUTE stmt_forn_telefone;
+DEALLOCATE PREPARE stmt_forn_telefone;
+
+SET @col_forn_endereco_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'fornecedores'
+    AND COLUMN_NAME = 'endereco'
+);
+SET @sql_forn_endereco := IF(
+  @col_forn_endereco_exists = 0,
+  'ALTER TABLE fornecedores ADD COLUMN endereco TEXT AFTER telefone',
+  'SELECT 1'
+);
+PREPARE stmt_forn_endereco FROM @sql_forn_endereco;
+EXECUTE stmt_forn_endereco;
+DEALLOCATE PREPARE stmt_forn_endereco;
 
 CREATE TABLE IF NOT EXISTS insumos (
   id INT AUTO_INCREMENT PRIMARY KEY,
