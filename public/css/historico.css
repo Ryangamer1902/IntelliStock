@@ -452,6 +452,11 @@
       .mini-grid {
         grid-template-columns: 1fr;
       }
+
+      #userArea {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
 
     @media (max-width: 560px) {
@@ -471,6 +476,18 @@
 
       .list-item {
         grid-template-columns: 1fr;
+      }
+
+      #userArea {
+        gap: 8px;
+      }
+
+      .user-pill span {
+        display: none;
+      }
+
+      #btnLogout {
+        flex: 0 0 auto;
       }
 
       .list-icon {
@@ -499,6 +516,17 @@
       }
 
       .actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      #userArea {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .user-pill,
+      #btnLogout {
         width: 100%;
         justify-content: center;
       }

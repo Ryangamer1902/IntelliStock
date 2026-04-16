@@ -721,13 +721,29 @@
     @media (max-width: 768px) {
       .topbar {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: flex-start;
         gap: 10px;
+      }
+
+      nav {
+        width: 100%;
+        justify-content: flex-start;
+        padding-bottom: 4px;
+      }
+
+      .user-area {
+        width: 100%;
+        justify-content: space-between;
       }
 
       .page-head {
         flex-direction: column;
         align-items: flex-start;
+      }
+
+      .toolbar {
+        align-items: stretch;
       }
     }
 
@@ -742,9 +758,23 @@
 
       .search-wrap { min-width: unset; }
 
+      .toolbar .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
       .user-chip span { display: none; }
 
       .field-row { grid-template-columns: 1fr; }
+
+      .modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .modal-actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
 
       .modal { padding: 20px 16px; }
 

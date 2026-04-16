@@ -32,6 +32,18 @@
     .btn-delete { background: #fee; color: #c00; }
     .btn-delete:hover { background: #fdd; }
     .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 16px; border-radius: 8px; z-index: 2000; }
+
+    @media (max-width: 760px) {
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .toolbar > div,
+      .btn-new {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>

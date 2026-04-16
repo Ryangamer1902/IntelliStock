@@ -518,6 +518,76 @@
       outline: none;
     }
 
+    @media (max-width: 1024px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .topbar {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      nav {
+        width: 100%;
+        justify-content: flex-start;
+        padding-bottom: 4px;
+      }
+
+      .user-area {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .hero-actions,
+      .toolbar,
+      .modal-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .hero-actions .btn,
+      .toolbar .btn,
+      .modal-actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .prod-row-main,
+      .prod-row-inputs,
+      .field-row,
+      .subscription-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #productionOverlay .modal {
+        max-height: calc(100vh - 24px);
+        margin: 12px auto;
+      }
+    }
+
+    @media (max-width: 560px) {
+      main { padding: 24px 0 48px; }
+
+      .kpi-row { grid-template-columns: 1fr; gap: 8px; }
+
+      .hero-title {
+        font-size: 1.7rem;
+      }
+
+      .search-wrap { min-width: unset; }
+
+      .user-chip span { display: none; }
+
+      .modal { padding: 20px 16px; }
+
+      .user-menu-panel {
+        right: 0;
+      }
+    }
+
     .prod-component-row .prod-comp-select:focus,
     .prod-component-row .prod-comp-qty:focus {
       border-color: rgba(14, 143, 131, 0.55);

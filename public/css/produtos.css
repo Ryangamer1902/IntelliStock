@@ -476,6 +476,11 @@
       .plan-card.featured {
         transform: none;
       }
+
+      #userArea {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
 
     @media (max-width: 620px) {
@@ -508,6 +513,10 @@
         width: 100%;
         justify-content: center;
       }
+
+      .user-pill span {
+        display: none;
+      }
     }
 
     @media (max-width: 420px) {
@@ -518,6 +527,17 @@
       .hero,
       .compare {
         padding: 12px;
+      }
+
+      #userArea {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .user-pill,
+      #btnLogout {
+        width: 100%;
+        justify-content: center;
       }
 
       h1 {
