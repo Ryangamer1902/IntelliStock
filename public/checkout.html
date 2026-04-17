@@ -97,7 +97,7 @@
             <div class="field">
               <label for="billingCycle">Plano escolhido</label>
               <select id="billingCycle">
-                <option value="teste">Teste real — R$ 1</option>
+                <option value="teste">Teste real — R$ 10</option>
                 <option value="semanal">Semanal — R$ 59</option>
                 <option value="mensal">Mensal — R$ 179</option>
                 <option value="anual">Anual — R$ 1.690</option>
@@ -157,7 +157,7 @@
   <script src="/js/auth-service.js"></script>
   <script>
     const plans = {
-      teste:   { id: 'teste',   name: 'Plano Teste',           price: 1,    intervalLabel: '/cobrança', note: 'Plano de validação para confirmar o checkout real do Mercado Pago.', chip: 'Validação real', features: ['Cobrança real de R$ 1', 'Acesso curto para teste', 'Ideal para validar retorno e ativação'] },
+      teste:   { id: 'teste',   name: 'Plano Teste',           price: 10,   intervalLabel: '/cobrança', note: 'Plano de validação para confirmar o checkout real do Mercado Pago.', chip: 'Validação real', features: ['Cobrança real de R$ 10', 'Acesso curto para teste', 'Ideal para validar retorno e ativação'] },
       semanal: { id: 'semanal', name: 'Assinatura Semanal', price: 59,   intervalLabel: '/semana', note: 'Ideal para testar a operação.', chip: 'Entrada rápida',   features: ['Acesso para 1 usuário', 'Até 150 produtos cadastrados', 'Relatório semanal simplificado'] },
       mensal:  { id: 'mensal',  name: 'Assinatura Mensal',  price: 179,  intervalLabel: '/mês',    note: 'Melhor equilíbrio entre previsibilidade e custo.', chip: 'Mais vendido', features: ['Até 5 usuários', 'Até 1.000 produtos', 'Alertas automáticos de estoque mínimo'] },
       anual:   { id: 'anual',   name: 'Assinatura Anual',   price: 1690, intervalLabel: '/ano',    note: 'Melhor custo-benefício para uso contínuo.', chip: 'Melhor valor',  features: ['Usuários ilimitados', 'Produtos ilimitados', 'Dashboard executivo e suporte VIP'] }

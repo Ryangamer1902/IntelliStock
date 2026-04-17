@@ -5,7 +5,7 @@ const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 
 // ==================== PLANOS ====================
 const PLANOS = {
-  teste:   { nome: 'Plano Teste IntelliStock',       preco: 1.00,    dias: 1   },
+  teste:   { nome: 'Plano Teste IntelliStock',       preco: 10.00,   dias: 1   },
   semanal: { nome: 'Assinatura Semanal IntelliStock', preco: 59.00,   dias: 7   },
   mensal:  { nome: 'Assinatura Mensal IntelliStock',  preco: 179.00,  dias: 30  },
   anual:   { nome: 'Assinatura Anual IntelliStock',   preco: 1690.00, dias: 365 }
@@ -151,14 +151,6 @@ async function criarPreferenciaMp(usuarioId, email, nome, cpfCnpj, planoId) {
       unit_price: plano.preco,
       currency_id: 'BRL'
     }],
-    payer: {
-      name: nome,
-      email,
-      identification: {
-        type: cpfCnpj.length <= 11 ? 'CPF' : 'CNPJ',
-        number: cpfCnpj
-      }
-    },
     external_reference: String(usuarioId),
     metadata: {
       usuario_id: usuarioId,
