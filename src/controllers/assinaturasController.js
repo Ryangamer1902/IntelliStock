@@ -174,6 +174,42 @@ async function criarPreferenciaMp(usuarioId, email, nome, cpfCnpj, planoId) {
   return prefClient.create({ body });
 }
 
+async function reconciliarUsuarioPorPagamento(db, usuarioId) {
+  if (!db || !process.env.MP_ACCESS_TOKEN || !usuarioId) {
+    return { success: false, approved: false, message: 'Reconciliação indisponível.' };
+  }
+
+  const searchUrl = new URL('https://api.mercadopago.com/v1/payments/search');
+  searchUrl.searchParams.set('external_reference', String(usuarioId));
+  searchUrl.searchParams.set('sort', 'date_created');
+  searchUrl.searchParams.set('criteria', 'desc');
+  searchUrl.searchParams.set('limit', '10');
+
+  const response = await fetch(searchUrl, {
+    headers: {
+      Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao consultar pagamentos do Mercado Pago (${response.status}).`);
+  }
+
+  const data = await response.json();
+  const pagamentos = Array.isArray(data.results) ? data.results : [];
+  const aprovado = pagamentos.find((payment) => String(payment.status || '').toLowerCase() === 'approved');
+
+  if (!aprovado?.id) {
+    return {
+      success: true,
+      approved: false,
+      message: 'Nenhum pagamento aprovado encontrado para esta conta.'
+    };
+  }
+
+  return ativarAssinaturaPorPagamento(db, String(aprovado.id));
+}
+
 class AssinaturasController {
   // ─────────────────────────────────────────────────────────────────────
   // POST /api/assinaturas/iniciar-checkout  (público)
@@ -539,3 +575,4 @@ class AssinaturasController {
 }
 
 module.exports = AssinaturasController;
+module.exports.reconciliarUsuarioPorPagamento = reconciliarUsuarioPorPagamento;

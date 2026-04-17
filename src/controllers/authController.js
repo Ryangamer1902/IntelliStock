@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { enviarCodigoVerificacao, enviarLinkResetSenha } = require('../services/emailService');
+const { reconciliarUsuarioPorPagamento } = require('./assinaturasController');
 
 async function criarDesafioVerificacao(db, usuario) {
   const codigo = String(Math.floor(100000 + Math.random() * 900000));
@@ -63,7 +64,7 @@ class AuthController {
 
     try {
       const [rows] = await db.query(
-        'SELECT id, nome, email, senha_hash FROM usuarios WHERE email = ? AND ativo = 1',
+        'SELECT id, nome, email, senha_hash, ativo FROM usuarios WHERE email = ? LIMIT 1',
         [email.trim().toLowerCase()]
       );
 
@@ -75,6 +76,24 @@ class AuthController {
       const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
       if (!senhaValida) {
         return res.status(401).json({ success: false, message: 'E-mail ou senha incorretos.' });
+      }
+
+      if (!usuario.ativo) {
+        try {
+          const reconciliacao = await reconciliarUsuarioPorPagamento(db, usuario.id);
+          if (reconciliacao.success && reconciliacao.approved) {
+            usuario.ativo = 1;
+          }
+        } catch (reconciliacaoError) {
+          console.error('Erro ao reconciliar pagamento no login:', reconciliacaoError.message);
+        }
+      }
+
+      if (!usuario.ativo) {
+        return res.status(403).json({
+          success: false,
+          message: 'Sua conta ainda está aguardando confirmação do pagamento. Se você já pagou, tente entrar novamente em alguns instantes.'
+        });
       }
 
       const desafio = await criarDesafioVerificacao(db, usuario);
