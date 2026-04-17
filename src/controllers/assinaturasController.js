@@ -11,6 +11,12 @@ const PLANOS = {
   anual:   { nome: 'Assinatura Anual IntelliStock',   preco: 1690.00, dias: 365 }
 };
 
+const PLANOS_PUBLICOS = {
+  semanal: PLANOS.semanal,
+  mensal: PLANOS.mensal,
+  anual: PLANOS.anual
+};
+
 function maskCpfCnpj(value) {
   const digits = String(value || '').replace(/\D/g, '');
   if (digits.length === 11) {
@@ -233,7 +239,9 @@ class AssinaturasController {
     const cpfCnpj = String(req.body.cpf_cnpj || '').replace(/\D/g, '');
     const planoId = String(req.body.plano    || 'mensal');
 
-    if (!PLANOS[planoId])    return res.status(400).json({ success: false, message: 'Plano inválido.' });
+    if (!PLANOS_PUBLICOS[planoId]) {
+      return res.status(400).json({ success: false, message: 'Plano inválido.' });
+    }
     if (nome.length < 3)     return res.status(400).json({ success: false, message: 'Nome precisa ter ao menos 3 caracteres.' });
     if (!emailValido(email)) return res.status(400).json({ success: false, message: 'E-mail inválido.' });
     if (cpfCnpj.length < 11) return res.status(400).json({ success: false, message: 'CPF (11 dígitos) ou CNPJ (14 dígitos) inválido.' });
@@ -336,7 +344,9 @@ class AssinaturasController {
     const planoId = String(req.body.plano    || 'mensal');
     const cpfCnpj = String(req.body.cpf_cnpj || '').replace(/\D/g, '');
 
-    if (!PLANOS[planoId])    return res.status(400).json({ success: false, message: 'Plano inválido.' });
+    if (!PLANOS_PUBLICOS[planoId]) {
+      return res.status(400).json({ success: false, message: 'Plano inválido.' });
+    }
     if (cpfCnpj.length < 11) return res.status(400).json({ success: false, message: 'CPF ou CNPJ obrigatório para renovação.' });
 
     try {
