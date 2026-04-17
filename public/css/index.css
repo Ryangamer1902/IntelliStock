@@ -31,6 +31,7 @@
     .shell {
       width: min(1140px, 94%);
       margin: 0 auto;
+      min-width: 0;
     }
 
     header {
@@ -196,6 +197,7 @@
       box-shadow: var(--shadow);
       display: grid;
       gap: 14px;
+      min-width: 0;
     }
 
     .showcase-title {
@@ -399,6 +401,10 @@
         padding: 18px;
       }
 
+      .shell {
+        width: min(100%, calc(100% - 20px));
+      }
+
       .grid {
         grid-template-columns: 1fr;
       }
@@ -442,6 +448,7 @@
       padding: 28px;
       background: linear-gradient(180deg, #ffffff, #f7fbfb);
       box-shadow: var(--shadow);
+      min-width: 0;
     }
 
     .hist-card > .pill { margin-bottom: 12px; }
@@ -523,6 +530,7 @@
       display: grid;
       grid-template-columns: 1fr;
       gap: 14px;
+      min-width: 0;
     }
 
     .hist-panel {
@@ -530,6 +538,7 @@
       border-radius: 16px;
       background: #fff;
       padding: 16px;
+      min-width: 0;
     }
 
     .hist-panel h3 {
@@ -547,8 +556,10 @@
 
     .hist-table-wrap {
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border: 1px solid var(--line);
       border-radius: 12px;
+      max-width: 100%;
     }
 
     .hist-table-wrap table {
@@ -598,6 +609,7 @@
       background:
         radial-gradient(circle at 95% 0%, rgba(14,143,131,0.1), transparent 42%),
         linear-gradient(180deg, #ffffff, #f7fbfb);
+      min-width: 0;
     }
 
     .hist-panel-info .eyebrow {
@@ -693,5 +705,16 @@
       .hist-kpi-grid   { grid-template-columns: 1fr; }
       .hist-list-item  { grid-template-columns: 1fr; }
       .hist-card, .hist-panel, .hist-panel-info { padding: 16px; }
+      .hist-table-wrap table { min-width: 620px; }
+    }
+
+    @media (max-width: 420px) {
+      .hist-card, .hist-panel, .hist-panel-info { padding: 12px; }
+      .hist-table-wrap table { min-width: 540px; }
+      .hist-table-wrap th,
+      .hist-table-wrap td {
+        padding: 9px 10px;
+        font-size: 0.82rem;
+      }
     }
   
