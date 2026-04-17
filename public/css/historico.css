@@ -30,6 +30,7 @@
     .shell {
       width: min(1140px, 94%);
       margin: 0 auto;
+      min-width: 0;
     }
 
     header {
@@ -104,6 +105,7 @@
       padding: 24px;
       background: linear-gradient(180deg, #ffffff, #f7fbfb);
       box-shadow: var(--shadow);
+      min-width: 0;
     }
 
     .pill {
@@ -234,6 +236,7 @@
       display: grid;
       grid-template-columns: 1fr;
       gap: 14px;
+      min-width: 0;
     }
 
     .panel {
@@ -241,6 +244,7 @@
       border-radius: 16px;
       background: #fff;
       padding: 16px;
+      min-width: 0;
     }
 
     .panel h2 {
@@ -257,8 +261,10 @@
 
     .table-wrap {
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border: 1px solid var(--line);
       border-radius: 12px;
+      max-width: 100%;
     }
 
     table {
@@ -323,6 +329,7 @@
       background:
         radial-gradient(circle at 95% 0%, rgba(14, 143, 131, 0.1), transparent 42%),
         linear-gradient(180deg, #ffffff, #f7fbfb);
+      min-width: 0;
     }
 
     .panel-info .eyebrow {
@@ -464,6 +471,10 @@
         padding: 36px 0 52px;
       }
 
+      .shell {
+        width: min(100%, calc(100% - 20px));
+      }
+
       .card,
       .panel,
       .panel-info {
@@ -493,6 +504,10 @@
       .list-icon {
         width: 26px;
         height: 26px;
+      }
+
+      table {
+        min-width: 620px;
       }
     }
 
@@ -533,6 +548,16 @@
 
       .mini-item {
         padding: 10px;
+      }
+
+      table {
+        min-width: 540px;
+      }
+
+      th,
+      td {
+        padding: 9px 10px;
+        font-size: 0.82rem;
       }
     }
 
