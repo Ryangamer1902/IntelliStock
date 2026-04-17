@@ -164,7 +164,8 @@
       </div>
       <div class="field">
         <label>Fornecedor *</label>
-        <input type="text" id="fieldFornecedor" placeholder="Ex: ACME Ltda" required>
+        <input type="text" id="fieldFornecedor" list="fornecedorSuggestions" placeholder="Ex: ACME Ltda" required>
+        <datalist id="fornecedorSuggestions"></datalist>
       </div>
       <div class="field-row">
         <div class="field">
@@ -241,9 +242,15 @@
         <button class="btn btn-soft" id="btnAddProdComponent" type="button">+ Adicionar componente</button>
       </div>
 
+      <div class="field production-components-field">
+        <label>Custos extras</label>
+        <div id="prodExtraCostsList" class="prod-components-list"></div>
+        <button class="btn btn-soft" id="btnAddProdExtraCost" type="button">+ Adicionar custo extra</button>
+      </div>
+
       <div class="production-summary" id="prodCostSummary">Custo unitário estimado: R$ 0,00</div>
 
-      <p class="production-hint">Exemplo: para produzir 10 unidades, informe em cada componente o consumo total do lote (nao por unidade).</p>
+      <p class="production-hint">Exemplo: para produzir 10 unidades, informe em cada componente o consumo total do lote. Se houver mao de obra, frete ou embalagem, lance em custos extras.</p>
 
       <div class="modal-actions">
         <button class="btn btn-soft" id="btnCancelProduction">Cancelar</button>
@@ -376,6 +383,48 @@
 
     function persistMockMovimentacoes(lista) {
       localStorage.setItem(MOCK_MOVIMENTACOES_STORAGE_KEY, JSON.stringify(lista));
+    }
+
+    let fornecedoresSugestoes = [];
+
+    function getMockFornecedorSuggestions() {
+      const nomes = readMockMateriais()
+        .map((item) => String(item.fornecedor || '').trim())
+        .filter(Boolean);
+      return Array.from(new Set(nomes)).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    }
+
+    function renderFornecedorSuggestions() {
+      const datalist = document.getElementById('fornecedorSuggestions');
+      if (!datalist) return;
+
+      datalist.innerHTML = fornecedoresSugestoes
+        .map((nome) => `<option value="${escHtml(nome)}"></option>`)
+        .join('');
+    }
+
+    async function carregarFornecedorSuggestions() {
+      if (getMode() !== 'api') {
+        fornecedoresSugestoes = getMockFornecedorSuggestions();
+        renderFornecedorSuggestions();
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/fornecedores', { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar fornecedores');
+
+        const lista = await res.json();
+        fornecedoresSugestoes = Array.from(new Set(
+          (Array.isArray(lista) ? lista : [])
+            .map((item) => String(item?.nome || '').trim())
+            .filter(Boolean)
+        )).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      } catch (_) {
+        fornecedoresSugestoes = [];
+      }
+
+      renderFornecedorSuggestions();
     }
 
     function badge(estoque, pontoPedido) {
@@ -644,6 +693,7 @@
     }
 
     let productionRowSeq = 0;
+    let productionExtraCostSeq = 0;
 
     function generateProductionBarcode(existingCodes = new Set()) {
       let code = '';
@@ -665,6 +715,10 @@
 
     function getProductionRows() {
       return Array.from(document.querySelectorAll('#prodComponentsList .prod-component-row'));
+    }
+
+    function getProductionExtraCostRows() {
+      return Array.from(document.querySelectorAll('#prodExtraCostsList .prod-extra-cost-row'));
     }
 
     function addProductionComponentRow(defaultData = null) {
@@ -705,6 +759,33 @@
       updateProductionSummary();
     }
 
+    function addProductionExtraCostRow(defaultData = null) {
+      productionExtraCostSeq += 1;
+      const row = document.createElement('div');
+      row.className = 'prod-component-row prod-extra-cost-row';
+      row.dataset.rowId = String(productionExtraCostSeq);
+      row.innerHTML = `
+        <div class="prod-row-main">
+          <div class="prod-row-inputs prod-row-inputs-extra">
+            <input type="text" class="prod-extra-cost-label" placeholder="Ex: Mao de obra" aria-label="Descricao do custo extra">
+            <input type="number" class="prod-extra-cost-value" min="0" step="0.01" placeholder="Valor total do lote" aria-label="Valor do custo extra">
+          </div>
+          <button type="button" class="btn btn-soft prod-extra-cost-remove" title="Remover custo extra">Remover</button>
+        </div>
+        <div class="prod-component-price">
+          <span>Tipo: <strong class="prod-extra-cost-name">Nao informado</strong></span>
+          <span>Valor no lote: <strong class="prod-extra-cost-total">-</strong></span>
+        </div>
+      `;
+
+      row.querySelector('.prod-extra-cost-label').value = defaultData?.label || '';
+      row.querySelector('.prod-extra-cost-value').value = defaultData?.value || '';
+
+      document.getElementById('prodExtraCostsList').appendChild(row);
+      updateProductionExtraCostRow(row);
+      updateProductionSummary();
+    }
+
     function updateProductionRowPrice(row) {
       const selectEl = row.querySelector('.prod-comp-select');
       const qtyEl = row.querySelector('.prod-comp-qty');
@@ -725,22 +806,62 @@
       totalPriceEl.textContent = item && qtyTotal > 0 ? fmtMoney(totalPrice) : '-';
     }
 
+    function updateProductionExtraCostRow(row) {
+      const labelEl = row.querySelector('.prod-extra-cost-label');
+      const valueEl = row.querySelector('.prod-extra-cost-value');
+      const namePreviewEl = row.querySelector('.prod-extra-cost-name');
+      const totalPreviewEl = row.querySelector('.prod-extra-cost-total');
+
+      const label = String(labelEl?.value || '').trim();
+      const value = Number(valueEl?.value || 0);
+
+      namePreviewEl.textContent = label || 'Nao informado';
+      totalPreviewEl.textContent = value > 0 ? fmtMoney(value) : '-';
+    }
+
+    function parseProductionExtraCosts() {
+      const costs = [];
+
+      getProductionExtraCostRows().forEach((row) => {
+        const label = String(row.querySelector('.prod-extra-cost-label')?.value || '').trim();
+        const rawValue = row.querySelector('.prod-extra-cost-value')?.value;
+
+        if (!label && !rawValue) return;
+
+        const value = Number(rawValue);
+        if (!label || !Number.isFinite(value) || value <= 0) {
+          throw new Error('Preencha descricao e valor valido para cada custo extra informado.');
+        }
+
+        costs.push({ label, value });
+      });
+
+      return costs;
+    }
+
     function updateProductionSummary() {
       const producedQty = Number(document.getElementById('prodQtd').value || 0);
-      let batchCost = 0;
+      let componentsBatchCost = 0;
 
       getProductionRows().forEach((row) => {
         const materialId = Number(row.querySelector('.prod-comp-select').value || 0);
         const qtyTotal = Number(row.querySelector('.prod-comp-qty').value || 0);
         const item = allInsumos.find((m) => Number(m.id) === materialId);
         if (item && Number.isFinite(qtyTotal) && qtyTotal > 0) {
-          batchCost += Number(item.preco_custo_un || 0) * qtyTotal;
+          componentsBatchCost += Number(item.preco_custo_un || 0) * qtyTotal;
         }
       });
 
+      const extraBatchCost = getProductionExtraCostRows().reduce((sum, row) => {
+        const value = Number(row.querySelector('.prod-extra-cost-value')?.value || 0);
+        return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+      }, 0);
+
+      const batchCost = componentsBatchCost + extraBatchCost;
+
       const estimatedUnitCost = producedQty > 0 ? batchCost / producedQty : 0;
       const summaryEl = document.getElementById('prodCostSummary');
-      summaryEl.textContent = `Custo unitário estimado: ${fmtMoney(estimatedUnitCost)} | Custo total do lote: ${fmtMoney(batchCost)}`;
+      summaryEl.textContent = `Custo unitário estimado: ${fmtMoney(estimatedUnitCost)} | Insumos: ${fmtMoney(componentsBatchCost)} | Extras: ${fmtMoney(extraBatchCost)} | Custo total do lote: ${fmtMoney(batchCost)}`;
     }
 
     function openProductionModal() {
@@ -752,6 +873,7 @@
       document.getElementById('prodFinalName').value = '';
       document.getElementById('prodQtd').value = '';
       document.getElementById('prodComponentsList').innerHTML = '';
+      document.getElementById('prodExtraCostsList').innerHTML = '';
       addProductionComponentRow();
 
       const fb = document.getElementById('productionFeedback');
@@ -930,6 +1052,9 @@
     document.getElementById('btnAddProdComponent').addEventListener('click', () => {
       addProductionComponentRow();
     });
+    document.getElementById('btnAddProdExtraCost').addEventListener('click', () => {
+      addProductionExtraCostRow();
+    });
     document.getElementById('prodQtd').addEventListener('input', updateProductionSummary);
     document.getElementById('prodComponentsList').addEventListener('input', (event) => {
       const row = event.target.closest('.prod-component-row');
@@ -939,11 +1064,27 @@
         updateProductionSummary();
       }
     });
+    document.getElementById('prodExtraCostsList').addEventListener('input', (event) => {
+      const row = event.target.closest('.prod-extra-cost-row');
+      if (!row) return;
+      if (event.target.classList.contains('prod-extra-cost-label') || event.target.classList.contains('prod-extra-cost-value')) {
+        updateProductionExtraCostRow(row);
+        updateProductionSummary();
+      }
+    });
     document.getElementById('prodComponentsList').addEventListener('change', (event) => {
       const row = event.target.closest('.prod-component-row');
       if (!row) return;
       if (event.target.classList.contains('prod-comp-select') || event.target.classList.contains('prod-comp-qty')) {
         updateProductionRowPrice(row);
+        updateProductionSummary();
+      }
+    });
+    document.getElementById('prodExtraCostsList').addEventListener('change', (event) => {
+      const row = event.target.closest('.prod-extra-cost-row');
+      if (!row) return;
+      if (event.target.classList.contains('prod-extra-cost-label') || event.target.classList.contains('prod-extra-cost-value')) {
+        updateProductionExtraCostRow(row);
         updateProductionSummary();
       }
     });
@@ -959,6 +1100,16 @@
         showToast('A produção precisa de pelo menos 1 componente.', 'error');
         return;
       }
+
+      row.remove();
+      updateProductionSummary();
+    });
+    document.getElementById('prodExtraCostsList').addEventListener('click', (event) => {
+      const removeBtn = event.target.closest('.prod-extra-cost-remove');
+      if (!removeBtn) return;
+
+      const row = removeBtn.closest('.prod-extra-cost-row');
+      if (!row) return;
 
       row.remove();
       updateProductionSummary();
@@ -1100,6 +1251,15 @@
         return;
       }
 
+      let extraCosts;
+      try {
+        extraCosts = parseProductionExtraCosts();
+      } catch (error) {
+        fb.textContent = error.message;
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
       const mergedIngredientsMap = new Map();
       ingredients.forEach((ing) => {
         const prev = mergedIngredientsMap.get(ing.materialId) || 0;
@@ -1134,6 +1294,9 @@
 
         totalCostEstimate += Number(item.preco_custo_un || 0) * Number(ing.qtyTotal || 0);
       }
+
+      const extraCostsTotal = extraCosts.reduce((sum, item) => sum + Number(item.value || 0), 0);
+      totalCostEstimate += extraCostsTotal;
 
       const finalUnitCost = +(producedQty > 0 ? (totalCostEstimate / producedQty) : 0).toFixed(2);
 
@@ -1209,7 +1372,7 @@
             body: JSON.stringify({
               diferenca: +producedQty,
               motivo: 'PRODUCAO',
-              observacao: `Entrada por produção com ${mergedIngredients.length} componente(s)`,
+              observacao: `Entrada por produção com ${mergedIngredients.length} componente(s) e ${extraCosts.length} custo(s) extra`,
               usuario_nome: usuario?.nome || 'Sistema'
             })
           });
@@ -1288,7 +1451,7 @@
             quantidade_anterior: qtdFinalAnterior,
             quantidade_atual: qtdFinalAtual,
             usuario_nome: usuario?.nome || 'Sistema',
-            observacao: `Entrada por produção com ${mergedIngredients.length} componente(s)`,
+            observacao: `Entrada por produção com ${mergedIngredients.length} componente(s) e ${extraCosts.length} custo(s) extra`,
             created_at: new Date().toISOString()
           });
 
@@ -1394,6 +1557,7 @@
     });
 
     carregarAssinatura();
+    carregarFornecedorSuggestions();
     carregarInsumos();
 
     const revealEls = document.querySelectorAll('.reveal-section');

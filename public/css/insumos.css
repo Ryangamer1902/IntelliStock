@@ -502,12 +502,18 @@
       gap: 8px;
     }
 
+    .prod-row-inputs-extra {
+      grid-template-columns: minmax(0, 1fr) 180px;
+    }
+
     .prod-row-main > * {
       min-width: 0;
     }
 
     .prod-component-row .prod-comp-select,
-    .prod-component-row .prod-comp-qty {
+    .prod-component-row .prod-comp-qty,
+    .prod-component-row .prod-extra-cost-label,
+    .prod-component-row .prod-extra-cost-value {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -589,7 +595,9 @@
     }
 
     .prod-component-row .prod-comp-select:focus,
-    .prod-component-row .prod-comp-qty:focus {
+    .prod-component-row .prod-comp-qty:focus,
+    .prod-component-row .prod-extra-cost-label:focus,
+    .prod-component-row .prod-extra-cost-value:focus {
       border-color: rgba(14, 143, 131, 0.55);
       box-shadow: 0 0 0 4px rgba(14, 143, 131, 0.12);
     }

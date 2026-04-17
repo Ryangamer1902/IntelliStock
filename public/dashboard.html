@@ -174,7 +174,8 @@
       </div>
       <div class="field">
         <label>Fornecedor *</label>
-        <input type="text" id="fieldFornecedor" placeholder="Ex: ACME Ltda" required>
+        <input type="text" id="fieldFornecedor" list="fornecedorSuggestions" placeholder="Ex: ACME Ltda" required>
+        <datalist id="fornecedorSuggestions"></datalist>
       </div>
       <div class="field-row">
         <div class="field">
@@ -501,6 +502,48 @@
         btn.disabled = false;
         btn.textContent = 'Renovar assinatura';
       }
+    }
+
+    let fornecedoresSugestoes = [];
+
+    function getMockFornecedorSuggestions() {
+      const nomes = mockMateriais
+        .map((item) => String(item.fornecedor || '').trim())
+        .filter(Boolean);
+      return Array.from(new Set(nomes)).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    }
+
+    function renderFornecedorSuggestions() {
+      const datalist = document.getElementById('fornecedorSuggestions');
+      if (!datalist) return;
+
+      datalist.innerHTML = fornecedoresSugestoes
+        .map((nome) => `<option value="${escHtml(nome)}"></option>`)
+        .join('');
+    }
+
+    async function carregarFornecedorSuggestions() {
+      if (getMode() !== 'api') {
+        fornecedoresSugestoes = getMockFornecedorSuggestions();
+        renderFornecedorSuggestions();
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/fornecedores', { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar fornecedores');
+
+        const lista = await res.json();
+        fornecedoresSugestoes = Array.from(new Set(
+          (Array.isArray(lista) ? lista : [])
+            .map((item) => String(item?.nome || '').trim())
+            .filter(Boolean)
+        )).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      } catch (_) {
+        fornecedoresSugestoes = [];
+      }
+
+      renderFornecedorSuggestions();
     }
 
     // ===== STATUS BADGE =====
@@ -955,6 +998,7 @@
 
     // ===== INICIAR =====
     carregarAssinatura();
+    carregarFornecedorSuggestions();
     carregarMateriais();
   </script>
 </body>
