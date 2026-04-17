@@ -46,6 +46,23 @@
       </p>
 
       <div class="plans">
+        <article class="plan-card plan-card-test reveal-section">
+          <span class="tag">Teste de produção</span>
+          <h2 class="plan-name">Plano Teste</h2>
+          <div class="price">
+            <strong>R$ 1</strong>
+            <span>/cobrança</span>
+          </div>
+          <p class="plan-note">Use este plano para validar o fluxo real do Mercado Pago em produção.</p>
+          <ul class="features">
+            <li>Cobrança real de R$ 1</li>
+            <li>Validação do retorno de pagamento</li>
+            <li>Ideal para homologação operacional</li>
+          </ul>
+          <div class="equivalent">Plano técnico para confirmar o checkout oficial</div>
+          <a class="btn btn-soft" href="/checkout.html?plano=teste">Escolher plano teste</a>
+        </article>
+
         <article class="plan-card reveal-section">
           <h2 class="plan-name">Assinatura Semanal</h2>
           <div class="price">
@@ -138,6 +155,18 @@
         </thead>
         <tbody>
           <tr>
+            <td>Teste</td>
+            <td>R$ 1/cobrança</td>
+            <td>Uso pontual</td>
+            <td>
+              <div class="saving-wrap">
+                <span class="saving-text">Validação operacional</span>
+                <div class="saving-track"><div class="saving-fill test"></div></div>
+              </div>
+            </td>
+            <td><span class="plan-chip chip-base">Homologação</span></td>
+          </tr>
+          <tr>
             <td>Semanal</td>
             <td>R$ 59/semana</td>
             <td>R$ 236/mês</td>
@@ -183,7 +212,7 @@
 
     <div class="actions">
       <a class="btn btn-soft" href="/index.html">Voltar ao início</a>
-      <a class="btn btn-main" href="/checkout.html?plano=anual">Assinar agora</a>
+      <a class="btn btn-main" href="/checkout.html?plano=teste">Testar pagamento real</a>
     </div>
 
   </main>

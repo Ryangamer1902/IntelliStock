@@ -123,7 +123,7 @@ const initializeDatabase = async () => {
       CREATE TABLE IF NOT EXISTS assinaturas (
         id                   INT AUTO_INCREMENT PRIMARY KEY,
         usuario_id           INT NOT NULL,
-        plano                ENUM('semanal','mensal','anual') NOT NULL,
+        plano                ENUM('teste','semanal','mensal','anual') NOT NULL,
         status               ENUM('pendente','ativa','cancelada','suspensa','expirada') NOT NULL DEFAULT 'pendente',
         mp_payment_id        VARCHAR(100) NULL,
         cpf_cnpj             VARCHAR(14) NULL,
@@ -151,6 +151,10 @@ const initializeDatabase = async () => {
     `).catch(() => {});
     await pool.query(`
       ALTER TABLE assinaturas ADD COLUMN IF NOT EXISTS card_last4 VARCHAR(4) NULL AFTER card_brand
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE assinaturas
+        MODIFY COLUMN plano ENUM('teste','semanal','mensal','anual') NOT NULL
     `).catch(() => {});
 
     // Garante que o admin fixo seja sempre is_admin = 1

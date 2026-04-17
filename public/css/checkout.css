@@ -131,6 +131,7 @@
       grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
       gap: 16px;
       align-items: start;
+      min-width: 0;
     }
 
     .panel {
@@ -139,6 +140,7 @@
       background: linear-gradient(180deg, #ffffff, #f7fbfb);
       box-shadow: var(--shadow);
       padding: 22px;
+      min-width: 0;
     }
 
     .panel h2 {
@@ -238,6 +240,7 @@
       background: linear-gradient(180deg, #ffffff, #f7fbfb);
       box-shadow: var(--shadow);
       padding: 20px;
+      min-width: 0;
     }
 
     .plan-chip {
@@ -407,6 +410,23 @@
       nav a { white-space: nowrap; flex: 0 0 auto; }
       .grid-2,
       .step-row { grid-template-columns: 1fr; }
+      .shell { width: min(100%, calc(100% - 20px)); }
+      .hero,
+      .panel,
+      .summary-card { padding: 16px; }
+      .btn-row { flex-direction: column; }
+    }
+
+    @media (max-width: 420px) {
+      main { padding: 24px 0 40px; }
+      .hero,
+      .panel,
+      .summary-card { padding: 12px; border-radius: 16px; }
+      .plan-price strong { font-size: 1.6rem; }
+      .price-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
   
 .checkout-title {

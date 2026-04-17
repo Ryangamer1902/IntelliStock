@@ -60,6 +60,7 @@
           </div>
           <div class="subscription-actions">
             <select id="renewPlan">
+              <option value="teste">Plano teste</option>
               <option value="semanal">Plano semanal</option>
               <option value="mensal" selected>Plano mensal</option>
               <option value="anual">Plano anual</option>
@@ -464,7 +465,7 @@
 
     async function renovarAssinatura() {
       if (getMode() !== 'api') {
-        showToast('No modo local, a renovação está simulada.', 'success');
+        showToast('A renovação oficial está disponível apenas no modo API.', 'error');
         return;
       }
 
@@ -494,10 +495,7 @@
           throw new Error(data.message || 'Não foi possível iniciar a renovação.');
         }
 
-        const url = (location.hostname === 'localhost' && data.sandbox_init_point)
-          ? data.sandbox_init_point
-          : data.init_point;
-        window.location.href = url;
+        window.location.href = data.init_point;
       } catch (error) {
         showToast(error.message || 'Erro ao renovar assinatura.', 'error');
       } finally {

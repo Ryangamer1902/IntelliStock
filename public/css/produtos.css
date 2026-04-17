@@ -141,7 +141,7 @@
 
     .plans {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin: 18px 0 20px;
     }
@@ -160,6 +160,11 @@
       border: 2px solid rgba(14, 143, 131, 0.45);
       position: relative;
       transform: translateY(-4px);
+    }
+
+    .plan-card-test {
+      border-color: rgba(238, 127, 59, 0.35);
+      background: linear-gradient(180deg, #fffdf8, #ffffff);
     }
 
     .tag {
@@ -420,6 +425,11 @@
       width: 24%;
     }
 
+    .saving-fill.test {
+      width: 12%;
+      background: linear-gradient(130deg, #33525a, #5d6b70);
+    }
+
     .saving-fill.annual {
       width: 40%;
       background: linear-gradient(130deg, var(--accent), #f6a060);
@@ -494,7 +504,7 @@
       }
 
       .compare {
-        overflow-x: auto;
+        overflow-x: hidden;
       }
 
       .compare-metrics {
@@ -502,7 +512,17 @@
       }
 
       .compare table {
-        min-width: 680px;
+        min-width: 100%;
+      }
+
+      .compare th,
+      .compare td {
+        padding: 9px 8px;
+        font-size: 0.82rem;
+      }
+
+      .saving-wrap {
+        min-width: 0;
       }
 
       .actions {
@@ -529,6 +549,10 @@
         padding: 12px;
       }
 
+      .shell {
+        width: min(100%, calc(100% - 20px));
+      }
+
       #userArea {
         align-items: stretch;
         flex-direction: column;
@@ -550,6 +574,11 @@
 
       .price strong {
         font-size: 1.65rem;
+      }
+
+      .compare th,
+      .compare td {
+        font-size: 0.76rem;
       }
     }
 

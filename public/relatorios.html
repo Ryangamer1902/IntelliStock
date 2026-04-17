@@ -58,6 +58,7 @@
           </div>
           <div class="subscription-actions">
             <select id="renewPlan">
+              <option value="teste">Plano teste</option>
               <option value="semanal">Plano semanal</option>
               <option value="mensal" selected>Plano mensal</option>
               <option value="anual">Plano anual</option>
@@ -330,10 +331,7 @@
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Não foi possível iniciar a renovação.');
 
-        const url = (location.hostname === 'localhost' && data.sandbox_init_point)
-          ? data.sandbox_init_point
-          : data.init_point;
-        window.location.href = url;
+        window.location.href = data.init_point;
       } catch (_) {
         btn.disabled = false;
         btn.textContent = 'Renovar assinatura';

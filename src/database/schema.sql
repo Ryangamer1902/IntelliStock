@@ -172,7 +172,7 @@ DEALLOCATE PREPARE stmt_is_admin;
 CREATE TABLE IF NOT EXISTS assinaturas (
   id                   INT AUTO_INCREMENT PRIMARY KEY,
   usuario_id           INT NOT NULL,
-  plano                ENUM('semanal','mensal','anual') NOT NULL,
+  plano                ENUM('teste','semanal','mensal','anual') NOT NULL,
   status               ENUM('pendente','ativa','cancelada','suspensa','expirada') NOT NULL DEFAULT 'pendente',
   mp_payment_id        VARCHAR(100) NULL,
   cpf_cnpj             VARCHAR(14) NULL,
@@ -224,6 +224,9 @@ SET @sql_ass_brand := IF(
 PREPARE stmt_ass_brand FROM @sql_ass_brand;
 EXECUTE stmt_ass_brand;
 DEALLOCATE PREPARE stmt_ass_brand;
+
+ALTER TABLE assinaturas
+  MODIFY COLUMN plano ENUM('teste','semanal','mensal','anual') NOT NULL;
 
 SET @col_ass_last4_exists := (
   SELECT COUNT(*)
