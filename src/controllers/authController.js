@@ -32,7 +32,7 @@ async function criarDesafioVerificacao(db, usuario) {
   if (mailRequired && !envioEmail.sent) {
     return {
       success: false,
-      message: 'Nao foi possivel enviar o codigo de verificacao por e-mail. Tente novamente em instantes.'
+      message: 'Não foi possível enviar o código de verificação por e-mail. Tente novamente em instantes.'
     };
   }
 
@@ -198,11 +198,11 @@ class AuthController {
 
   static async solicitarReset(req, res) {
     const db = global.db;
-    if (!db) return res.status(503).json({ success: false, message: 'Banco de dados nao configurado.' });
+    if (!db) return res.status(503).json({ success: false, message: 'Banco de dados não configurado.' });
 
     const email = String(req.body.email || '').trim().toLowerCase();
     if (!emailValido(email)) {
-      return res.status(400).json({ success: false, message: 'Informe um e-mail valido.' });
+      return res.status(400).json({ success: false, message: 'Informe um e-mail válido.' });
     }
 
     try {
@@ -213,7 +213,7 @@ class AuthController {
 
       // Resposta generica por seguranca (nao revela se o e-mail existe)
       if (rows.length === 0) {
-        return res.json({ success: true, message: 'Se este e-mail estiver cadastrado, voce receberá as instruções em instantes.' });
+        return res.json({ success: true, message: 'Se este e-mail estiver cadastrado, você receberá as instruções em instantes.' });
       }
 
       const usuario = rows[0];
@@ -233,10 +233,10 @@ class AuthController {
 
       if (!envio.sent) {
         console.error('Falha ao enviar e-mail de reset para', usuario.email, '-', envio.reason);
-        return res.status(502).json({ success: false, message: 'Nao foi possivel enviar o e-mail. Tente novamente.' });
+        return res.status(502).json({ success: false, message: 'Não foi possível enviar o e-mail. Tente novamente.' });
       }
 
-      return res.json({ success: true, message: 'Se este e-mail estiver cadastrado, voce receberá as instruções em instantes.' });
+      return res.json({ success: true, message: 'Se este e-mail estiver cadastrado, você receberá as instruções em instantes.' });
     } catch (err) {
       console.error('Erro ao solicitar reset:', err);
       return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
@@ -245,12 +245,12 @@ class AuthController {
 
   static async redefinirSenha(req, res) {
     const db = global.db;
-    if (!db) return res.status(503).json({ success: false, message: 'Banco de dados nao configurado.' });
+    if (!db) return res.status(503).json({ success: false, message: 'Banco de dados não configurado.' });
 
     const token = String(req.body.token || '').trim();
     const novaSenha = String(req.body.senha || '');
 
-    if (!token) return res.status(400).json({ success: false, message: 'Token invalido.' });
+    if (!token) return res.status(400).json({ success: false, message: 'Token inválido.' });
     if (novaSenha.length < 6) return res.status(400).json({ success: false, message: 'A nova senha precisa ter pelo menos 6 caracteres.' });
 
     try {
@@ -261,17 +261,17 @@ class AuthController {
         [token]
       );
 
-      if (rows.length === 0) return res.status(401).json({ success: false, message: 'Link invalido ou ja utilizado.' });
+      if (rows.length === 0) return res.status(401).json({ success: false, message: 'Link inválido ou já utilizado.' });
 
       const reg = rows[0];
-      if (reg.usado) return res.status(401).json({ success: false, message: 'Este link ja foi utilizado.' });
+      if (reg.usado) return res.status(401).json({ success: false, message: 'Este link já foi utilizado.' });
       if (new Date() > new Date(reg.expira_em)) return res.status(401).json({ success: false, message: 'Link expirado. Solicite um novo.' });
 
       const senhaHash = await bcrypt.hash(novaSenha, 10);
       await db.query('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [senhaHash, reg.usuario_id]);
       await db.query('UPDATE tokens_reset_senha SET usado = 1 WHERE id = ?', [reg.id]);
 
-      return res.json({ success: true, message: 'Senha redefinida com sucesso. Faca login com sua nova senha.' });
+      return res.json({ success: true, message: 'Senha redefinida com sucesso. Faça login com sua nova senha.' });
     } catch (err) {
       console.error('Erro ao redefinir senha:', err);
       return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });

@@ -250,7 +250,7 @@
 
       <div class="production-summary" id="prodCostSummary">Custo unitário estimado: R$ 0,00</div>
 
-      <p class="production-hint">Exemplo: para produzir 10 unidades, informe em cada componente o consumo total do lote. Se houver mao de obra, frete ou embalagem, lance em custos extras.</p>
+      <p class="production-hint">Exemplo: para produzir 10 unidades, informe em cada componente o consumo total do lote. Se houver mão de obra, frete ou embalagem, lance em custos extras.</p>
 
       <div class="modal-actions">
         <button class="btn btn-soft" id="btnCancelProduction">Cancelar</button>
@@ -767,13 +767,13 @@
       row.innerHTML = `
         <div class="prod-row-main">
           <div class="prod-row-inputs prod-row-inputs-extra">
-            <input type="text" class="prod-extra-cost-label" placeholder="Ex: Mao de obra" aria-label="Descricao do custo extra">
+            <input type="text" class="prod-extra-cost-label" placeholder="Ex: Mão de obra" aria-label="Descrição do custo extra">
             <input type="number" class="prod-extra-cost-value" min="0" step="0.01" placeholder="Valor total do lote" aria-label="Valor do custo extra">
           </div>
           <button type="button" class="btn btn-soft prod-extra-cost-remove" title="Remover custo extra">Remover</button>
         </div>
         <div class="prod-component-price">
-          <span>Tipo: <strong class="prod-extra-cost-name">Nao informado</strong></span>
+          <span>Tipo: <strong class="prod-extra-cost-name">Não informado</strong></span>
           <span>Valor no lote: <strong class="prod-extra-cost-total">-</strong></span>
         </div>
       `;
@@ -815,7 +815,7 @@
       const label = String(labelEl?.value || '').trim();
       const value = Number(valueEl?.value || 0);
 
-      namePreviewEl.textContent = label || 'Nao informado';
+      namePreviewEl.textContent = label || 'Não informado';
       totalPreviewEl.textContent = value > 0 ? fmtMoney(value) : '-';
     }
 

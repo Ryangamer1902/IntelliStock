@@ -6,11 +6,11 @@ async function authMiddleware(req, res, next) {
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
-    return res.status(401).json({ success: false, message: 'Autenticacao necessaria.' });
+    return res.status(401).json({ success: false, message: 'Autenticação necessária.' });
   }
 
   if (!global.db) {
-    return res.status(503).json({ success: false, message: 'Banco de dados nao disponivel.' });
+    return res.status(503).json({ success: false, message: 'Banco de dados não disponível.' });
   }
 
   try {
@@ -23,7 +23,7 @@ async function authMiddleware(req, res, next) {
     );
 
     if (rows.length === 0) {
-      return res.status(401).json({ success: false, message: 'Sessao invalida ou expirada. Faca login novamente.' });
+      return res.status(401).json({ success: false, message: 'Sessão inválida ou expirada. Faça login novamente.' });
     }
 
     req.usuario_id = rows[0].usuario_id;
@@ -31,7 +31,7 @@ async function authMiddleware(req, res, next) {
     next();
   } catch (err) {
     console.error('Erro no middleware de autenticacao:', err);
-    return res.status(500).json({ success: false, message: 'Erro interno ao validar sessao.' });
+    return res.status(500).json({ success: false, message: 'Erro interno ao validar sessão.' });
   }
 }
 

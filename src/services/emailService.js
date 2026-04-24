@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-const path = require('path');
 
 let transporter = null;
 
@@ -70,21 +69,20 @@ function buildLowStockHtml({ materialNome, quantidadeAtual, quantidadeMinima, de
         <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
           <tr>
             <td style="background:linear-gradient(135deg,#0e8f83 0%,#0a6b61 100%);padding:36px 40px;text-align:center;">
-              <img src="cid:intellistock-logo" alt="Logo IntelliStock" width="72" height="72" style="display:block;margin:0 auto 12px;border-radius:16px;">
               <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:1px;">IntelliStock</h1>
-              <p style="margin:6px 0 0;color:#a7f3d0;font-size:13px;">Alerta automatico de estoque</p>
+              <p style="margin:6px 0 0;color:#a7f3d0;font-size:13px;">Alerta automático de estoque</p>
             </td>
           </tr>
           <tr>
             <td style="padding:36px 40px 28px;">
-              <h2 style="margin:0 0 10px;color:#111827;font-size:20px;">Material abaixo do minimo</h2>
-              <p style="margin:0 0 18px;color:#374151;font-size:15px;">O material <strong>${materialNome}</strong> esta com estoque abaixo do minimo configurado.</p>
+              <h2 style="margin:0 0 10px;color:#111827;font-size:20px;">Material abaixo do mínimo</h2>
+              <p style="margin:0 0 18px;color:#374151;font-size:15px;">O material <strong>${materialNome}</strong> está com estoque abaixo do mínimo configurado.</p>
               <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;margin:0 0 18px;">
                 <p style="margin:0 0 8px;color:#111827;font-size:14px;"><strong>Estoque atual:</strong> ${quantidadeAtual}</p>
-                <p style="margin:0 0 8px;color:#111827;font-size:14px;"><strong>Estoque minimo:</strong> ${quantidadeMinima}</p>
-                <p style="margin:0;color:#b91c1c;font-size:15px;"><strong>Deficit:</strong> ${deficit} unidade(s) abaixo do minimo</p>
+                <p style="margin:0 0 8px;color:#111827;font-size:14px;"><strong>Estoque mínimo:</strong> ${quantidadeMinima}</p>
+                <p style="margin:0;color:#b91c1c;font-size:15px;"><strong>Déficit:</strong> ${deficit} unidade(s) abaixo do mínimo</p>
               </div>
-              <p style="margin:0;color:#6b7280;font-size:13px;">Recomendacao: realizar reposicao para evitar ruptura de estoque.</p>
+              <p style="margin:0;color:#6b7280;font-size:13px;">Recomendação: realizar reposição para evitar ruptura de estoque.</p>
             </td>
           </tr>
           <tr><td style="padding:0 40px;"><div style="height:1px;background:#e5e7eb;"></div></td></tr>
@@ -114,7 +112,6 @@ function buildHtml(nome, codigo) {
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#0e8f83 0%,#0a6b61 100%);padding:36px 40px;text-align:center;">
-              <img src="cid:intellistock-logo" alt="Logo IntelliStock" width="72" height="72" style="display:block;margin:0 auto 12px;border-radius:16px;">
               <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:1px;">IntelliStock</h1>
               <p style="margin:6px 0 0;color:#a7f3d0;font-size:13px;">Sistema de Gerenciamento de Estoque</p>
             </td>
@@ -162,21 +159,13 @@ async function enviarCodigoVerificacao({ para, nome, codigo }) {
 
   try {
     const mailTransport = getTransporter(config);
-    const logoPath = path.join(__dirname, '..', '..', 'public', 'images', 'intellistock-logo.svg');
 
     await mailTransport.sendMail({
       from: config.from,
       to: para,
-      subject: 'Codigo de verificacao - IntelliStock',
-      text: `Seu codigo de verificacao e ${codigo}. Ele expira em 10 minutos.`,
-      html: buildHtml(nome, codigo),
-      attachments: [
-        {
-          filename: 'intellistock-logo.svg',
-          path: logoPath,
-          cid: 'intellistock-logo'
-        }
-      ]
+      subject: 'Código de verificação - IntelliStock',
+      text: `Seu código de verificação é ${codigo}. Ele expira em 10 minutos.`,
+      html: buildHtml(nome, codigo)
     });
 
     return { sent: true };
@@ -208,7 +197,6 @@ async function enviarLinkResetSenha({ para, nome, link }) {
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#0e8f83 0%,#0a6b61 100%);padding:36px 40px;text-align:center;">
-              <img src="cid:intellistock-logo" alt="Logo IntelliStock" width="72" height="72" style="display:block;margin:0 auto 12px;border-radius:16px;">
               <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:1px;">IntelliStock</h1>
               <p style="margin:6px 0 0;color:#a7f3d0;font-size:13px;">Sistema de Gerenciamento de Estoque</p>
             </td>
@@ -244,20 +232,12 @@ async function enviarLinkResetSenha({ para, nome, link }) {
 
   try {
     const mailTransport = getTransporter(config);
-    const logoPath = path.join(__dirname, '..', '..', 'public', 'images', 'intellistock-logo.svg');
     await mailTransport.sendMail({
       from: config.from,
       to: para,
-      subject: 'Redefinicao de senha - IntelliStock',
+      subject: 'Redefinição de senha - IntelliStock',
       text: `Acesse o link para redefinir sua senha: ${link} (expira em 30 minutos)`,
-      html,
-      attachments: [
-        {
-          filename: 'intellistock-logo.svg',
-          path: logoPath,
-          cid: 'intellistock-logo'
-        }
-      ]
+      html
     });
     return { sent: true };
   } catch (error) {
@@ -289,7 +269,6 @@ async function enviarAlertaEstoqueBaixo({ destinatarios = [], materialNome, quan
 
   try {
     const mailTransport = getTransporter(config);
-    const logoPath = path.join(__dirname, '..', '..', 'public', 'images', 'intellistock-logo.svg');
     const html = buildLowStockHtml({
       materialNome: safeMaterial,
       quantidadeAtual: atual,
@@ -301,15 +280,8 @@ async function enviarAlertaEstoqueBaixo({ destinatarios = [], materialNome, quan
       from: config.from,
       to: recipients.join(', '),
       subject: `Alerta de estoque baixo - ${safeMaterial}`,
-      text: `Material ${safeMaterial} esta abaixo do minimo. Atual: ${atual}. Minimo: ${minimo}. Deficit: ${falta} unidade(s).`,
-      html,
-      attachments: [
-        {
-          filename: 'intellistock-logo.svg',
-          path: logoPath,
-          cid: 'intellistock-logo'
-        }
-      ]
+      text: `Material ${safeMaterial} está abaixo do mínimo. Atual: ${atual}. Mínimo: ${minimo}. Déficit: ${falta} unidade(s).`,
+      html
     });
 
     return { sent: true, recipients };
