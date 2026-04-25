@@ -54,10 +54,30 @@ async function listarEmailsClientesAtivos(usuarioId) {
   }
 }
 
+function listarEmailsAlertaGlobais() {
+  const bruto = String(
+    process.env.ALERT_EMAILS ||
+    process.env.ALERT_EMAIL ||
+    process.env.MAIL_ALERT_EMAILS ||
+    ''
+  );
+
+  if (!bruto.trim()) return [];
+
+  return [...new Set(
+    bruto
+      .split(/[;,\s]+/)
+      .map((item) => String(item || '').trim())
+      .filter((item) => /[^\s@]+@[^\s@]+\.[^\s@]+/.test(item))
+  )];
+}
+
 async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
   if (!precisaNotificarBaixoEstoque(materialAntes, materialDepois)) return;
 
-  const destinatarios = await listarEmailsClientesAtivos(usuarioId);
+  const destinatariosCliente = await listarEmailsClientesAtivos(usuarioId);
+  const destinatariosGlobais = listarEmailsAlertaGlobais();
+  const destinatarios = [...new Set([...destinatariosCliente, ...destinatariosGlobais])];
   if (!destinatarios.length) {
     console.warn('Alerta de estoque baixo nao enviado (usuario sem email ativo para notificacao)');
     return;
@@ -77,13 +97,18 @@ async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
   const quantidadeAtual = toNumber(snapshot?.quantidade_atual, 0);
   const quantidadeMinima = toNumber(snapshot?.quantidade_minima, 0);
   const deficit = Math.max(0, quantidadeMinima - quantidadeAtual);
+  const fornecedor = String(snapshot?.fornecedor || materialDepois?.fornecedor || '').trim().toLowerCase();
+  const tipoItem = fornecedor === 'produção interna' || fornecedor === 'producao interna'
+    ? 'Item final de produção'
+    : 'Material';
 
   const resultado = await enviarAlertaEstoqueBaixo({
     destinatarios,
     materialNome: String(snapshot?.nome || materialDepois?.nome || 'Material'),
     quantidadeAtual,
     quantidadeMinima,
-    deficit
+    deficit,
+    tipoItem
   });
 
   if (!resultado?.sent) {
@@ -94,6 +119,148 @@ async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
   console.log(`Alerta de estoque baixo enviado para ${resultado.recipients?.length || 0} destinatario(s) - material: ${String(snapshot?.nome || materialDepois?.nome || 'Material')} - atual: ${quantidadeAtual} - minimo: ${quantidadeMinima}`);
 }
 class MateriaisController {
+  /**
+   * GET /api/materiais/:id/receita
+   * Buscar receita de producao do item final
+   */
+  static async obterReceita(req, res) {
+    try {
+      const { id } = req.params;
+      const usuarioId = req.usuario_id;
+
+      const material = await Material.findById(id, usuarioId);
+      if (!material) {
+        return res.status(404).json({
+          success: false,
+          message: 'Material nao encontrado'
+        });
+      }
+
+      const receita = await Material.findReceita(id, usuarioId);
+      if (!receita) {
+        return res.status(404).json({
+          success: false,
+          message: 'Receita de producao nao cadastrada para este item final'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Receita recuperada com sucesso',
+        data: receita
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao obter receita de producao',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * PUT /api/materiais/:id/receita
+   * Criar/atualizar receita de producao do item final
+   */
+  static async salvarReceita(req, res) {
+    try {
+      const { id } = req.params;
+      const usuarioId = req.usuario_id;
+      const { base_quantidade, componentes = [], custos_extras = [] } = req.body || {};
+
+      const material = await Material.findById(id, usuarioId);
+      if (!material) {
+        return res.status(404).json({
+          success: false,
+          message: 'Material nao encontrado'
+        });
+      }
+
+      const baseQuantidadeNum = Number(base_quantidade || 0);
+      if (!Number.isFinite(baseQuantidadeNum) || baseQuantidadeNum <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Base de quantidade da receita deve ser maior que zero'
+        });
+      }
+
+      if (!Array.isArray(componentes) || componentes.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Informe ao menos 1 componente para a receita'
+        });
+      }
+
+      const componentesNormalizados = [];
+      for (const comp of componentes) {
+        const materialId = Number(comp?.material_id || comp?.materialId || 0);
+        const qtdTotal = Number(comp?.qty_total || comp?.qtyTotal || 0);
+        if (!Number.isInteger(materialId) || materialId <= 0 || !Number.isFinite(qtdTotal) || qtdTotal <= 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Componentes da receita estao invalidos'
+          });
+        }
+
+        const materialComponente = await Material.findById(materialId, usuarioId);
+        if (!materialComponente) {
+          return res.status(404).json({
+            success: false,
+            message: `Componente nao encontrado: ${materialId}`
+          });
+        }
+
+        if (Number(materialId) === Number(id)) {
+          return res.status(400).json({
+            success: false,
+            message: 'O item final nao pode ser componente da propria receita'
+          });
+        }
+
+        const qtyUnit = Number((qtdTotal / baseQuantidadeNum).toFixed(6));
+        componentesNormalizados.push({
+          material_id: materialId,
+          nome: String(materialComponente.nome || 'Material'),
+          qty_total: Number(qtdTotal.toFixed(6)),
+          qty_unitaria: qtyUnit
+        });
+      }
+
+      const custosNormalizados = Array.isArray(custos_extras)
+        ? custos_extras
+            .map((item) => {
+              const label = String(item?.label || '').trim();
+              const valueTotal = Number(item?.value_total || item?.value || 0);
+              if (!label || !Number.isFinite(valueTotal) || valueTotal <= 0) return null;
+              return {
+                label,
+                value_total: Number(valueTotal.toFixed(2)),
+                value_unitario: Number((valueTotal / baseQuantidadeNum).toFixed(6))
+              };
+            })
+            .filter(Boolean)
+        : [];
+
+      const receita = await Material.saveReceita(id, usuarioId, {
+        base_quantidade: baseQuantidadeNum,
+        componentes: componentesNormalizados,
+        custos_extras: custosNormalizados
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Receita salva com sucesso',
+        data: receita
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao salvar receita de producao',
+        error: error.message
+      });
+    }
+  }
+
   /**
    * GET /api/materiais
    * Listar todos os materiais ou buscar por termo

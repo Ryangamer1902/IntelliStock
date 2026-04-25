@@ -58,12 +58,23 @@ function parseRecipients(input) {
   return [...new Set(recipients)];
 }
 
-function buildLowStockHtml({ materialNome, quantidadeAtual, quantidadeMinima, deficit }) {
+function buildLowStockHtml({ materialNome, quantidadeAtual, quantidadeMinima, deficit, tipoItem }) {
+  const tipo = String(tipoItem || 'Material');
+  const safeNome = String(materialNome || 'Material')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  const isItemFinal = tipo === 'Item final de produção';
+
   return `
   <!DOCTYPE html>
   <html lang="pt-BR">
   <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif;">
+  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif;color:#111827;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+      ${tipo}: ${safeNome} está abaixo do mínimo. Atual: ${quantidadeAtual}. Mínimo: ${quantidadeMinima}.
+    </div>
     <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 0;">
       <tr><td align="center">
         <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
@@ -75,8 +86,9 @@ function buildLowStockHtml({ materialNome, quantidadeAtual, quantidadeMinima, de
           </tr>
           <tr>
             <td style="padding:36px 40px 28px;">
-              <h2 style="margin:0 0 10px;color:#111827;font-size:20px;">Material abaixo do mínimo</h2>
-              <p style="margin:0 0 18px;color:#374151;font-size:15px;">O material <strong>${materialNome}</strong> está com estoque abaixo do mínimo configurado.</p>
+              <h2 style="margin:0 0 10px;color:#111827;font-size:20px;">${tipo} abaixo do mínimo</h2>
+              <p style="margin:0 0 18px;color:#374151;font-size:15px;">O ${tipo.toLowerCase()} <strong>${safeNome}</strong> está com estoque abaixo do mínimo configurado.</p>
+              ${isItemFinal ? '<p style="margin:0 0 18px;color:#374151;font-size:14px;">Este item é produzido a partir de outros componentes. Verifique a receita e produza mais unidades para normalizar o estoque.</p>' : ''}
               <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;margin:0 0 18px;">
                 <p style="margin:0 0 8px;color:#111827;font-size:14px;"><strong>Estoque atual:</strong> ${quantidadeAtual}</p>
                 <p style="margin:0 0 8px;color:#111827;font-size:14px;"><strong>Estoque mínimo:</strong> ${quantidadeMinima}</p>
@@ -246,7 +258,7 @@ async function enviarLinkResetSenha({ para, nome, link }) {
   }
 }
 
-async function enviarAlertaEstoqueBaixo({ destinatarios = [], materialNome, quantidadeAtual, quantidadeMinima, deficit }) {
+async function enviarAlertaEstoqueBaixo({ destinatarios = [], materialNome, quantidadeAtual, quantidadeMinima, deficit, tipoItem = 'Material' }) {
   const config = getMailConfig();
 
   if (!config.enabled) {
@@ -263,6 +275,7 @@ async function enviarAlertaEstoqueBaixo({ destinatarios = [], materialNome, quan
   }
 
   const safeMaterial = String(materialNome || 'Material');
+  const safeTipo = String(tipoItem || 'Material');
   const atual = Number(quantidadeAtual || 0);
   const minimo = Number(quantidadeMinima || 0);
   const falta = Number(deficit || Math.max(0, minimo - atual));
@@ -273,14 +286,15 @@ async function enviarAlertaEstoqueBaixo({ destinatarios = [], materialNome, quan
       materialNome: safeMaterial,
       quantidadeAtual: atual,
       quantidadeMinima: minimo,
-      deficit: falta
+      deficit: falta,
+      tipoItem: safeTipo
     });
 
     await mailTransport.sendMail({
       from: config.from,
       to: recipients.join(', '),
       subject: `Alerta de estoque baixo - ${safeMaterial}`,
-      text: `Material ${safeMaterial} está abaixo do mínimo. Atual: ${atual}. Mínimo: ${minimo}. Déficit: ${falta} unidade(s).`,
+      text: `${safeTipo} ${safeMaterial} está abaixo do mínimo. Atual: ${atual}. Mínimo: ${minimo}. Déficit: ${falta} unidade(s).`,
       html
     });
 

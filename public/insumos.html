@@ -236,6 +236,11 @@
         </div>
       </div>
 
+      <div class="field">
+        <label>Estoque mínimo do item final *</label>
+        <input type="number" id="prodQtdMin" min="0" step="1" placeholder="Ex: 10">
+      </div>
+
       <div class="field production-components-field">
         <label>Componentes da produção *</label>
         <div id="prodComponentsList" class="prod-components-list"></div>
@@ -624,9 +629,12 @@
 
     function openEditModal(item) {
       editItemId = Number(item.id);
-      document.getElementById('modalTitle').textContent = 'Editar material';
-      document.getElementById('modalSub').textContent = 'Altere os dados do material e salve.';
-      document.getElementById('btnSaveModal').textContent = 'Salvar alterações';
+      editingProductionItem = isProductionItem(item);
+      document.getElementById('modalTitle').textContent = editingProductionItem ? 'Adicionar produção no item final' : 'Editar material';
+      document.getElementById('modalSub').textContent = editingProductionItem
+        ? 'Para item final de produção, você pode apenas informar quanto foi produzido a mais. A baixa dos componentes será feita automaticamente pela receita salva.'
+        : 'Altere os dados do material e salve.';
+      document.getElementById('btnSaveModal').textContent = editingProductionItem ? 'Adicionar ao estoque' : 'Salvar alterações';
       document.getElementById('btnDeleteModal').classList.remove('is-hidden');
       document.getElementById('labelQtd').textContent = 'Quantidade a adicionar (soma ao estoque atual: ' + (item.qtd_atual ?? 0) + ')';
       document.getElementById('fieldNome').value = item.nome || '';
@@ -637,9 +645,17 @@
       document.getElementById('fieldCusto').value = item.preco_custo_un ?? '';
       document.getElementById('fieldMargem').value = item.margem_lucro ?? '30';
       document.getElementById('fieldPreco').value = item.preco_manual ?? '';
+
+      document.getElementById('fieldNome').disabled = editingProductionItem;
+      document.getElementById('fieldCodigo').disabled = editingProductionItem;
+      document.getElementById('fieldFornecedor').disabled = editingProductionItem;
+      document.getElementById('fieldQtdMin').disabled = editingProductionItem;
+      document.getElementById('fieldCusto').disabled = editingProductionItem;
+      document.getElementById('fieldMargem').disabled = editingProductionItem;
+
       document.getElementById('modalFeedback').className = 'modal-feedback';
       modalOverlay.classList.add('open');
-      setTimeout(() => document.getElementById('fieldNome').focus(), 80);
+      setTimeout(() => (editingProductionItem ? document.getElementById('fieldQtd') : document.getElementById('fieldNome')).focus(), 80);
     }
 
     function renderTable(items) {
@@ -694,6 +710,134 @@
 
     let productionRowSeq = 0;
     let productionExtraCostSeq = 0;
+    let productionLockedRecipe = null;
+    let productionFinalItemMatch = null;
+    let editingProductionItem = false;
+
+    function isProductionItem(item) {
+      const fornecedor = String(item?.fornecedor_nome || item?.fornecedor || '').trim().toLowerCase();
+      return fornecedor === 'produção interna' || fornecedor === 'producao interna';
+    }
+
+    async function fetchProductionRecipe(materialId) {
+      if (getMode() !== 'api') return null;
+
+      const res = await fetch(`/api/materiais/${materialId}/receita`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      if (!res.ok || !data?.success) return null;
+      return data.data || null;
+    }
+
+    function setProductionComposerDisabled(disabled) {
+      document.getElementById('btnAddProdComponent').disabled = disabled;
+      document.getElementById('btnAddProdExtraCost').disabled = disabled;
+      document.getElementById('prodComponentsList').querySelectorAll('select,input,button').forEach((el) => {
+        el.disabled = disabled;
+      });
+      document.getElementById('prodExtraCostsList').querySelectorAll('input,button').forEach((el) => {
+        el.disabled = disabled;
+      });
+    }
+
+    function buildRecipeLotFromStored(receita, producedQty) {
+      const qty = Number(producedQty || 0);
+      const componentesBase = Array.isArray(receita?.componentes) ? receita.componentes : [];
+      const extrasBase = Array.isArray(receita?.custos_extras) ? receita.custos_extras : [];
+
+      const ingredients = componentesBase.map((comp) => {
+        const unit = Number(comp?.qty_unitaria || 0);
+        return {
+          materialId: Number(comp?.material_id || 0),
+          qtyTotal: Number((unit * qty).toFixed(6))
+        };
+      }).filter((comp) => Number.isInteger(comp.materialId) && comp.materialId > 0 && comp.qtyTotal > 0);
+
+      const extraCosts = extrasBase.map((cost) => {
+        const valueUnit = Number(cost?.value_unitario || 0);
+        return {
+          label: String(cost?.label || '').trim(),
+          value: Number((valueUnit * qty).toFixed(2))
+        };
+      }).filter((cost) => cost.label && cost.value > 0);
+
+      return { ingredients, extraCosts };
+    }
+
+    function renderProductionLockedRecipe(receita, producedQty) {
+      const lot = buildRecipeLotFromStored(receita, producedQty);
+      document.getElementById('prodComponentsList').innerHTML = '';
+      document.getElementById('prodExtraCostsList').innerHTML = '';
+
+      lot.ingredients.forEach((ing) => {
+        addProductionComponentRow({ materialId: ing.materialId, qtyTotal: ing.qtyTotal });
+      });
+
+      lot.extraCosts.forEach((cost) => {
+        addProductionExtraCostRow({ label: cost.label, value: cost.value });
+      });
+
+      if (!lot.ingredients.length) {
+        addProductionComponentRow();
+      }
+
+      setProductionComposerDisabled(true);
+      updateProductionSummary();
+    }
+
+    async function syncProductionModeByFinalName() {
+      const finalName = String(document.getElementById('prodFinalName').value || '').trim().toLowerCase();
+      const currentMatch = allInsumos.find((row) => String(row.nome || '').trim().toLowerCase() === finalName);
+      productionFinalItemMatch = currentMatch || null;
+
+      const minimumEl = document.getElementById('prodQtdMin');
+      if (!currentMatch) {
+        productionLockedRecipe = null;
+        minimumEl.disabled = false;
+        setProductionComposerDisabled(false);
+        return;
+      }
+
+      minimumEl.value = Number(currentMatch?.ponto_pedido || 0);
+      minimumEl.disabled = true;
+
+      const receita = await fetchProductionRecipe(currentMatch.id);
+      productionLockedRecipe = receita;
+
+      if (receita) {
+        const producedQty = Number(document.getElementById('prodQtd').value || 0);
+        renderProductionLockedRecipe(receita, producedQty);
+      } else {
+        setProductionComposerDisabled(false);
+      }
+    }
+
+    async function saveProductionRecipe(materialId, producedQty, mergedIngredients, extraCosts) {
+      if (getMode() !== 'api') return;
+
+      const response = await fetch(`/api/materiais/${materialId}/receita`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          base_quantidade: producedQty,
+          componentes: mergedIngredients.map((ing) => ({
+            material_id: Number(ing.materialId),
+            qty_total: Number(ing.qtyTotal)
+          })),
+          custos_extras: extraCosts.map((cost) => ({
+            label: String(cost.label || '').trim(),
+            value: Number(cost.value || 0)
+          }))
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || 'Falha ao salvar receita de produção.');
+      }
+    }
 
     function generateProductionBarcode(existingCodes = new Set()) {
       let code = '';
@@ -872,8 +1016,13 @@
 
       document.getElementById('prodFinalName').value = '';
       document.getElementById('prodQtd').value = '';
+      document.getElementById('prodQtdMin').value = '';
+      document.getElementById('prodQtdMin').disabled = false;
       document.getElementById('prodComponentsList').innerHTML = '';
       document.getElementById('prodExtraCostsList').innerHTML = '';
+      productionLockedRecipe = null;
+      productionFinalItemMatch = null;
+      setProductionComposerDisabled(false);
       addProductionComponentRow();
 
       const fb = document.getElementById('productionFeedback');
@@ -965,11 +1114,18 @@
 
     function openAddModal() {
       editItemId = null;
+      editingProductionItem = false;
       document.getElementById('labelQtd').textContent = 'Quantidade de chegada';
       document.getElementById('btnDeleteModal').classList.add('is-hidden');
       document.getElementById('modalTitle').textContent = 'Novo material';
       document.getElementById('modalSub').textContent = 'Preencha os dados do novo item de estoque.';
       document.getElementById('btnSaveModal').textContent = 'Salvar';
+      document.getElementById('fieldNome').disabled = false;
+      document.getElementById('fieldCodigo').disabled = false;
+      document.getElementById('fieldFornecedor').disabled = false;
+      document.getElementById('fieldQtdMin').disabled = false;
+      document.getElementById('fieldCusto').disabled = false;
+      document.getElementById('fieldMargem').disabled = false;
       document.getElementById('fieldNome').value = '';
       document.getElementById('fieldCodigo').value = '';
       document.getElementById('fieldFornecedor').value = '';
@@ -1055,7 +1211,18 @@
     document.getElementById('btnAddProdExtraCost').addEventListener('click', () => {
       addProductionExtraCostRow();
     });
-    document.getElementById('prodQtd').addEventListener('input', updateProductionSummary);
+    document.getElementById('prodFinalName').addEventListener('change', () => {
+      syncProductionModeByFinalName().catch(() => {});
+    });
+    document.getElementById('prodFinalName').addEventListener('blur', () => {
+      syncProductionModeByFinalName().catch(() => {});
+    });
+    document.getElementById('prodQtd').addEventListener('input', () => {
+      if (productionLockedRecipe) {
+        renderProductionLockedRecipe(productionLockedRecipe, Number(document.getElementById('prodQtd').value || 0));
+      }
+      updateProductionSummary();
+    });
     document.getElementById('prodComponentsList').addEventListener('input', (event) => {
       const row = event.target.closest('.prod-component-row');
       if (!row) return;
@@ -1223,12 +1390,93 @@
       }
     });
 
+    async function adicionarProducaoItemFinalExistente(itemFinal, producedQty) {
+      if (!isProductionItem(itemFinal)) {
+        throw new Error('Este item não é um item final de produção.');
+      }
+
+      let receita = null;
+      if (getMode() === 'api') {
+        receita = await fetchProductionRecipe(itemFinal.id);
+      }
+
+      if (!receita) {
+        throw new Error('Receita não cadastrada para este item final. Use "Registrar produção" para configurar a receita primeiro.');
+      }
+
+      const lote = buildRecipeLotFromStored(receita, producedQty);
+      if (!lote.ingredients.length) {
+        throw new Error('Receita inválida: sem componentes para debitar.');
+      }
+
+      for (const ing of lote.ingredients) {
+        const componente = allInsumos.find((row) => Number(row.id) === Number(ing.materialId));
+        if (!componente) {
+          throw new Error(`Componente não encontrado: ${ing.materialId}`);
+        }
+
+        const disponivel = Number(componente.qtd_atual || 0);
+        if (Number(ing.qtyTotal) > disponivel) {
+          throw new Error(`Estoque insuficiente para ${componente.nome}. Necessário: ${fmtNum(ing.qtyTotal)} | Disponível: ${fmtNum(disponivel)}.`);
+        }
+      }
+
+      if (getMode() === 'api') {
+        for (const ing of lote.ingredients) {
+          const consumoTotal = +Number(ing.qtyTotal || 0).toFixed(3);
+          const response = await fetch(`/api/materiais/${ing.materialId}/quantidade`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeaders(),
+              'x-usuario-nome': usuario?.nome || 'Sistema'
+            },
+            body: JSON.stringify({
+              diferenca: -consumoTotal,
+              motivo: 'PRODUCAO',
+              observacao: `Consumo para produzir ${fmtNum(producedQty)} un. de ${itemFinal.nome}`,
+              usuario_nome: usuario?.nome || 'Sistema'
+            })
+          });
+
+          const data = await response.json();
+          if (!data.success) {
+            throw new Error(data.message || `Falha ao dar baixa no componente ${ing.materialId}`);
+          }
+        }
+
+        const finalResponse = await fetch(`/api/materiais/${itemFinal.id}/quantidade`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+            'x-usuario-nome': usuario?.nome || 'Sistema'
+          },
+          body: JSON.stringify({
+            diferenca: +producedQty,
+            motivo: 'PRODUCAO',
+            observacao: `Entrada adicional por produção usando receita salva`,
+            usuario_nome: usuario?.nome || 'Sistema'
+          })
+        });
+
+        const finalData = await finalResponse.json();
+        if (!finalData.success) {
+          throw new Error(finalData.message || 'Falha ao lançar entrada no item final.');
+        }
+        return;
+      }
+
+      throw new Error('Produção adicional por receita salva está disponível apenas no modo API.');
+    }
+
     document.getElementById('btnSaveProduction').addEventListener('click', async () => {
       const btn = document.getElementById('btnSaveProduction');
       const fb = document.getElementById('productionFeedback');
 
       const finalName = document.getElementById('prodFinalName').value.trim();
       const producedQty = Number(document.getElementById('prodQtd').value);
+      const finalMinQty = Number(document.getElementById('prodQtdMin').value);
 
       if (!finalName) {
         fb.textContent = 'Informe o nome do item final.';
@@ -1242,22 +1490,38 @@
         return;
       }
 
-      let ingredients;
-      try {
-        ingredients = parseProductionRecipe();
-      } catch (error) {
-        fb.textContent = error.message;
+      await syncProductionModeByFinalName().catch(() => {});
+      const finalItemByName = productionFinalItemMatch || allInsumos.find((row) => String(row.nome || '').trim().toLowerCase() === finalName.toLowerCase());
+
+      if (!finalItemByName && (!Number.isFinite(finalMinQty) || finalMinQty < 0)) {
+        fb.textContent = 'Informe o estoque mínimo do item final.';
         fb.className = 'modal-feedback error';
         return;
       }
 
+      let ingredients;
       let extraCosts;
-      try {
-        extraCosts = parseProductionExtraCosts();
-      } catch (error) {
-        fb.textContent = error.message;
-        fb.className = 'modal-feedback error';
-        return;
+
+      if (finalItemByName && productionLockedRecipe) {
+        const lote = buildRecipeLotFromStored(productionLockedRecipe, producedQty);
+        ingredients = lote.ingredients;
+        extraCosts = lote.extraCosts;
+      } else {
+        try {
+          ingredients = parseProductionRecipe();
+        } catch (error) {
+          fb.textContent = error.message;
+          fb.className = 'modal-feedback error';
+          return;
+        }
+
+        try {
+          extraCosts = parseProductionExtraCosts();
+        } catch (error) {
+          fb.textContent = error.message;
+          fb.className = 'modal-feedback error';
+          return;
+        }
       }
 
       const mergedIngredientsMap = new Map();
@@ -1267,7 +1531,6 @@
       });
 
       const mergedIngredients = Array.from(mergedIngredientsMap.entries()).map(([materialId, qtyTotal]) => ({ materialId, qtyTotal }));
-      const finalItemByName = allInsumos.find((row) => String(row.nome || '').trim().toLowerCase() === finalName.toLowerCase());
 
       if (finalItemByName && mergedIngredients.some((ing) => ing.materialId === Number(finalItemByName.id))) {
         fb.textContent = 'O item final não pode ser usado como componente na mesma produção.';
@@ -1306,6 +1569,7 @@
       try {
         let finalItemId = finalItemByName ? Number(finalItemByName.id) : null;
         let finalItemNome = finalItemByName?.nome || finalName;
+        let finalItemCriadoAgora = false;
 
         if (getMode() === 'api') {
           if (!finalItemId) {
@@ -1321,8 +1585,8 @@
                 nome: finalName,
                 codigo_barras: generatedBarcode,
                 fornecedor: 'Produção Interna',
-                quantidade_atual: 0,
-                quantidade_minima: 0,
+                quantidade_atual: producedQty,
+                quantidade_minima: Math.floor(finalMinQty),
                 preco_custo: finalUnitCost,
                 margem_lucro: 0,
                 preco_manual: finalUnitCost
@@ -1335,6 +1599,11 @@
 
             finalItemId = Number(createData.data.id);
             finalItemNome = createData.data.nome || finalName;
+            finalItemCriadoAgora = true;
+          }
+
+          if (!productionLockedRecipe) {
+            await saveProductionRecipe(finalItemId, producedQty, mergedIngredients, extraCosts);
           }
 
           for (const ing of mergedIngredients) {
@@ -1362,23 +1631,25 @@
             }
           }
 
-          const finalResponse = await fetch(`/api/materiais/${finalItemId}/quantidade`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              ...getAuthHeaders(),
-              'x-usuario-nome': usuario?.nome || 'Sistema'
-            },
-            body: JSON.stringify({
-              diferenca: +producedQty,
-              motivo: 'PRODUCAO',
-              observacao: `Entrada por produção com ${mergedIngredients.length} componente(s) e ${extraCosts.length} custo(s) extra`,
-              usuario_nome: usuario?.nome || 'Sistema'
-            })
-          });
-          const finalData = await finalResponse.json();
-          if (!finalData.success) {
-            throw new Error(finalData.message || 'Falha ao lançar entrada do item final.');
+          if (!finalItemCriadoAgora) {
+            const finalResponse = await fetch(`/api/materiais/${finalItemId}/quantidade`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+                'x-usuario-nome': usuario?.nome || 'Sistema'
+              },
+              body: JSON.stringify({
+                diferenca: +producedQty,
+                motivo: 'PRODUCAO',
+                observacao: `Entrada por produção com ${mergedIngredients.length} componente(s) e ${extraCosts.length} custo(s) extra`,
+                usuario_nome: usuario?.nome || 'Sistema'
+              })
+            });
+            const finalData = await finalResponse.json();
+            if (!finalData.success) {
+              throw new Error(finalData.message || 'Falha ao lançar entrada do item final.');
+            }
           }
         } else {
           const lista = readMockMateriais();
@@ -1398,8 +1669,8 @@
               codigo_barras: generatedBarcode,
               nome: finalName,
               fornecedor: 'Produção Interna',
-              quantidade_atual: 0,
-              quantidade_minima: 0,
+              quantidade_atual: producedQty,
+              quantidade_minima: Math.floor(finalMinQty),
               preco_custo: finalUnitCost,
               margem_lucro: 0,
               preco_manual: finalUnitCost
@@ -1407,6 +1678,7 @@
 
             finalItemId = nextIdForCreate;
             finalItemNome = finalName;
+            finalItemCriadoAgora = true;
           }
 
           for (const ing of mergedIngredients) {
@@ -1436,24 +1708,26 @@
           const idxFinal = lista.findIndex((mat) => Number(mat.id) === finalItemId);
           if (idxFinal < 0) throw new Error('Item final não encontrado no modo local.');
 
-          const qtdFinalAnterior = Number(lista[idxFinal].quantidade_atual || 0);
-          const qtdFinalAtual = +(qtdFinalAnterior + producedQty).toFixed(3);
-          lista[idxFinal].quantidade_atual = qtdFinalAtual;
-          lista[idxFinal].preco_custo = finalUnitCost;
-          lista[idxFinal].preco_manual = finalUnitCost;
+          if (!finalItemCriadoAgora) {
+            const qtdFinalAnterior = Number(lista[idxFinal].quantidade_atual || 0);
+            const qtdFinalAtual = +(qtdFinalAnterior + producedQty).toFixed(3);
+            lista[idxFinal].quantidade_atual = qtdFinalAtual;
+            lista[idxFinal].preco_custo = finalUnitCost;
+            lista[idxFinal].preco_manual = finalUnitCost;
 
-          movs.unshift({
-            id: Date.now() + 999,
-            material_id: Number(lista[idxFinal].id),
-            material_nome: String(lista[idxFinal].nome || 'Material'),
-            tipo_movimento: 'AJUSTE',
-            quantidade_delta: +producedQty,
-            quantidade_anterior: qtdFinalAnterior,
-            quantidade_atual: qtdFinalAtual,
-            usuario_nome: usuario?.nome || 'Sistema',
-            observacao: `Entrada por produção com ${mergedIngredients.length} componente(s) e ${extraCosts.length} custo(s) extra`,
-            created_at: new Date().toISOString()
-          });
+            movs.unshift({
+              id: Date.now() + 999,
+              material_id: Number(lista[idxFinal].id),
+              material_nome: String(lista[idxFinal].nome || 'Material'),
+              tipo_movimento: 'AJUSTE',
+              quantidade_delta: +producedQty,
+              quantidade_anterior: qtdFinalAnterior,
+              quantidade_atual: qtdFinalAtual,
+              usuario_nome: usuario?.nome || 'Sistema',
+              observacao: `Entrada por produção com ${mergedIngredients.length} componente(s) e ${extraCosts.length} custo(s) extra`,
+              created_at: new Date().toISOString()
+            });
+          }
 
           const nextId = parseInt(localStorage.getItem(MOCK_MATERIAIS_NEXT_ID_KEY) || '1', 10) || 1;
           persistMockMateriais(lista, nextId);
@@ -1486,6 +1760,37 @@
       // Ao editar: soma a nova chegada ao estoque atual; ao criar: usa o valor direto
       const estoqueAtualItem = editItemId !== null ? (allInsumos.find(i => Number(i.id) === editItemId)?.qtd_atual ?? 0) : 0;
       const qtd = editItemId !== null ? Number(estoqueAtualItem) + qtdInput : qtdInput;
+
+      if (editItemId !== null && editingProductionItem) {
+        if (!Number.isFinite(qtdInput) || qtdInput <= 0) {
+          fb.textContent = 'Informe uma quantidade válida para adicionar ao item final.';
+          fb.className = 'modal-feedback error';
+          return;
+        }
+
+        const itemFinal = allInsumos.find((item) => Number(item.id) === Number(editItemId));
+        if (!itemFinal) {
+          fb.textContent = 'Item final não encontrado.';
+          fb.className = 'modal-feedback error';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Processando...';
+        try {
+          await adicionarProducaoItemFinalExistente(itemFinal, qtdInput);
+          closeModal();
+          await carregarInsumos();
+          showToast(`Produção adicional registrada: +${fmtNum(qtdInput)} em ${itemFinal.nome}.`);
+        } catch (error) {
+          fb.textContent = `Erro: ${error.message}`;
+          fb.className = 'modal-feedback error';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Adicionar ao estoque';
+        }
+        return;
+      }
 
       if (!nome || !codigo || !fornecedor || Number.isNaN(qtdMin) || Number.isNaN(custo) || Number.isNaN(preco)) {
         fb.textContent = 'Preencha todos os campos obrigatórios.';

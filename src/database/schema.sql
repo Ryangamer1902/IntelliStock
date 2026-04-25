@@ -64,6 +64,20 @@ CREATE TABLE IF NOT EXISTS alertas_estoque (
   INDEX idx_material_id (material_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS materiais_receitas (
+  material_id INT NOT NULL,
+  usuario_id INT NOT NULL,
+  base_quantidade DECIMAL(12, 3) NOT NULL,
+  receita_json LONGTEXT NOT NULL,
+  custos_extras_json LONGTEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (material_id),
+  INDEX idx_materiais_receitas_usuario (usuario_id),
+  CONSTRAINT fk_materiais_receitas_material
+    FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
   id INT AUTO_INCREMENT PRIMARY KEY,
   usuario_id INT NULL,

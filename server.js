@@ -113,6 +113,22 @@ const initializeDatabase = async () => {
       ALTER TABLE insumos ADD COLUMN IF NOT EXISTS usuario_id INT NULL AFTER id
     `).catch(() => {});
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS materiais_receitas (
+        material_id INT NOT NULL,
+        usuario_id INT NOT NULL,
+        base_quantidade DECIMAL(12, 3) NOT NULL,
+        receita_json LONGTEXT NOT NULL,
+        custos_extras_json LONGTEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (material_id),
+        INDEX idx_materiais_receitas_usuario (usuario_id),
+        CONSTRAINT fk_materiais_receitas_material
+          FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `).catch(() => {});
+
     // Migração: adicionar is_admin em usuarios (bancos existentes)
     await pool.query(`
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS is_admin TINYINT(1) NOT NULL DEFAULT 0

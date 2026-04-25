@@ -34,6 +34,18 @@ router.get('/estoque/baixo', MateriaisController.listarBaixoEstoque);
 router.get('/historico', MateriaisController.listarHistorico);
 
 /**
+ * GET /api/materiais/:id/receita
+ * Obter receita de produção do item final
+ */
+router.get('/:id/receita', MateriaisController.obterReceita);
+
+/**
+ * PUT /api/materiais/:id/receita
+ * Criar/atualizar receita de produção do item final
+ */
+router.put('/:id/receita', MateriaisController.salvarReceita);
+
+/**
  * GET /api/materiais/:id
  * Obter um material específico por ID
  */

@@ -2,6 +2,15 @@
 // Modelo para operacoes com materiais e historico de movimentacoes
 
 class Material {
+  static parseJsonArray(value) {
+    try {
+      const parsed = JSON.parse(String(value || '[]'));
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   /**
    * Buscar todos os materiais do usuario
    */
@@ -196,6 +205,71 @@ class Material {
       );
 
       return rows;
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * Buscar receita de producao de um item final
+   */
+  static async findReceita(materialId, usuarioId) {
+    const connection = await global.db.getConnection();
+    try {
+      const [rows] = await connection.query(
+        `SELECT material_id, usuario_id, base_quantidade, receita_json, custos_extras_json, created_at, updated_at
+         FROM materiais_receitas
+         WHERE material_id = ? AND usuario_id = ?
+         LIMIT 1`,
+        [materialId, usuarioId]
+      );
+
+      const row = rows[0];
+      if (!row) return null;
+
+      return {
+        material_id: Number(row.material_id),
+        usuario_id: Number(row.usuario_id),
+        base_quantidade: Number(row.base_quantidade || 0),
+        componentes: Material.parseJsonArray(row.receita_json),
+        custos_extras: Material.parseJsonArray(row.custos_extras_json),
+        created_at: row.created_at,
+        updated_at: row.updated_at
+      };
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * Salvar ou atualizar receita de producao de um item final
+   */
+  static async saveReceita(materialId, usuarioId, payload) {
+    const baseQuantidade = Number(payload?.base_quantidade || 0);
+    const componentes = Array.isArray(payload?.componentes) ? payload.componentes : [];
+    const custosExtras = Array.isArray(payload?.custos_extras) ? payload.custos_extras : [];
+
+    const connection = await global.db.getConnection();
+    try {
+      await connection.query(
+        `INSERT INTO materiais_receitas
+          (material_id, usuario_id, base_quantidade, receita_json, custos_extras_json)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           base_quantidade = VALUES(base_quantidade),
+           receita_json = VALUES(receita_json),
+           custos_extras_json = VALUES(custos_extras_json),
+           updated_at = CURRENT_TIMESTAMP`,
+        [
+          materialId,
+          usuarioId,
+          baseQuantidade,
+          JSON.stringify(componentes),
+          JSON.stringify(custosExtras)
+        ]
+      );
+
+      return Material.findReceita(materialId, usuarioId);
     } finally {
       connection.release();
     }
