@@ -96,7 +96,6 @@
                   <th>Data</th>
                   <th>Produto</th>
                   <th>Tipo</th>
-                  <th>Cadastrado por</th>
                   <th>Chegou</th>
                   <th>Saiu</th>
                   <th>Em estoque</th>
@@ -260,12 +259,12 @@
 
     function tipoInfo(tipo, delta) {
       if (tipo === 'CADASTRO' || Number(delta) > 0) {
-        return { badge: '<span class="badge badge-in">Entrada</span>', chegou: '+' + Math.abs(Number(delta || 0)), saiu: '-' };
+        return { badge: '<span class="badge badge-in">Entrada</span>', chegou: '+' + Math.abs(Number(delta || 0)), saiu: '0' };
       }
       if (tipo === 'REMOCAO') {
-        return { badge: '<span class="badge badge-out">Remoção</span>', chegou: '-', saiu: Math.abs(Number(delta || 0)) };
+        return { badge: '<span class="badge badge-out">Remoção</span>', chegou: '0', saiu: Math.abs(Number(delta || 0)) };
       }
-      return { badge: '<span class="badge badge-out">Saída</span>', chegou: '-', saiu: Math.abs(Number(delta || 0)) };
+      return { badge: '<span class="badge badge-out">Saída</span>', chegou: '0', saiu: Math.abs(Number(delta || 0)) };
     }
 
     function classeSaldo(saldo) {
@@ -275,7 +274,7 @@
     function renderTable(rows) {
       const tbody = document.getElementById('historicoBody');
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="7">Nenhuma movimentação encontrada.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6">Nenhuma movimentação encontrada.</td></tr>';
         return;
       }
 
@@ -289,9 +288,8 @@
             <td>${fmtDate(item.created_at)}</td>
             <td>${escHtml(item.material_nome || '-')}</td>
             <td>${info.badge}</td>
-            <td>${escHtml(usuario)}</td>
-            <td>${info.chegou === '-' ? '-' : info.chegou}</td>
-            <td>${info.saiu === '-' ? '-' : info.saiu}</td>
+            <td>${info.chegou}</td>
+            <td>${info.saiu}</td>
             <td class="${classeSaldo(saldo)}">${fmtQtd(saldo)}</td>
           </tr>
         `;

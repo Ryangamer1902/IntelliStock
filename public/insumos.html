@@ -133,12 +133,13 @@
                 <th>Custo unitário</th>
                 <th>Valor em estoque</th>
                 <th>Unidade</th>
+                <th>Criado em</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody id="tableBody">
               <tr>
-                <td colspan="9" class="empty-state">Carregando insumos...</td>
+                <td colspan="10" class="empty-state">Carregando insumos...</td>
               </tr>
             </tbody>
           </table>
@@ -169,8 +170,9 @@
       </div>
       <div class="field-row">
         <div class="field">
-          <label id="labelQtd">Quantidade de chegada</label>
+          <label id="labelQtd">Quantidade *</label>
           <input type="number" id="fieldQtd" placeholder="0" min="0">
+          <small id="labelQtdMeta" class="is-hidden"></small>
         </div>
         <div class="field">
           <label>Quantidade mínima *</label>
@@ -255,6 +257,25 @@
 
       <div class="production-summary" id="prodCostSummary">Custo unitário estimado: R$ 0,00</div>
 
+      <div class="field-row">
+        <div class="field">
+          <label>Margem sugerida (%)</label>
+          <div class="production-price-tools">
+            <input type="number" id="prodSuggestedMargin" min="0" step="0.1" value="30" placeholder="Ex: 30">
+          </div>
+          <div class="production-margin-quick" id="prodMarginQuickActions">
+            <button type="button" class="btn btn-soft btn-sm" data-margin="20">20%</button>
+            <button type="button" class="btn btn-soft btn-sm" data-margin="30">30%</button>
+            <button type="button" class="btn btn-soft btn-sm" data-margin="50">50%</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Preço final de venda (opcional)</label>
+          <input type="number" id="prodFinalPrice" min="0" step="0.01" placeholder="Ex: 19.90">
+          <small class="field-help">Se deixar em branco, o sistema usa o preço sugerido pela margem.</small>
+        </div>
+      </div>
+
       <p class="production-hint">Exemplo: para produzir 10 unidades, informe em cada componente o consumo total do lote. Se houver mão de obra, frete ou embalagem, lance em custos extras.</p>
 
       <div class="modal-actions">
@@ -335,6 +356,13 @@
       return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
+    function fmtDate(value) {
+      if (!value) return '-';
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return '-';
+      return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+    }
+
     function fmtNum(value) {
       const n = Number(value || 0);
       return n % 1 === 0
@@ -369,7 +397,8 @@
         ponto_pedido: item.quantidade_minima,
         codigo_barras: item.codigo_barras,
         margem_lucro: item.margem_lucro,
-        preco_manual: item.preco_manual
+        preco_manual: item.preco_manual,
+        created_at: item.created_at
       };
     }
 
@@ -630,13 +659,17 @@
     function openEditModal(item) {
       editItemId = Number(item.id);
       editingProductionItem = isProductionItem(item);
+      const labelQtdEl = document.getElementById('labelQtd');
+      const labelQtdMetaEl = document.getElementById('labelQtdMeta');
       document.getElementById('modalTitle').textContent = editingProductionItem ? 'Adicionar produção no item final' : 'Editar material';
       document.getElementById('modalSub').textContent = editingProductionItem
         ? 'Para item final de produção, você pode apenas informar quanto foi produzido a mais. A baixa dos componentes será feita automaticamente pela receita salva.'
         : 'Altere os dados do material e salve.';
       document.getElementById('btnSaveModal').textContent = editingProductionItem ? 'Adicionar ao estoque' : 'Salvar alterações';
       document.getElementById('btnDeleteModal').classList.remove('is-hidden');
-      document.getElementById('labelQtd').textContent = 'Quantidade a adicionar (soma ao estoque atual: ' + (item.qtd_atual ?? 0) + ')';
+      labelQtdEl.textContent = 'Quantidade *';
+      labelQtdMetaEl.textContent = `Atual: ${fmtNum(item.qtd_atual ?? 0)}`;
+      labelQtdMetaEl.classList.remove('is-hidden');
       document.getElementById('fieldNome').value = item.nome || '';
       document.getElementById('fieldCodigo').value = item.codigo_barras || '';
       document.getElementById('fieldFornecedor').value = item.fornecedor_nome || '';
@@ -662,7 +695,7 @@
       const tbody = document.getElementById('tableBody');
 
       if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Nenhum insumo encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Nenhum insumo encontrado.</td></tr>';
         return;
       }
 
@@ -687,6 +720,7 @@
             <td>${fmtMoney(precoCusto)}</td>
             <td>${fmtMoney(valorEstoque)}</td>
             <td>${escHtml(unidade)}</td>
+            <td>${fmtDate(item.created_at)}</td>
             <td><button class="btn btn-soft btn-sm btn-edit" data-id="${item.id}">Editar</button></td>
           </tr>
         `;
@@ -790,6 +824,7 @@
       productionFinalItemMatch = currentMatch || null;
 
       const minimumEl = document.getElementById('prodQtdMin');
+      const finalPriceEl = document.getElementById('prodFinalPrice');
       if (!currentMatch) {
         productionLockedRecipe = null;
         minimumEl.disabled = false;
@@ -799,6 +834,12 @@
 
       minimumEl.value = Number(currentMatch?.ponto_pedido || 0);
       minimumEl.disabled = true;
+      if (!String(finalPriceEl.value || '').trim()) {
+        const suggestedPrice = Number(currentMatch?.preco_manual || 0);
+        if (Number.isFinite(suggestedPrice) && suggestedPrice > 0) {
+          finalPriceEl.value = suggestedPrice.toFixed(2);
+        }
+      }
 
       const receita = await fetchProductionRecipe(currentMatch.id);
       productionLockedRecipe = receita;
@@ -983,7 +1024,7 @@
       return costs;
     }
 
-    function updateProductionSummary() {
+    function getProductionCostSnapshot() {
       const producedQty = Number(document.getElementById('prodQtd').value || 0);
       let componentsBatchCost = 0;
 
@@ -1002,10 +1043,85 @@
       }, 0);
 
       const batchCost = componentsBatchCost + extraBatchCost;
-
       const estimatedUnitCost = producedQty > 0 ? batchCost / producedQty : 0;
+
+      return {
+        producedQty,
+        componentsBatchCost,
+        extraBatchCost,
+        batchCost,
+        estimatedUnitCost
+      };
+    }
+
+    function syncProductionQuickMarginState(rawMarginValue) {
+      const normalized = String(rawMarginValue || '').trim().replace(',', '.');
+      const margin = Number(normalized);
+      const quickButtons = Array.from(document.querySelectorAll('#prodMarginQuickActions [data-margin]'));
+
+      quickButtons.forEach((button) => {
+        const buttonMargin = Number(button.dataset.margin || 0);
+        const isActive = Number.isFinite(margin) && Number.isFinite(buttonMargin) && margin === buttonMargin;
+        button.classList.toggle('is-active', isActive);
+      });
+    }
+
+    function getProductionSuggestedPrice(estimatedUnitCost) {
+      const marginRaw = String(document.getElementById('prodSuggestedMargin').value || '').trim().replace(',', '.');
+      const margin = Number(marginRaw);
+      const safeMargin = Number.isFinite(margin) && margin >= 0 ? margin : 0;
+      return +(estimatedUnitCost * (1 + (safeMargin / 100))).toFixed(2);
+    }
+
+    function updateProductionSummary() {
+      const { componentsBatchCost, extraBatchCost, batchCost, estimatedUnitCost } = getProductionCostSnapshot();
+      const finalPriceRaw = String(document.getElementById('prodFinalPrice').value || '').trim().replace(',', '.');
+      const parsedFinalPrice = Number(finalPriceRaw);
+      const suggestedPrice = getProductionSuggestedPrice(estimatedUnitCost);
+      const hasCustomFinalPrice = finalPriceRaw !== '' && Number.isFinite(parsedFinalPrice) && parsedFinalPrice >= 0;
+      const finalSalePrice = hasCustomFinalPrice ? parsedFinalPrice : suggestedPrice;
+      const finalPriceSource = hasCustomFinalPrice ? 'manual' : 'sugerido';
+      const unitProfit = finalSalePrice - estimatedUnitCost;
+      const effectiveMarginPct = estimatedUnitCost > 0 ? (unitProfit / estimatedUnitCost) * 100 : 0;
+      const profitTone = unitProfit > 0 ? 'positive' : unitProfit < 0 ? 'negative' : 'neutral';
+      const absProfitLabel = fmtMoney(Math.abs(unitProfit));
+      const profitLabel = unitProfit > 0 ? `+${absProfitLabel}` : unitProfit < 0 ? `-${absProfitLabel}` : fmtMoney(0);
+      const marginLabel = `${effectiveMarginPct > 0 ? '+' : ''}${effectiveMarginPct.toFixed(1)}%`;
       const summaryEl = document.getElementById('prodCostSummary');
-      summaryEl.textContent = `Custo unitário estimado: ${fmtMoney(estimatedUnitCost)} | Insumos: ${fmtMoney(componentsBatchCost)} | Extras: ${fmtMoney(extraBatchCost)} | Custo total do lote: ${fmtMoney(batchCost)}`;
+      summaryEl.classList.remove('is-profit-positive', 'is-profit-negative', 'is-profit-neutral');
+      summaryEl.classList.add(`is-profit-${profitTone}`);
+      summaryEl.innerHTML = `
+        <div class="prod-summary-grid">
+          <div class="prod-summary-item">
+            <span class="prod-summary-label">Custo unitário estimado</span>
+            <strong class="prod-summary-value">${fmtMoney(estimatedUnitCost)}</strong>
+          </div>
+          <div class="prod-summary-item">
+            <span class="prod-summary-label">Preço sugerido</span>
+            <strong class="prod-summary-value">${fmtMoney(suggestedPrice)}</strong>
+          </div>
+          <div class="prod-summary-item">
+            <span class="prod-summary-label">Preço final (${finalPriceSource})</span>
+            <strong class="prod-summary-value">${fmtMoney(finalSalePrice)}</strong>
+          </div>
+          <div class="prod-summary-item prod-summary-item-profit prod-profit-${profitTone}">
+            <span class="prod-summary-label">Lucro estimado por unidade</span>
+            <strong class="prod-summary-value">${profitLabel} (${marginLabel})</strong>
+          </div>
+          <div class="prod-summary-item">
+            <span class="prod-summary-label">Custo de insumos</span>
+            <strong class="prod-summary-value">${fmtMoney(componentsBatchCost)}</strong>
+          </div>
+          <div class="prod-summary-item">
+            <span class="prod-summary-label">Custos extras</span>
+            <strong class="prod-summary-value">${fmtMoney(extraBatchCost)}</strong>
+          </div>
+          <div class="prod-summary-item prod-summary-item-total">
+            <span class="prod-summary-label">Custo total do lote</span>
+            <strong class="prod-summary-value">${fmtMoney(batchCost)}</strong>
+          </div>
+        </div>
+      `;
     }
 
     function openProductionModal() {
@@ -1017,6 +1133,9 @@
       document.getElementById('prodFinalName').value = '';
       document.getElementById('prodQtd').value = '';
       document.getElementById('prodQtdMin').value = '';
+      document.getElementById('prodFinalPrice').value = '';
+      document.getElementById('prodSuggestedMargin').value = '30';
+      syncProductionQuickMarginState('30');
       document.getElementById('prodQtdMin').disabled = false;
       document.getElementById('prodComponentsList').innerHTML = '';
       document.getElementById('prodExtraCostsList').innerHTML = '';
@@ -1115,7 +1234,9 @@
     function openAddModal() {
       editItemId = null;
       editingProductionItem = false;
-      document.getElementById('labelQtd').textContent = 'Quantidade de chegada';
+      document.getElementById('labelQtd').textContent = 'Quantidade *';
+      document.getElementById('labelQtdMeta').textContent = '';
+      document.getElementById('labelQtdMeta').classList.add('is-hidden');
       document.getElementById('btnDeleteModal').classList.add('is-hidden');
       document.getElementById('modalTitle').textContent = 'Novo material';
       document.getElementById('modalSub').textContent = 'Preencha os dados do novo item de estoque.';
@@ -1221,6 +1342,20 @@
       if (productionLockedRecipe) {
         renderProductionLockedRecipe(productionLockedRecipe, Number(document.getElementById('prodQtd').value || 0));
       }
+      updateProductionSummary();
+    });
+    document.getElementById('prodSuggestedMargin').addEventListener('input', (event) => {
+      syncProductionQuickMarginState(event.target.value);
+      updateProductionSummary();
+    });
+    document.getElementById('prodFinalPrice').addEventListener('input', updateProductionSummary);
+    document.getElementById('prodMarginQuickActions').addEventListener('click', (event) => {
+      const btnMargin = event.target.closest('[data-margin]');
+      if (!btnMargin) return;
+
+      const selectedMargin = Number(btnMargin.dataset.margin || 0);
+      document.getElementById('prodSuggestedMargin').value = String(selectedMargin);
+      syncProductionQuickMarginState(selectedMargin);
       updateProductionSummary();
     });
     document.getElementById('prodComponentsList').addEventListener('input', (event) => {
@@ -1477,6 +1612,7 @@
       const finalName = document.getElementById('prodFinalName').value.trim();
       const producedQty = Number(document.getElementById('prodQtd').value);
       const finalMinQty = Number(document.getElementById('prodQtdMin').value);
+      const finalPriceRaw = String(document.getElementById('prodFinalPrice').value || '').trim().replace(',', '.');
 
       if (!finalName) {
         fb.textContent = 'Informe o nome do item final.';
@@ -1488,6 +1624,17 @@
         fb.textContent = 'Informe uma quantidade produzida válida.';
         fb.className = 'modal-feedback error';
         return;
+      }
+
+      let customFinalPrice = null;
+      if (finalPriceRaw !== '') {
+        const parsedFinalPrice = Number(finalPriceRaw);
+        if (!Number.isFinite(parsedFinalPrice) || parsedFinalPrice < 0) {
+          fb.textContent = 'Informe um preço final válido (ou deixe em branco para usar o custo estimado).';
+          fb.className = 'modal-feedback error';
+          return;
+        }
+        customFinalPrice = +parsedFinalPrice.toFixed(2);
       }
 
       await syncProductionModeByFinalName().catch(() => {});
@@ -1562,6 +1709,8 @@
       totalCostEstimate += extraCostsTotal;
 
       const finalUnitCost = +(producedQty > 0 ? (totalCostEstimate / producedQty) : 0).toFixed(2);
+      const suggestedPrice = getProductionSuggestedPrice(finalUnitCost);
+      const finalSalePrice = customFinalPrice !== null ? customFinalPrice : suggestedPrice;
 
       btn.disabled = true;
       btn.textContent = 'Processando...';
@@ -1589,7 +1738,7 @@
                 quantidade_minima: Math.floor(finalMinQty),
                 preco_custo: finalUnitCost,
                 margem_lucro: 0,
-                preco_manual: finalUnitCost
+                preco_manual: finalSalePrice
               })
             });
             const createData = await createResponse.json();
@@ -1650,6 +1799,24 @@
             if (!finalData.success) {
               throw new Error(finalData.message || 'Falha ao lançar entrada do item final.');
             }
+
+            const updateFinalPriceResponse = await fetch(`/api/materiais/${finalItemId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+                'x-usuario-nome': usuario?.nome || 'Sistema'
+              },
+              body: JSON.stringify({
+                preco_custo: finalUnitCost,
+                margem_lucro: 0,
+                preco_manual: finalSalePrice
+              })
+            });
+            const updateFinalPriceData = await updateFinalPriceResponse.json();
+            if (!updateFinalPriceData.success) {
+              throw new Error(updateFinalPriceData.message || 'Falha ao atualizar preço do item final.');
+            }
           }
         } else {
           const lista = readMockMateriais();
@@ -1673,7 +1840,7 @@
               quantidade_minima: Math.floor(finalMinQty),
               preco_custo: finalUnitCost,
               margem_lucro: 0,
-              preco_manual: finalUnitCost
+              preco_manual: finalSalePrice
             });
 
             finalItemId = nextIdForCreate;
@@ -1713,7 +1880,7 @@
             const qtdFinalAtual = +(qtdFinalAnterior + producedQty).toFixed(3);
             lista[idxFinal].quantidade_atual = qtdFinalAtual;
             lista[idxFinal].preco_custo = finalUnitCost;
-            lista[idxFinal].preco_manual = finalUnitCost;
+            lista[idxFinal].preco_manual = finalSalePrice;
 
             movs.unshift({
               id: Date.now() + 999,
@@ -1736,7 +1903,7 @@
 
         closeProductionModal();
         await carregarInsumos();
-        showToast(`Produção registrada: +${fmtNum(producedQty)} em ${finalItemNome}. Custo unitário: ${fmtMoney(finalUnitCost)}.`);
+        showToast(`Produção registrada: +${fmtNum(producedQty)} em ${finalItemNome}. Custo unitário: ${fmtMoney(finalUnitCost)} | Preço final: ${fmtMoney(finalSalePrice)}.`);
       } catch (error) {
         fb.textContent = `Erro: ${error.message}`;
         fb.className = 'modal-feedback error';

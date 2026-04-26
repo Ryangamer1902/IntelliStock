@@ -568,6 +568,18 @@
         grid-template-columns: 1fr;
       }
 
+      .production-price-tools {
+        grid-template-columns: 1fr;
+      }
+
+      .prod-summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .prod-summary-item-total {
+        grid-column: auto;
+      }
+
       #productionOverlay .modal {
         max-height: calc(100vh - 24px);
         margin: 12px auto;
@@ -627,11 +639,148 @@
       border: 1px solid rgba(14, 143, 131, 0.28);
       background: rgba(14, 143, 131, 0.08);
       border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 0.88rem;
+      padding: 8px 10px;
+      font-size: 0.84rem;
       font-weight: 700;
       color: #0d5f57;
       margin-bottom: 10px;
+    }
+
+    .prod-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .prod-summary-item {
+      border: 1px solid rgba(14, 143, 131, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.68);
+      padding: 6px 8px;
+      display: grid;
+      gap: 2px;
+    }
+
+    .prod-summary-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: #2e5a61;
+    }
+
+    .prod-summary-value {
+      font-size: 0.88rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #0f4f59;
+    }
+
+    .prod-summary-item-profit {
+      border-width: 2px;
+    }
+
+    .prod-summary-item-total {
+      grid-column: 1 / -1;
+      background: rgba(14, 143, 131, 0.13);
+    }
+
+    .production-summary.is-profit-positive {
+      border-color: rgba(11, 125, 69, 0.35);
+      background: rgba(11, 125, 69, 0.08);
+    }
+
+    .production-summary.is-profit-negative {
+      border-color: rgba(179, 39, 39, 0.35);
+      background: rgba(179, 39, 39, 0.08);
+      color: #7f1f1f;
+    }
+
+    .production-summary.is-profit-neutral {
+      border-color: rgba(95, 109, 115, 0.35);
+      background: rgba(95, 109, 115, 0.08);
+      color: #3d5258;
+    }
+
+    .prod-profit {
+      font-weight: 800;
+    }
+
+    .prod-profit-positive {
+      color: #0b7d45;
+    }
+
+    .prod-profit-negative {
+      color: #b32727;
+    }
+
+    .prod-profit-neutral {
+      color: #4d5f65;
+    }
+
+    .prod-profit-positive .prod-summary-label,
+    .prod-profit-positive .prod-summary-value {
+      color: #0b7d45;
+    }
+
+    .prod-profit-negative .prod-summary-label,
+    .prod-profit-negative .prod-summary-value {
+      color: #b32727;
+    }
+
+    .prod-profit-neutral .prod-summary-label,
+    .prod-profit-neutral .prod-summary-value {
+      color: #4d5f65;
+    }
+
+    .field-help {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    #labelQtdMeta {
+      display: block;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #0b7d45;
+      margin-top: 6px;
+    }
+
+    .field-row .field label {
+      white-space: nowrap;
+      min-height: 22px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .production-price-tools {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .production-margin-quick {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .production-margin-quick .btn {
+      width: auto;
+      min-width: 64px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .production-margin-quick .btn.is-active {
+      background: linear-gradient(135deg, var(--brand), #0fb8a9);
+      border-color: transparent;
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(14, 143, 131, 0.28);
     }
 
     .field {

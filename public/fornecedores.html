@@ -117,11 +117,12 @@
                 <th>Fornecedor</th>
                 <th>Contato</th>
                 <th>Tempo de espera</th>
+                <th>Criado em</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody id="tableBody">
-              <tr><td colspan="4" class="empty-state">Carregando fornecedores...</td></tr>
+              <tr><td colspan="5" class="empty-state">Carregando fornecedores...</td></tr>
             </tbody>
           </table>
         </div>
@@ -258,7 +259,7 @@
     function renderTable(lista) {
       const tbody = document.getElementById('tableBody');
       if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhum fornecedor encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum fornecedor encontrado.</td></tr>';
         return;
       }
 
@@ -267,6 +268,7 @@
           <td><strong>${escHtml(f.nome)}</strong></td>
           <td>${f.email ? `<a href="mailto:${escHtml(f.email)}">${escHtml(f.email)}</a>` : (f.telefone || '-')}</td>
           <td>${f.tempo_espera_dias || 7} dias</td>
+          <td>${f.data_cadastro ? new Date(f.data_cadastro).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '-'}</td>
           <td>
             <div class="table-actions">
               <button class="btn-edit" onclick="editarFornecedor(${f.id})">Editar</button>

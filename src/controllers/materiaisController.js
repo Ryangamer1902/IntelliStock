@@ -72,6 +72,195 @@ function listarEmailsAlertaGlobais() {
   )];
 }
 
+async function calcularRecomendacaoCompraHistorica({ materialId, usuarioId, quantidadeAtual, quantidadeMinima, deficit }) {
+  const atual = Math.max(0, toNumber(quantidadeAtual, 0));
+  const minimo = Math.max(0, toNumber(quantidadeMinima, 0));
+  const falta = Math.max(0, toNumber(deficit, Math.max(0, minimo - atual)));
+
+  const diasHistorico = 30;
+  const diasRecente = 7;
+  const diasCoberturaAlvo = 7;
+  let consumoTotalPeriodo = 0;
+  let consumoTotalRecente = 0;
+
+  if (global.db && Number.isInteger(Number(materialId)) && Number(materialId) > 0) {
+    const connection = await global.db.getConnection();
+    try {
+      const [rows] = await connection.query(
+        `SELECT
+           COALESCE(SUM(ABS(quantidade_delta)), 0) AS total_saida_30d,
+           COALESCE(SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL ? DAY) THEN ABS(quantidade_delta) ELSE 0 END), 0) AS total_saida_7d
+         FROM movimentacoes_estoque
+         WHERE usuario_id = ?
+           AND material_id = ?
+           AND quantidade_delta < 0
+           AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
+        [diasRecente, usuarioId, Number(materialId), diasHistorico]
+      );
+      consumoTotalPeriodo = toNumber(rows?.[0]?.total_saida_30d, 0);
+      consumoTotalRecente = toNumber(rows?.[0]?.total_saida_7d, 0);
+    } finally {
+      connection.release();
+    }
+  }
+
+  const consumoMedio30Dias = consumoTotalPeriodo > 0
+    ? Number((consumoTotalPeriodo / diasHistorico).toFixed(3))
+    : 0;
+  const consumoMedio7Dias = consumoTotalRecente > 0
+    ? Number((consumoTotalRecente / diasRecente).toFixed(3))
+    : 0;
+
+  // Da mais peso ao recente para reagir quando a saída acelerar.
+  let consumoPrevistoDiario = 0;
+  if (consumoMedio7Dias > 0 && consumoMedio30Dias > 0) {
+    consumoPrevistoDiario = Number(((consumoMedio7Dias * 0.6) + (consumoMedio30Dias * 0.4)).toFixed(3));
+  } else {
+    consumoPrevistoDiario = Math.max(consumoMedio7Dias, consumoMedio30Dias, 0);
+  }
+
+  const aceleracaoAtiva = consumoMedio30Dias > 0 && consumoMedio7Dias >= (consumoMedio30Dias * 1.3);
+  const fatorAceleracao = aceleracaoAtiva ? 1.25 : 1;
+
+  const estoqueSeguranca = consumoPrevistoDiario > 0
+    ? Math.ceil(consumoPrevistoDiario * 2)
+    : 0;
+
+  const estoqueObjetivo = Math.max(
+    minimo,
+    minimo + Math.ceil(consumoPrevistoDiario * diasCoberturaAlvo) + estoqueSeguranca
+  );
+
+  const sugestaoPorObjetivo = Math.max(0, Math.ceil(estoqueObjetivo - atual));
+  let quantidadeSugerida = Math.max(1, falta, sugestaoPorObjetivo);
+
+  if (falta > 0 && consumoPrevistoDiario > 0) {
+    const loteMinimoDinamico = Math.ceil(consumoPrevistoDiario * 3);
+    quantidadeSugerida = Math.max(quantidadeSugerida, loteMinimoDinamico);
+  }
+
+  if (aceleracaoAtiva) {
+    quantidadeSugerida = Math.ceil(quantidadeSugerida * fatorAceleracao);
+  }
+
+  const coberturaDias = consumoPrevistoDiario > 0
+    ? Number((atual / consumoPrevistoDiario).toFixed(1))
+    : null;
+
+  let quandoComprar = 'Monitorar diariamente';
+  let resumoRecomendacao = 'Consumo recente estável; mantenha acompanhamento do saldo.';
+
+  if (atual <= 0) {
+    quandoComprar = 'Comprar imediatamente (hoje)';
+    resumoRecomendacao = 'Estoque zerado: há risco imediato de ruptura.';
+  } else if (consumoPrevistoDiario > 0 && coberturaDias !== null) {
+    if (coberturaDias <= 3) {
+      quandoComprar = 'Comprar hoje';
+      resumoRecomendacao = 'Pelo consumo recente, o estoque cobre poucos dias.';
+    } else if (coberturaDias <= 7) {
+      quandoComprar = 'Comprar em até 48h';
+      resumoRecomendacao = 'Reposição de curto prazo recomendada para evitar ruptura.';
+    } else {
+      quandoComprar = 'Comprar em até 7 dias';
+      resumoRecomendacao = 'Há cobertura temporária, mas a compra deve ser programada.';
+    }
+  } else if (falta > 0) {
+    quandoComprar = 'Comprar em até 48h';
+    resumoRecomendacao = 'Sem histórico suficiente de consumo; baseando sugestão no déficit atual.';
+  }
+
+  if (aceleracaoAtiva) {
+    resumoRecomendacao += ' Saída acelerada nos últimos 7 dias; sugestão reforçada automaticamente.';
+  }
+
+  return {
+    quandoComprar,
+    quantidadeSugerida,
+    resumoRecomendacao,
+    consumoMedioDiario: consumoPrevistoDiario,
+    consumoMedio7Dias,
+    consumoMedio30Dias,
+    aceleracaoAtiva,
+    fatorAceleracao,
+    coberturaDias,
+    diasHistorico,
+    diasRecente,
+    diasCoberturaAlvo,
+    acaoPrincipal: 'comprar'
+  };
+}
+
+async function enriquecerRecomendacaoItemFinal(snapshot, usuarioId, recomendacaoBase) {
+  const base = {
+    ...(recomendacaoBase || {}),
+    acaoPrincipal: 'produzir'
+  };
+
+  const materialId = Number(snapshot?.id || 0);
+  if (!Number.isInteger(materialId) || materialId <= 0) {
+    return {
+      ...base,
+      resumoRecomendacao: 'Item final sem identificacao valida para buscar receita de producao.'
+    };
+  }
+
+  const receita = await Material.findReceita(materialId, usuarioId);
+  if (!receita || !Array.isArray(receita.componentes) || !receita.componentes.length) {
+    return {
+      ...base,
+      possuiReceita: false,
+      resumoRecomendacao: 'Item final sem receita cadastrada. Defina a receita para calcular componentes e planejar producao.'
+    };
+  }
+
+  const quantidadeProduzir = Math.max(1, Math.ceil(Number(base.quantidadeSugerida || 1)));
+  const baseQuantidadeReceita = Number(receita.base_quantidade || 0);
+  const componentesCriticos = [];
+
+  for (const comp of receita.componentes) {
+    const componenteId = Number(comp?.material_id || comp?.materialId || 0);
+    if (!Number.isInteger(componenteId) || componenteId <= 0) continue;
+
+    let consumoUnitario = Number(comp?.qty_unitaria || 0);
+    if ((!Number.isFinite(consumoUnitario) || consumoUnitario <= 0) && baseQuantidadeReceita > 0) {
+      const qtyTotal = Number(comp?.qty_total || 0);
+      consumoUnitario = Number.isFinite(qtyTotal) && qtyTotal > 0 ? qtyTotal / baseQuantidadeReceita : 0;
+    }
+    if (!Number.isFinite(consumoUnitario) || consumoUnitario <= 0) continue;
+
+    const materialComponente = await Material.findById(componenteId, usuarioId);
+    if (!materialComponente) continue;
+
+    const disponivel = toNumber(materialComponente.quantidade_atual, 0);
+    const necessario = Number((consumoUnitario * quantidadeProduzir).toFixed(3));
+    const falta = Math.max(0, Number((necessario - disponivel).toFixed(3)));
+
+    if (falta > 0) {
+      componentesCriticos.push({
+        id: componenteId,
+        nome: String(materialComponente.nome || `Componente ${componenteId}`),
+        necessario,
+        disponivel,
+        falta
+      });
+    }
+  }
+
+  const componentesOrdenados = componentesCriticos.sort((a, b) => b.falta - a.falta);
+  const resumoRecomendacao = componentesOrdenados.length
+    ? `Produza ${quantidadeProduzir} unidade(s) e reponha os componentes em falta para liberar a producao.`
+    : `Produza ${quantidadeProduzir} unidade(s). Componentes com estoque suficiente para esta sugestao.`;
+
+  return {
+    ...base,
+    possuiReceita: true,
+    acaoPrincipal: 'produzir',
+    quantidadeSugerida: quantidadeProduzir,
+    componentesCriticos: componentesOrdenados,
+    resumoRecomendacao
+  };
+}
+
 async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
   if (!precisaNotificarBaixoEstoque(materialAntes, materialDepois)) return;
 
@@ -102,13 +291,26 @@ async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
     ? 'Item final de produção'
     : 'Material';
 
+  let recomendacaoCompra = await calcularRecomendacaoCompraHistorica({
+    materialId,
+    usuarioId,
+    quantidadeAtual,
+    quantidadeMinima,
+    deficit
+  });
+
+  if (tipoItem === 'Item final de produção') {
+    recomendacaoCompra = await enriquecerRecomendacaoItemFinal(snapshot, usuarioId, recomendacaoCompra);
+  }
+
   const resultado = await enviarAlertaEstoqueBaixo({
     destinatarios,
     materialNome: String(snapshot?.nome || materialDepois?.nome || 'Material'),
     quantidadeAtual,
     quantidadeMinima,
     deficit,
-    tipoItem
+    tipoItem,
+    recomendacaoCompra
   });
 
   if (!resultado?.sent) {
