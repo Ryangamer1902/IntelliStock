@@ -325,7 +325,7 @@
           const response = await fetch('/api/materiais/historico', { headers: getAuthHeadersHist() });
           const data = await response.json();
           if (!data.success || !Array.isArray(data.data)) {
-            throw new Error(data.message || 'Resposta invalida da API');
+            throw new Error(data.message || 'Resposta inválida da API');
           }
           rows = data.data;
         } else {

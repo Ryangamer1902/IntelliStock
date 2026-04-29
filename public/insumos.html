@@ -195,6 +195,7 @@
       </div>
       <div class="modal-actions">
         <button class="btn btn-soft" id="btnCancelModal">Cancelar</button>
+        <button class="btn btn-soft is-hidden" id="btnEditProductionRecipe">Editar receita</button>
         <button class="btn btn-danger is-hidden" id="btnDeleteModal">Excluir material</button>
         <button class="btn btn-main" id="btnSaveModal">Salvar</button>
       </div>
@@ -223,23 +224,23 @@
 
   <div class="overlay" id="productionOverlay">
     <div class="modal">
-      <h2>Registrar produção</h2>
-      <p class="sub">Crie um item final pelo nome e monte a receita com quantos componentes quiser. O sistema dá baixa nos componentes e entrada no item final.</p>
+      <h2 id="productionTitle">Registrar produção</h2>
+      <p class="sub" id="productionSub">Crie um item final pelo nome e monte a receita com quantos componentes quiser. O sistema dá baixa nos componentes e entrada no item final.</p>
       <div class="modal-feedback" id="productionFeedback"></div>
 
       <div class="field-row">
         <div class="field">
-          <label>Nome do novo item final *</label>
+          <label id="prodFinalNameLabel">Nome do novo item final *</label>
           <input type="text" id="prodFinalName" placeholder="Ex: Kit Chave Estrela Premium">
         </div>
         <div class="field">
-          <label>Quantidade produzida *</label>
+          <label id="prodQtdLabel">Quantidade produzida *</label>
           <input type="number" id="prodQtd" min="1" step="1" placeholder="Ex: 10">
         </div>
       </div>
 
       <div class="field">
-        <label>Estoque mínimo do item final *</label>
+        <label id="prodQtdMinLabel">Estoque mínimo do item final *</label>
         <input type="number" id="prodQtdMin" min="0" step="1" placeholder="Ex: 10">
       </div>
 
@@ -656,28 +657,43 @@
 
     let editItemId = null;
 
-    function openEditModal(item) {
-      editItemId = Number(item.id);
-      editingProductionItem = isProductionItem(item);
+    async function openEditModal(item) {
+      let currentItem = item;
+
+      if (getMode() === 'api' && item?.id) {
+        try {
+          const response = await fetch(`/api/materiais/${item.id}`, { headers: getAuthHeaders() });
+          const data = await response.json();
+          if (response.ok && data?.success && data?.data) {
+            currentItem = mapMaterialToInsumo(data.data);
+          }
+        } catch (_) {
+          // Em caso de falha, usa os dados já carregados em memória.
+        }
+      }
+
+      editItemId = Number(currentItem.id);
+      editingProductionItem = isProductionItem(currentItem);
+      document.getElementById('btnEditProductionRecipe').classList.toggle('is-hidden', !editingProductionItem);
       const labelQtdEl = document.getElementById('labelQtd');
       const labelQtdMetaEl = document.getElementById('labelQtdMeta');
       document.getElementById('modalTitle').textContent = editingProductionItem ? 'Adicionar produção no item final' : 'Editar material';
       document.getElementById('modalSub').textContent = editingProductionItem
-        ? 'Para item final de produção, você pode apenas informar quanto foi produzido a mais. A baixa dos componentes será feita automaticamente pela receita salva.'
+        ? 'Para item final de produção, você pode informar produção adicional e também ajustar o preço de venda manual.'
         : 'Altere os dados do material e salve.';
-      document.getElementById('btnSaveModal').textContent = editingProductionItem ? 'Adicionar ao estoque' : 'Salvar alterações';
+      document.getElementById('btnSaveModal').textContent = editingProductionItem ? 'Salvar ajustes' : 'Salvar alterações';
       document.getElementById('btnDeleteModal').classList.remove('is-hidden');
       labelQtdEl.textContent = 'Quantidade *';
-      labelQtdMetaEl.textContent = `Atual: ${fmtNum(item.qtd_atual ?? 0)}`;
+      labelQtdMetaEl.textContent = `Atual: ${fmtNum(currentItem.qtd_atual ?? 0)}`;
       labelQtdMetaEl.classList.remove('is-hidden');
-      document.getElementById('fieldNome').value = item.nome || '';
-      document.getElementById('fieldCodigo').value = item.codigo_barras || '';
-      document.getElementById('fieldFornecedor').value = item.fornecedor_nome || '';
+      document.getElementById('fieldNome').value = currentItem.nome || '';
+      document.getElementById('fieldCodigo').value = currentItem.codigo_barras || '';
+      document.getElementById('fieldFornecedor').value = currentItem.fornecedor_nome || '';
       document.getElementById('fieldQtd').value = 0;
-      document.getElementById('fieldQtdMin').value = item.ponto_pedido ?? '';
-      document.getElementById('fieldCusto').value = item.preco_custo_un ?? '';
-      document.getElementById('fieldMargem').value = item.margem_lucro ?? '30';
-      document.getElementById('fieldPreco').value = item.preco_manual ?? '';
+      document.getElementById('fieldQtdMin').value = currentItem.ponto_pedido ?? '';
+      document.getElementById('fieldCusto').value = currentItem.preco_custo_un ?? '';
+      document.getElementById('fieldMargem').value = currentItem.margem_lucro ?? '30';
+      document.getElementById('fieldPreco').value = currentItem.preco_manual ?? '';
 
       document.getElementById('fieldNome').disabled = editingProductionItem;
       document.getElementById('fieldCodigo').disabled = editingProductionItem;
@@ -685,9 +701,11 @@
       document.getElementById('fieldQtdMin').disabled = editingProductionItem;
       document.getElementById('fieldCusto').disabled = editingProductionItem;
       document.getElementById('fieldMargem').disabled = editingProductionItem;
+      document.getElementById('fieldPreco').readOnly = false;
 
       document.getElementById('modalFeedback').className = 'modal-feedback';
       modalOverlay.classList.add('open');
+      syncModalScrollLock();
       setTimeout(() => (editingProductionItem ? document.getElementById('fieldQtd') : document.getElementById('fieldNome')).focus(), 80);
     }
 
@@ -747,10 +765,40 @@
     let productionLockedRecipe = null;
     let productionFinalItemMatch = null;
     let editingProductionItem = false;
+    let productionEditorMode = false;
+    let productionEditingItem = null;
+    let productionManualPriceLocked = false;
+    let settingAutoProductionPrice = false;
 
     function isProductionItem(item) {
       const fornecedor = String(item?.fornecedor_nome || item?.fornecedor || '').trim().toLowerCase();
       return fornecedor === 'produção interna' || fornecedor === 'producao interna';
+    }
+
+    function setProductionModalCreateMode() {
+      productionEditorMode = false;
+      productionEditingItem = null;
+      productionManualPriceLocked = false;
+      document.getElementById('productionTitle').textContent = 'Registrar produção';
+      document.getElementById('productionSub').textContent = 'Crie um item final pelo nome e monte a receita com quantos componentes quiser. O sistema dá baixa nos componentes e entrada no item final.';
+      document.getElementById('prodFinalNameLabel').textContent = 'Nome do novo item final *';
+      document.getElementById('prodQtdLabel').textContent = 'Quantidade produzida *';
+      document.getElementById('prodQtdMinLabel').textContent = 'Estoque mínimo do item final *';
+      document.getElementById('btnSaveProduction').textContent = 'Confirmar produção';
+      document.getElementById('prodFinalName').disabled = false;
+    }
+
+    function setProductionModalRecipeEditMode(item) {
+      productionEditorMode = true;
+      productionEditingItem = item;
+      productionManualPriceLocked = false;
+      document.getElementById('productionTitle').textContent = 'Editar receita do item final';
+      document.getElementById('productionSub').textContent = 'Revise os componentes usados, remova o que não quiser e atualize o custo/preço do item final sem registrar nova produção.';
+      document.getElementById('prodFinalNameLabel').textContent = 'Item final';
+      document.getElementById('prodQtdLabel').textContent = 'Lote base da receita *';
+      document.getElementById('prodQtdMinLabel').textContent = 'Estoque mínimo do item final *';
+      document.getElementById('btnSaveProduction').textContent = 'Salvar receita';
+      document.getElementById('prodFinalName').disabled = true;
     }
 
     async function fetchProductionRecipe(materialId) {
@@ -1075,12 +1123,18 @@
 
     function updateProductionSummary() {
       const { componentsBatchCost, extraBatchCost, batchCost, estimatedUnitCost } = getProductionCostSnapshot();
-      const finalPriceRaw = String(document.getElementById('prodFinalPrice').value || '').trim().replace(',', '.');
-      const parsedFinalPrice = Number(finalPriceRaw);
+      const finalPriceEl = document.getElementById('prodFinalPrice');
       const suggestedPrice = getProductionSuggestedPrice(estimatedUnitCost);
-      const hasCustomFinalPrice = finalPriceRaw !== '' && Number.isFinite(parsedFinalPrice) && parsedFinalPrice >= 0;
+      if (!productionManualPriceLocked) {
+        settingAutoProductionPrice = true;
+        finalPriceEl.value = suggestedPrice.toFixed(2);
+        settingAutoProductionPrice = false;
+      }
+      const finalPriceRaw = String(finalPriceEl.value || '').trim().replace(',', '.');
+      const parsedFinalPrice = Number(finalPriceRaw);
+      const hasCustomFinalPrice = productionManualPriceLocked && Number.isFinite(parsedFinalPrice) && parsedFinalPrice >= 0;
       const finalSalePrice = hasCustomFinalPrice ? parsedFinalPrice : suggestedPrice;
-      const finalPriceSource = hasCustomFinalPrice ? 'manual' : 'sugerido';
+      const finalPriceSource = hasCustomFinalPrice ? 'manual' : 'auto';
       const unitProfit = finalSalePrice - estimatedUnitCost;
       const effectiveMarginPct = estimatedUnitCost > 0 ? (unitProfit / estimatedUnitCost) * 100 : 0;
       const profitTone = unitProfit > 0 ? 'positive' : unitProfit < 0 ? 'negative' : 'neutral';
@@ -1130,6 +1184,8 @@
         return;
       }
 
+      setProductionModalCreateMode();
+
       document.getElementById('prodFinalName').value = '';
       document.getElementById('prodQtd').value = '';
       document.getElementById('prodQtdMin').value = '';
@@ -1151,11 +1207,76 @@
       updateProductionSummary();
       const productionOverlay = document.getElementById('productionOverlay');
       productionOverlay.classList.add('open');
+      syncModalScrollLock();
       setTimeout(() => document.getElementById('prodFinalName').focus(), 80);
+    }
+
+    async function openProductionRecipeEditor(item) {
+      if (!item || !isProductionItem(item)) {
+        showToast('Selecione um item final de produção para editar a receita.', 'error');
+        return;
+      }
+
+      if (getMode() !== 'api') {
+        showToast('A edição de receita está disponível apenas no modo API.', 'error');
+        return;
+      }
+
+      setProductionModalRecipeEditMode(item);
+      document.getElementById('prodFinalName').value = item.nome || '';
+      document.getElementById('prodQtd').value = '1';
+      document.getElementById('prodQtdMin').value = Number(item.ponto_pedido || 0);
+      document.getElementById('prodQtdMin').disabled = false;
+      document.getElementById('prodFinalPrice').value = '';
+      document.getElementById('prodSuggestedMargin').value = Number(item.margem_lucro || 30);
+      syncProductionQuickMarginState(document.getElementById('prodSuggestedMargin').value);
+
+      document.getElementById('prodComponentsList').innerHTML = '';
+      document.getElementById('prodExtraCostsList').innerHTML = '';
+      productionLockedRecipe = null;
+      productionFinalItemMatch = item;
+      setProductionComposerDisabled(false);
+
+      const receita = await fetchProductionRecipe(item.id);
+      if (receita?.base_quantidade) {
+        document.getElementById('prodQtd').value = Number(receita.base_quantidade || 1);
+      }
+
+      const componentes = Array.isArray(receita?.componentes) ? receita.componentes : [];
+      const extras = Array.isArray(receita?.custos_extras) ? receita.custos_extras : [];
+
+      componentes.forEach((comp) => {
+        addProductionComponentRow({
+          materialId: Number(comp?.material_id || 0),
+          qtyTotal: Number(comp?.qty_total || 0)
+        });
+      });
+
+      extras.forEach((cost) => {
+        addProductionExtraCostRow({
+          label: String(cost?.label || ''),
+          value: Number(cost?.value_total || cost?.value || 0)
+        });
+      });
+
+      if (!componentes.length) {
+        addProductionComponentRow();
+      }
+
+      const fb = document.getElementById('productionFeedback');
+      fb.className = 'modal-feedback';
+      fb.textContent = '';
+
+      updateProductionSummary();
+      productionOverlay.classList.add('open');
+      syncModalScrollLock();
+      setTimeout(() => document.getElementById('prodQtd').focus(), 80);
     }
 
     function closeProductionModal() {
       document.getElementById('productionOverlay').classList.remove('open');
+      setProductionModalCreateMode();
+      syncModalScrollLock();
     }
 
     function parseProductionRecipe() {
@@ -1223,6 +1344,13 @@
     const productionOverlay = document.getElementById('productionOverlay');
     let saleMaterialId = null;
 
+    function syncModalScrollLock() {
+      const anyOpen = modalOverlay.classList.contains('open')
+        || saleOverlay.classList.contains('open')
+        || productionOverlay.classList.contains('open');
+      document.body.classList.toggle('modal-open', anyOpen);
+    }
+
     function calcVenda() {
       const custo = parseFloat(document.getElementById('fieldCusto').value) || 0;
       const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
@@ -1234,6 +1362,7 @@
     function openAddModal() {
       editItemId = null;
       editingProductionItem = false;
+      document.getElementById('btnEditProductionRecipe').classList.add('is-hidden');
       document.getElementById('labelQtd').textContent = 'Quantidade *';
       document.getElementById('labelQtdMeta').textContent = '';
       document.getElementById('labelQtdMeta').classList.add('is-hidden');
@@ -1247,6 +1376,7 @@
       document.getElementById('fieldQtdMin').disabled = false;
       document.getElementById('fieldCusto').disabled = false;
       document.getElementById('fieldMargem').disabled = false;
+      document.getElementById('fieldPreco').readOnly = true;
       document.getElementById('fieldNome').value = '';
       document.getElementById('fieldCodigo').value = '';
       document.getElementById('fieldFornecedor').value = '';
@@ -1258,11 +1388,13 @@
       document.getElementById('modalFeedback').className = 'modal-feedback';
       calcVenda();
       modalOverlay.classList.add('open');
+      syncModalScrollLock();
       setTimeout(() => document.getElementById('fieldNome').focus(), 80);
     }
 
     function closeModal() {
       modalOverlay.classList.remove('open');
+      syncModalScrollLock();
     }
 
     function openSaleModal(material = null) {
@@ -1273,16 +1405,32 @@
       fb.className = 'modal-feedback';
       fb.textContent = '';
       saleOverlay.classList.add('open');
+      syncModalScrollLock();
       setTimeout(() => document.getElementById('saleQtd').focus(), 80);
     }
 
     function closeSaleModal() {
       saleOverlay.classList.remove('open');
+      syncModalScrollLock();
       saleMaterialId = null;
     }
 
     document.getElementById('btnAddMaterial').addEventListener('click', openAddModal);
     document.getElementById('btnOpenProduction').addEventListener('click', openProductionModal);
+    document.getElementById('btnEditProductionRecipe').addEventListener('click', async () => {
+      if (!editingProductionItem || editItemId === null) return;
+      const item = allInsumos.find((row) => Number(row.id) === Number(editItemId));
+      if (!item) {
+        showToast('Item final não encontrado.', 'error');
+        return;
+      }
+      try {
+        await openProductionRecipeEditor(item);
+        closeModal();
+      } catch (error) {
+        showToast(error.message || 'Falha ao abrir editor de receita.', 'error');
+      }
+    });
     document.getElementById('fieldCusto').addEventListener('input', calcVenda);
     document.getElementById('fieldMargem').addEventListener('input', calcVenda);
     document.getElementById('btnCancelModal').addEventListener('click', closeModal);
@@ -1326,6 +1474,12 @@
     saleOverlay.addEventListener('click', (e) => { if (e.target === saleOverlay) closeSaleModal(); });
     document.getElementById('btnCancelProduction').addEventListener('click', closeProductionModal);
     productionOverlay.addEventListener('click', (e) => { if (e.target === productionOverlay) closeProductionModal(); });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (productionOverlay.classList.contains('open')) { closeProductionModal(); return; }
+      if (saleOverlay.classList.contains('open')) { closeSaleModal(); return; }
+      if (modalOverlay.classList.contains('open')) { closeModal(); }
+    });
     document.getElementById('btnAddProdComponent').addEventListener('click', () => {
       addProductionComponentRow();
     });
@@ -1348,7 +1502,12 @@
       syncProductionQuickMarginState(event.target.value);
       updateProductionSummary();
     });
-    document.getElementById('prodFinalPrice').addEventListener('input', updateProductionSummary);
+    document.getElementById('prodFinalPrice').addEventListener('input', (event) => {
+      if (settingAutoProductionPrice) return;
+      const raw = String(event.target.value || '').trim();
+      productionManualPriceLocked = raw !== '';
+      updateProductionSummary();
+    });
     document.getElementById('prodMarginQuickActions').addEventListener('click', (event) => {
       const btnMargin = event.target.closest('[data-margin]');
       if (!btnMargin) return;
@@ -1432,7 +1591,9 @@
         const materialId = Number(editBtn.dataset.id || 0);
         const material = allInsumos.find((item) => Number(item.id) === materialId);
         if (!material) { showToast('Material não encontrado.', 'error'); return; }
-        openEditModal(material);
+        openEditModal(material).catch(() => {
+          showToast('Não foi possível abrir o editor do item.', 'error');
+        });
       }
     });
 
@@ -1613,6 +1774,7 @@
       const producedQty = Number(document.getElementById('prodQtd').value);
       const finalMinQty = Number(document.getElementById('prodQtdMin').value);
       const finalPriceRaw = String(document.getElementById('prodFinalPrice').value || '').trim().replace(',', '.');
+      const margemSugerida = Number(String(document.getElementById('prodSuggestedMargin').value || '0').trim().replace(',', '.'));
 
       if (!finalName) {
         fb.textContent = 'Informe o nome do item final.';
@@ -1626,8 +1788,14 @@
         return;
       }
 
+      if (!Number.isFinite(finalMinQty) || finalMinQty < 0) {
+        fb.textContent = 'Informe um estoque mínimo válido para o item final.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
       let customFinalPrice = null;
-      if (finalPriceRaw !== '') {
+      if (productionManualPriceLocked) {
         const parsedFinalPrice = Number(finalPriceRaw);
         if (!Number.isFinite(parsedFinalPrice) || parsedFinalPrice < 0) {
           fb.textContent = 'Informe um preço final válido (ou deixe em branco para usar o custo estimado).';
@@ -1678,6 +1846,83 @@
       });
 
       const mergedIngredients = Array.from(mergedIngredientsMap.entries()).map(([materialId, qtyTotal]) => ({ materialId, qtyTotal }));
+
+      if (productionEditorMode && productionEditingItem) {
+        const productionEditingItemName = productionEditingItem.nome;
+        if (mergedIngredients.some((ing) => Number(ing.materialId) === Number(productionEditingItem.id))) {
+          fb.textContent = 'O item final não pode ser usado como componente da própria receita.';
+          fb.className = 'modal-feedback error';
+          return;
+        }
+
+        let totalCostEstimateEdit = 0;
+        for (const ing of mergedIngredients) {
+          const item = allInsumos.find((row) => Number(row.id) === Number(ing.materialId));
+          if (!item) {
+            fb.textContent = 'Um dos componentes informados não foi encontrado.';
+            fb.className = 'modal-feedback error';
+            return;
+          }
+          totalCostEstimateEdit += Number(item.preco_custo_un || 0) * Number(ing.qtyTotal || 0);
+        }
+
+        const extraCostsTotalEdit = extraCosts.reduce((sum, item) => sum + Number(item.value || 0), 0);
+        totalCostEstimateEdit += extraCostsTotalEdit;
+
+        const finalUnitCostEdit = +(producedQty > 0 ? (totalCostEstimateEdit / producedQty) : 0).toFixed(2);
+        const suggestedPriceEdit = getProductionSuggestedPrice(finalUnitCostEdit);
+        const finalSalePriceEdit = customFinalPrice !== null ? customFinalPrice : suggestedPriceEdit;
+
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+
+        try {
+          if (getMode() === 'api') {
+            await saveProductionRecipe(productionEditingItem.id, producedQty, mergedIngredients, extraCosts);
+
+            const updateResponse = await fetch(`/api/materiais/${productionEditingItem.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+                'x-usuario-nome': usuario?.nome || 'Sistema'
+              },
+              body: JSON.stringify({
+                quantidade_minima: Math.floor(finalMinQty),
+                preco_custo: finalUnitCostEdit,
+                margem_lucro: Number.isFinite(margemSugerida) && margemSugerida >= 0 ? margemSugerida : 0,
+                preco_manual: finalSalePriceEdit
+              })
+            });
+
+            const updateData = await updateResponse.json();
+            if (!updateData.success) {
+              throw new Error(updateData.message || 'Falha ao atualizar preço/custo do item final.');
+            }
+          } else {
+            const lista = readMockMateriais();
+            const idx = lista.findIndex((m) => Number(m.id) === Number(productionEditingItem.id));
+            if (idx < 0) throw new Error('Item final não encontrado no modo local.');
+            lista[idx].quantidade_minima = Math.floor(finalMinQty);
+            lista[idx].preco_custo = finalUnitCostEdit;
+            lista[idx].margem_lucro = Number.isFinite(margemSugerida) && margemSugerida >= 0 ? margemSugerida : 0;
+            lista[idx].preco_manual = finalSalePriceEdit;
+            const nextId = parseInt(localStorage.getItem(MOCK_MATERIAIS_NEXT_ID_KEY) || '1', 10) || 1;
+            persistMockMateriais(lista, nextId);
+          }
+
+          closeProductionModal();
+          await carregarInsumos();
+          showToast(`Receita atualizada em ${productionEditingItemName}. Custo unitário: ${fmtMoney(finalUnitCostEdit)} | Preço final: ${fmtMoney(finalSalePriceEdit)}.`);
+        } catch (error) {
+          fb.textContent = `Erro: ${error.message}`;
+          fb.className = 'modal-feedback error';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = productionEditorMode ? 'Salvar receita' : 'Confirmar produção';
+        }
+        return;
+      }
 
       if (finalItemByName && mergedIngredients.some((ing) => ing.materialId === Number(finalItemByName.id))) {
         fb.textContent = 'O item final não pode ser usado como componente na mesma produção.';
@@ -1921,7 +2166,9 @@
       const qtdMin = parseInt(document.getElementById('fieldQtdMin').value, 10);
       const custo = parseFloat(document.getElementById('fieldCusto').value);
       const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
-      const preco = calcVenda();
+      const precoRaw = String(document.getElementById('fieldPreco').value || '').trim().replace(',', '.');
+      const precoCalculado = calcVenda();
+      const preco = precoRaw !== '' ? Number(precoRaw) : Number(precoCalculado);
       const fb = document.getElementById('modalFeedback');
       const btn = document.getElementById('btnSaveModal');
       // Ao editar: soma a nova chegada ao estoque atual; ao criar: usa o valor direto
@@ -1929,8 +2176,10 @@
       const qtd = editItemId !== null ? Number(estoqueAtualItem) + qtdInput : qtdInput;
 
       if (editItemId !== null && editingProductionItem) {
-        if (!Number.isFinite(qtdInput) || qtdInput <= 0) {
-          fb.textContent = 'Informe uma quantidade válida para adicionar ao item final.';
+        const precoManualRaw = String(document.getElementById('fieldPreco').value || '').trim().replace(',', '.');
+        const precoManualAjustado = Number(precoManualRaw);
+        if (!Number.isFinite(precoManualAjustado) || precoManualAjustado < 0) {
+          fb.textContent = 'Informe um preço de venda válido para o item final.';
           fb.className = 'modal-feedback error';
           return;
         }
@@ -1942,31 +2191,64 @@
           return;
         }
 
+        const quantidadeAdicionar = Number.isFinite(qtdInput) && qtdInput > 0 ? qtdInput : 0;
+        const precoAnterior = Number(itemFinal.preco_manual || 0);
+        const precoMudou = Number(precoManualAjustado.toFixed(2)) !== Number(precoAnterior.toFixed(2));
+
         btn.disabled = true;
         btn.textContent = 'Processando...';
         try {
-          await adicionarProducaoItemFinalExistente(itemFinal, qtdInput);
+          if (quantidadeAdicionar > 0) {
+            await adicionarProducaoItemFinalExistente(itemFinal, quantidadeAdicionar);
+          }
+
+          if (getMode() === 'api') {
+            const updateRes = await fetch(`/api/materiais/${itemFinal.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+              body: JSON.stringify({ preco_manual: Number(precoManualAjustado.toFixed(2)) })
+            });
+            const updateData = await updateRes.json();
+            if (!updateData.success) throw new Error(updateData.message || 'Falha ao atualizar preço do item final');
+          } else {
+            const lista = readMockMateriais();
+            const idx = lista.findIndex((m) => Number(m.id) === Number(itemFinal.id));
+            if (idx >= 0) {
+              lista[idx].preco_manual = Number(precoManualAjustado.toFixed(2));
+              const nextId = parseInt(localStorage.getItem(MOCK_MATERIAIS_NEXT_ID_KEY) || '1', 10) || 1;
+              persistMockMateriais(lista, nextId);
+            }
+          }
+
           closeModal();
           await carregarInsumos();
-          showToast(`Produção adicional registrada: +${fmtNum(qtdInput)} em ${itemFinal.nome}.`);
+          if (quantidadeAdicionar > 0 && precoMudou) {
+            showToast(`Item final atualizado: +${fmtNum(quantidadeAdicionar)} em ${itemFinal.nome} e preço ajustado.`);
+          } else if (quantidadeAdicionar > 0) {
+            showToast(`Produção adicional registrada: +${fmtNum(quantidadeAdicionar)} em ${itemFinal.nome}.`);
+          } else if (precoMudou) {
+            showToast(`Preço de venda atualizado em ${itemFinal.nome}.`);
+          } else {
+            showToast(`Ajustes salvos em ${itemFinal.nome}.`);
+          }
         } catch (error) {
           fb.textContent = `Erro: ${error.message}`;
           fb.className = 'modal-feedback error';
         } finally {
           btn.disabled = false;
-          btn.textContent = 'Adicionar ao estoque';
+          btn.textContent = 'Salvar ajustes';
         }
         return;
       }
 
       if (!nome || !codigo || !fornecedor || Number.isNaN(qtdMin) || Number.isNaN(custo) || Number.isNaN(preco)) {
-        fb.textContent = 'Preencha todos os campos obrigatórios.';
+        fb.textContent = 'Confira os campos obrigatórios: nome, código de barras, fornecedor, quantidade mínima, custo e preço.';
         fb.className = 'modal-feedback error';
         return;
       }
 
       if (!/^\d{13}$/.test(codigo)) {
-        fb.textContent = 'O código de barras deve ter exatamente 13 dígitos numéricos.';
+        fb.textContent = 'Código de barras inválido. Informe exatamente 13 números.';
         fb.className = 'modal-feedback error';
         return;
       }
@@ -2020,7 +2302,7 @@
         await carregarInsumos();
         showToast(editItemId !== null ? 'Material atualizado!' : 'Material cadastrado!');
       } catch (error) {
-        fb.textContent = `Erro: ${error.message}`;
+        fb.textContent = `Não foi possível salvar o item. ${error.message}`;
         fb.className = 'modal-feedback error';
       } finally {
         btn.disabled = false;

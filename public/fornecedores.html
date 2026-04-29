@@ -360,8 +360,14 @@
     document.getElementById('btnNovoFornecedor').addEventListener('click', abrirModal);
     document.getElementById('btnRefresh').addEventListener('click', carregarFornecedores);
     document.getElementById('searchInput').addEventListener('input', applySearchFilter);
+    const fornecedorModal = document.getElementById('fornecedorModal');
     document.getElementById('btnCancelar').addEventListener('click', () => {
-      document.getElementById('fornecedorModal').classList.remove('active');
+      fornecedorModal.classList.remove('active');
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && fornecedorModal.classList.contains('active')) {
+        fornecedorModal.classList.remove('active');
+      }
     });
 
     document.getElementById('fornecedorForm').addEventListener('submit', async (e) => {
@@ -394,7 +400,7 @@
         }
 
         showToast(editingId ? 'Fornecedor atualizado' : 'Fornecedor criado');
-        document.getElementById('fornecedorModal').classList.remove('active');
+        fornecedorModal.classList.remove('active');
         await carregarFornecedores();
       } catch (err) {
         console.error(err);

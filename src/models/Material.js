@@ -123,7 +123,7 @@ class Material {
     try {
       const [material] = await connection.query('SELECT quantidade_atual FROM materiais WHERE id = ? AND usuario_id = ?', [id, usuarioId]);
       if (!material || material.length === 0) {
-        throw new Error('Material nao encontrado');
+        throw new Error('Material não encontrado');
       }
 
       const novaQuantidade = Math.max(0, Number(material[0].quantidade_atual) + Number(diferenca));

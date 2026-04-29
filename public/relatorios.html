@@ -146,20 +146,21 @@
       </section>
 
       <section class="full-panel reveal-section">
-        <h2>Resumo geral por produto</h2>
+        <h2>Painel de atenção para compras</h2>
         <p>
-          Aqui voc&#234; compara giro estimado, estoque atual, situa&#231;&#227;o em rela&#231;&#227;o ao m&#237;nimo, pre&#231;o de venda e tend&#234;ncia de cada item.
+          Aqui ficam todos os itens que exigem reposi&#231;&#227;o e a mesma recomenda&#231;&#227;o enviada por e-mail para facilitar sua decis&#227;o de compra.
         </p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Produto</th>
-                <th>Vendido</th>
+                <th>Item</th>
                 <th>Estoque atual</th>
-                <th>Cobertura</th>
-                <th>Pre&#231;o venda</th>
-                <th>Tend&#234;ncia</th>
+                <th>Falta p/ m&#237;nimo</th>
+                <th>Urg&#234;ncia</th>
+                <th>Quando comprar</th>
+                <th>Qtd. sugerida</th>
+                <th>Recomenda&#231;&#227;o exibida (e-mail)</th>
               </tr>
             </thead>
             <tbody id="reportTableBody"></tbody>
@@ -344,10 +345,10 @@
     const defaultMockMateriais = [
       { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
       { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
-      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', fornecedor: 'Aco Forte Chapas', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
+      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', fornecedor: 'Aço Forte Chapas', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
       { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', fornecedor: 'EletroCabos Brasil', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75 },
       { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', fornecedor: 'SegMais EPIs', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00 },
-      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', fornecedor: 'Quimica Rapida', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
+      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', fornecedor: 'Química Rápida', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
       { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', fornecedor: 'EletroCabos Brasil', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90 },
     ];
 
@@ -388,9 +389,16 @@
       const obs = String(mov?.observacao || '').toLowerCase();
       if (obs.includes('venda')) return true;
 
+      // Baixa de produção é consumo interno, não venda comercial.
+      if (obs.includes('produção') || obs.includes('producao') || obs.includes('consumo para produzir')) {
+        return false;
+      }
+
       const tipo = String(mov?.tipo_movimento || '').toUpperCase();
       const delta = Number(mov?.quantidade_delta || 0);
-      return (tipo === 'AJUSTE' || tipo === 'VENDA') && delta < 0;
+      // No modelo atual, VENDA pode vir como AJUSTE com observação contendo "venda".
+      // Ajustes negativos sem indicação de venda não entram no cálculo de lucro.
+      return tipo === 'VENDA' && delta < 0;
     }
 
     function buildVendasMap(movimentacoes) {
@@ -407,6 +415,53 @@
       });
 
       return map;
+    }
+
+    function isConsumoInternoMovimentacao(mov) {
+      const obs = String(mov?.observacao || '').toLowerCase();
+      const tipo = String(mov?.tipo_movimento || '').toUpperCase();
+      const delta = Number(mov?.quantidade_delta || 0);
+
+      if (delta >= 0) return false;
+      if (tipo === 'PRODUCAO' || tipo === 'PRODUÇÃO') return true;
+      return obs.includes('produção') || obs.includes('producao') || obs.includes('consumo para produzir');
+    }
+
+    function buildConsumoInternoStats(movimentacoes, materiais) {
+      const materialMap = new Map((materiais || []).map((item) => [Number(item.id), item]));
+      const consumoPorMaterial = new Map();
+      let totalUnidades = 0;
+      let totalCustoEstimado = 0;
+
+      (movimentacoes || []).forEach((mov) => {
+        if (!isConsumoInternoMovimentacao(mov)) return;
+
+        const qtd = Math.abs(Number(mov?.quantidade_delta || 0));
+        if (qtd <= 0) return;
+
+        totalUnidades += qtd;
+
+        const materialId = Number(mov?.material_id || 0);
+        const material = materialMap.get(materialId);
+        const custoUnit = Number(material?.preco_custo || 0);
+        if (custoUnit > 0) {
+          totalCustoEstimado += qtd * custoUnit;
+        }
+
+        const key = materialId > 0 ? materialId : String(mov?.material_nome || 'Material');
+        const nome = material?.nome || String(mov?.material_nome || 'Material');
+        const atual = consumoPorMaterial.get(key) || { nome, unidades: 0 };
+        atual.unidades += qtd;
+        consumoPorMaterial.set(key, atual);
+      });
+
+      const topConsumido = [...consumoPorMaterial.values()].sort((a, b) => b.unidades - a.unidades)[0] || null;
+
+      return {
+        totalUnidades,
+        totalCustoEstimado,
+        topConsumido
+      };
     }
 
     function sameDay(a, b) {
@@ -476,7 +531,7 @@
       }).join('');
     }
 
-    function renderInsights(analytics) {
+    function renderInsights(analytics, consumoInternoStats) {
       const target = document.getElementById('insightGrid');
       if (!analytics.length) { target.innerHTML = '<div class="empty-report">Cadastre materiais para visualizar insights executivos.</div>'; return; }
       const criticos = analytics.filter(item => item.estoque < item.minimo).length;
@@ -485,31 +540,129 @@
       const lucroEstimado = analytics.reduce((sum, item) => sum + item.lucroEstimado, 0);
       const melhorMargem = [...analytics].sort((a, b) => b.margem - a.margem)[0];
       const maiorEstoque = [...analytics].sort((a, b) => b.estoque - a.estoque)[0];
+      const consumoInterno = consumoInternoStats?.totalUnidades || 0;
+      const custoConsumoInterno = consumoInternoStats?.totalCustoEstimado || 0;
+      const topConsumo = consumoInternoStats?.topConsumido || null;
       target.innerHTML =
-        '<article class="insight-card"><span>Reposição imediata</span><strong>' + criticos + ' item(ns) críticos</strong><p>' + (criticos === 0 ? 'Nenhum item abaixo do mínimo no momento.' : 'Esses itens precisam de compra rápida para evitar perda de venda.') + '</p></article>' +
-        '<article class="insight-card"><span>Produtos zerados</span><strong>' + semEstoque + ' item(ns) sem saldo</strong><p>' + (semEstoque === 0 ? 'O catálogo não tem ruptura total agora.' : 'Há ruptura completa em parte do catálogo e isso merece atenção.') + '</p></article>' +
-        '<article class="insight-card"><span>Lucro estimado do período</span><strong>' + fmtMoney(lucroEstimado) + '</strong><p>Estimativa calculada a partir do preço de venda, custo e giro dos itens do catálogo.</p></article>' +
-        '<article class="insight-card"><span>Capital parado</span><strong>' + fmtMoney(capitalParado) + '</strong><p>' + (maiorEstoque ? 'Maior concentração atual em ' + escHtml(maiorEstoque.nome) + '.' : 'Sem concentração relevante no estoque.') + '</p></article>' +
-        '<article class="insight-card"><span>Maior margem</span><strong>' + (melhorMargem ? escHtml(melhorMargem.nome) : '-') + '</strong><p>' + (melhorMargem ? melhorMargem.margem.toFixed(1) + '% de margem cadastrada.' : 'Sem leitura disponível.') + '</p></article>' +
-        '<article class="insight-card"><span>Leitura comercial</span><strong>' + (criticos > 0 ? 'Ação imediata' : 'Cenário estável') + '</strong><p>' + (criticos > 0 ? 'Priorize reposição dos itens críticos e empurre os produtos de menor saída com campanha.' : 'A operação está equilibrada e pode focar em aumentar giro dos itens lentos.') + '</p></article>';
+        '<article class="insight-card is-critical"><span class="insight-label">Reposição imediata</span><strong class="insight-value">' + criticos.toLocaleString('pt-BR') + '</strong><p class="insight-note">' + (criticos === 0 ? 'Nenhum item crítico no momento. Estoque dentro da meta mínima.' : 'Itens em risco de ruptura. Priorize compra imediata para não perder venda.') + '</p></article>' +
+        '<article class="insight-card is-critical"><span class="insight-label">Produtos zerados</span><strong class="insight-value">' + semEstoque.toLocaleString('pt-BR') + '</strong><p class="insight-note">' + (semEstoque === 0 ? 'Sem ruptura total no catálogo neste período.' : 'Itens sem saldo total. Reposição urgente para retomar disponibilidade.') + '</p></article>' +
+        '<article class="insight-card is-finance"><span class="insight-label">Lucro estimado do período</span><strong class="insight-value compact">' + fmtMoney(lucroEstimado) + '</strong><p class="insight-note">Baseado em venda real registrada, custo e giro de saída do período.</p></article>' +
+        '<article class="insight-card is-finance"><span class="insight-label">Capital parado</span><strong class="insight-value compact">' + fmtMoney(capitalParado) + '</strong><p class="insight-note">' + (maiorEstoque ? ('Maior concentração de saldo em <span class="insight-product">' + escHtml(maiorEstoque.nome) + '</span>.') : 'Sem concentração relevante acima do nível de segurança.') + '</p></article>' +
+        '<article class="insight-card is-action"><span class="insight-label">Consumo interno (produção)</span><strong class="insight-value">' + consumoInterno.toLocaleString('pt-BR') + ' un.</strong><p class="insight-note">' + (consumoInterno > 0 ? ('Custo interno estimado: ' + fmtMoney(custoConsumoInterno) + (topConsumo ? ('. Item mais consumido: <span class="insight-product">' + escHtml(topConsumo.nome) + '</span>.') : '.')) : 'Sem consumo interno no período selecionado.') + '</p></article>' +
+        '<article class="insight-card is-finance"><span class="insight-label">Maior margem</span><strong class="insight-value compact">' + (melhorMargem ? ('<span class="insight-product">' + escHtml(melhorMargem.nome) + '</span>') : '-') + '</strong><p class="insight-note">' + (melhorMargem ? melhorMargem.margem.toFixed(1) + '% de margem cadastrada para este item.' : 'Sem leitura disponível para margem.') + '</p></article>' +
+        '<article class="insight-card is-action is-highlight"><span class="insight-label">Leitura comercial</span><strong class="insight-value compact">' + (criticos > 0 ? 'Ação imediata' : 'Cenário estável') + '</strong><p class="insight-note">' + (criticos > 0 ? 'Priorize reposição dos críticos e rode campanha para itens de baixo giro.' : 'Operação equilibrada. Foque em acelerar giro dos itens com saída lenta.') + '</p></article>';
     }
 
     function renderReportTable(analytics) {
       const target = document.getElementById('reportTableBody');
-      if (!analytics.length) { target.innerHTML = '<tr><td colspan="6"><div class="empty-report">Nenhum produto disponível para o relatório.</div></td></tr>'; return; }
+      if (!analytics.length) { target.innerHTML = '<tr><td colspan="7"><div class="empty-report">Nenhum item com necessidade de reposição no momento.</div></td></tr>'; return; }
 
-      function formatCobertura(item) {
-        const minimo = Math.max(Number(item.minimo || 0), 1);
-        const estoque = Number(item.estoque || 0);
-        const diferenca = estoque - minimo;
-        if (diferenca > 0) return diferenca + ' un. acima do mínimo';
-        if (diferenca === 0) return 'No mínimo (0 un. acima)';
-        return Math.abs(diferenca) + ' un. abaixo do mínimo';
+      function fmtCoberturaDias(value) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return 'Sem histórico';
+        return Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' dia(s)';
+      }
+
+      function urgencyLevel(item) {
+        const estoque = Number(item.quantidade_atual || item.estoque || 0);
+        const coberturaDias = Number(item.recomendacao_compra?.coberturaDias);
+        if (estoque <= 0) {
+          return 'critical';
+        }
+        if (Number.isFinite(coberturaDias) && coberturaDias <= 3) {
+          return 'very-high';
+        }
+        if (Number(item.deficit || 0) > 0) {
+          return 'high';
+        }
+        return 'monitor';
+      }
+
+      function urgencyBadge(level) {
+        if (level === 'critical') return '<span class="badge badge-critical">Ruptura</span>';
+        if (level === 'very-high') return '<span class="badge badge-down">Muito alta</span>';
+        if (level === 'high') return '<span class="badge badge-warn">Alta</span>';
+        return '<span class="badge badge-up">Monitorar</span>';
+      }
+
+      function recommendationText(item) {
+        const rec = item.recomendacao_compra || {};
+        const resumo = rec.resumoRecomendacao ? escHtml(rec.resumoRecomendacao) : 'Sem recomendação detalhada.';
+        const cobertura = fmtCoberturaDias(rec.coberturaDias);
+        const consumo = Number(rec.consumoMedioDiario || 0);
+        const quandoComprar = escHtml(rec.quandoComprar || 'Monitorar diariamente');
+        const quantidade = Math.max(0, Number(rec.quantidadeSugerida || item.deficit || 0));
+        const consumoFmt = consumo.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+
+        return '' +
+          '<div class="rec-title">Plano de ação</div>' +
+          '<div class="rec-action"><strong>Comprar ' + quantidade + ' un.</strong><span>' + quandoComprar + '</span></div>' +
+          '<div class="rec-summary">' + resumo + '</div>' +
+          '<div class="recommendation-meta">' +
+            '<span>Estoque cobre: <strong>' + cobertura + '</strong></span>' +
+            '<span>Consumo médio: <strong>' + consumoFmt + ' un./dia</strong></span>' +
+          '</div>';
       }
 
       target.innerHTML = analytics.map(item =>
-        '<tr><td>' + escHtml(item.nome) + '</td><td>' + item.saidasPeriodo + ' un.</td><td>' + item.estoque + ' un.</td><td>' + formatCobertura(item) + '</td><td>' + fmtMoney(item.precoVenda) + '</td><td><span class="badge ' + item.tendenciaClass + '">' + item.tendenciaLabel + '</span></td></tr>'
+        '<tr class="table-row-' + urgencyLevel(item) + '">' +
+          '<td><strong class="item-name">' + escHtml(item.nome) + '</strong><div class="cell-sub">' + escHtml(item.tipo_item || 'Material') + '</div></td>' +
+          '<td><span class="metric-value">' + Number(item.quantidade_atual || item.estoque || 0) + ' un.</span></td>' +
+          '<td><span class="metric-value metric-alert">' + Number(item.deficit || 0) + ' un.</span></td>' +
+          '<td>' + urgencyBadge(urgencyLevel(item)) + '</td>' +
+          '<td><span class="buy-when">' + escHtml(item.recomendacao_compra?.quandoComprar || 'Monitorar diariamente') + '</span></td>' +
+          '<td><span class="metric-value metric-suggested">' + Math.max(0, Number(item.recomendacao_compra?.quantidadeSugerida || item.deficit || 0)) + ' un.</span></td>' +
+          '<td>' + recommendationText(item) + '</td>' +
+        '</tr>'
       ).join('');
+    }
+
+    function buildMockRecommendation(item) {
+      const atual = Math.max(0, Number(item.quantidade_atual || 0));
+      const minimo = Math.max(0, Number(item.quantidade_minima || 0));
+      const deficit = Math.max(0, minimo - atual);
+      const consumoMedioDiario = minimo > 0 ? Number((minimo / 30).toFixed(3)) : 0;
+      const coberturaDias = consumoMedioDiario > 0 ? Number((atual / consumoMedioDiario).toFixed(1)) : null;
+
+      let quandoComprar = 'Monitorar diariamente';
+      let resumoRecomendacao = 'Acompanhe o giro semanal para definir o melhor momento de compra.';
+      if (atual <= 0) {
+        quandoComprar = 'Comprar imediatamente (hoje)';
+        resumoRecomendacao = 'Estoque zerado: há risco imediato de ruptura no atendimento.';
+      } else if (coberturaDias !== null && coberturaDias <= 3) {
+        quandoComprar = 'Comprar hoje';
+        resumoRecomendacao = 'Cobertura muito curta considerando o consumo estimado.';
+      } else if (deficit > 0) {
+        quandoComprar = 'Comprar em até 48h';
+        resumoRecomendacao = 'Item abaixo do mínimo e com risco de ruptura de curto prazo.';
+      }
+
+      return {
+        quandoComprar,
+        quantidadeSugerida: Math.max(1, deficit),
+        resumoRecomendacao,
+        consumoMedioDiario,
+        coberturaDias
+      };
+    }
+
+    async function carregarItensAtencao(materiais) {
+      if (getMode() === 'api') {
+        const res = await fetch('/api/materiais/estoque/baixo', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Erro ao carregar itens de atenção');
+        return data.data || [];
+      }
+
+      return (materiais || [])
+        .filter((item) => Number(item.quantidade_atual || 0) < Number(item.quantidade_minima || 0))
+        .map((item) => ({
+        ...item,
+        deficit: Math.max(0, Number(item.quantidade_minima || 0) - Number(item.quantidade_atual || 0)),
+        tipo_item: String(item.fornecedor || '').toLowerCase().includes('produção interna') || String(item.fornecedor || '').toLowerCase().includes('producao interna')
+          ? 'Item final de produção'
+          : 'Material',
+        recomendacao_compra: buildMockRecommendation(item)
+      }));
     }
 
     function updateKpis(analytics) {
@@ -550,8 +703,10 @@
     async function renderReports() {
       try {
         const [materiais, movimentacoes] = await Promise.all([carregarMateriais(), carregarMovimentacoes()]);
+        const itensAtencao = await carregarItensAtencao(materiais);
         const movsPeriodo = filtrarMovimentacoesPorPeriodo(movimentacoes, selectedPeriod);
         const vendasMap = buildVendasMap(movsPeriodo);
+        const consumoInternoStats = buildConsumoInternoStats(movsPeriodo, materiais);
         const analytics = materiais.map((item) => buildAnalytics(item, vendasMap));
         updateKpis(analytics);
         renderRankList('topSoldList', [...analytics].filter(a => a.saidasPeriodo > 0).sort((a, b) => b.saidasPeriodo - a.saidasPeriodo).slice(0, 4), 'saidasPeriodo', v => v + ' un.', item => 'Vendas registradas: ' + item.saidasPeriodo + ' un.', false);
@@ -564,7 +719,7 @@
         } else {
           document.getElementById('lowSoldList').innerHTML = '<div class="empty-report">Nenhum item cadastrado para analisar.</div>';
         }
-        renderRankList('highStockList', [...analytics].sort((a, b) => b.estoque - a.estoque).slice(0, 4), 'estoque', v => v + ' un.', item => 'Mínimo em ' + item.minimo + ' un. Preço venda ' + fmtMoney(item.precoVenda) + '.', false);
+        renderRankList('highStockList', [...analytics].sort((a, b) => b.estoque - a.estoque).slice(0, 4), 'estoque', v => v + ' un.', item => 'Mínimo em ' + item.minimo + ' un. Preço de venda ' + fmtMoney(item.precoVenda) + '.', false);
         const lowStockRanking = analytics
           .filter((item) => item.estoque < item.minimo)
           .sort((a, b) => a.estoque - b.estoque)
@@ -582,15 +737,23 @@
         } else {
           document.getElementById('lowStockList').innerHTML = '<div class="empty-report">Nenhum item abaixo do mínimo no momento.</div>';
         }
-        renderInsights(analytics);
-        renderReportTable([...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo));
+        renderInsights(analytics, consumoInternoStats);
+        renderReportTable(
+          [...itensAtencao].sort((a, b) => {
+            const estoqueA = Number(a.quantidade_atual || 0);
+            const estoqueB = Number(b.quantidade_atual || 0);
+            if (estoqueA === 0 && estoqueB !== 0) return -1;
+            if (estoqueB === 0 && estoqueA !== 0) return 1;
+            return Number(b.deficit || 0) - Number(a.deficit || 0);
+          })
+        );
       } catch (error) {
         document.getElementById('topSoldList').innerHTML = '<div class="empty-report">Erro ao carregar: ' + escHtml(error.message) + '</div>';
         document.getElementById('lowSoldList').innerHTML = '<div class="empty-report">Não foi possível gerar os rankings.</div>';
         document.getElementById('highStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';
         document.getElementById('lowStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';
         document.getElementById('insightGrid').innerHTML = '<div class="empty-report">Não foi possível montar o diagnóstico executivo.</div>';
-        document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="6"><div class="empty-report">Não foi possível carregar a tabela do relatório.</div></td></tr>';
+        document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="7"><div class="empty-report">Não foi possível carregar o painel de atenção de compras.</div></td></tr>';
       }
     }
 

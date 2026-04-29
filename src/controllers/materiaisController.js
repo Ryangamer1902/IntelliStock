@@ -200,7 +200,7 @@ async function enriquecerRecomendacaoItemFinal(snapshot, usuarioId, recomendacao
   if (!Number.isInteger(materialId) || materialId <= 0) {
     return {
       ...base,
-      resumoRecomendacao: 'Item final sem identificacao valida para buscar receita de producao.'
+      resumoRecomendacao: 'Item final sem identificação válida para buscar receita de produção.'
     };
   }
 
@@ -209,7 +209,7 @@ async function enriquecerRecomendacaoItemFinal(snapshot, usuarioId, recomendacao
     return {
       ...base,
       possuiReceita: false,
-      resumoRecomendacao: 'Item final sem receita cadastrada. Defina a receita para calcular componentes e planejar producao.'
+      resumoRecomendacao: 'Item final sem receita cadastrada. Defina a receita para calcular componentes e planejar produção.'
     };
   }
 
@@ -248,8 +248,8 @@ async function enriquecerRecomendacaoItemFinal(snapshot, usuarioId, recomendacao
 
   const componentesOrdenados = componentesCriticos.sort((a, b) => b.falta - a.falta);
   const resumoRecomendacao = componentesOrdenados.length
-    ? `Produza ${quantidadeProduzir} unidade(s) e reponha os componentes em falta para liberar a producao.`
-    : `Produza ${quantidadeProduzir} unidade(s). Componentes com estoque suficiente para esta sugestao.`;
+    ? `Produza ${quantidadeProduzir} unidade(s) e reponha os componentes em falta para liberar a produção.`
+    : `Produza ${quantidadeProduzir} unidade(s). Componentes com estoque suficiente para esta sugestão.`;
 
   return {
     ...base,
@@ -268,7 +268,7 @@ async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
   const destinatariosGlobais = listarEmailsAlertaGlobais();
   const destinatarios = [...new Set([...destinatariosCliente, ...destinatariosGlobais])];
   if (!destinatarios.length) {
-    console.warn('Alerta de estoque baixo nao enviado (usuario sem email ativo para notificacao)');
+    console.warn('Alerta de estoque baixo não enviado (usuário sem e-mail ativo para notificação)');
     return;
   }
 
@@ -279,7 +279,7 @@ async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
       const atualDoBanco = await Material.findById(materialId, usuarioId);
       if (atualDoBanco) snapshot = atualDoBanco;
     } catch (err) {
-      console.warn(`Nao foi possivel atualizar snapshot do material para alerta (${err?.message || 'erro_desconhecido'})`);
+      console.warn(`Não foi possível atualizar snapshot do material para alerta (${err?.message || 'erro_desconhecido'})`);
     }
   }
 
@@ -314,16 +314,49 @@ async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
   });
 
   if (!resultado?.sent) {
-    console.warn(`Alerta de estoque baixo nao enviado (${resultado?.reason || 'motivo_desconhecido'})`);
+    console.warn(`Alerta de estoque baixo não enviado (${resultado?.reason || 'motivo_desconhecido'})`);
     return;
   }
 
-  console.log(`Alerta de estoque baixo enviado para ${resultado.recipients?.length || 0} destinatario(s) - material: ${String(snapshot?.nome || materialDepois?.nome || 'Material')} - atual: ${quantidadeAtual} - minimo: ${quantidadeMinima}`);
+  console.log(`Alerta de estoque baixo enviado para ${resultado.recipients?.length || 0} destinatário(s) - material: ${String(snapshot?.nome || materialDepois?.nome || 'Material')} - atual: ${quantidadeAtual} - mínimo: ${quantidadeMinima}`);
+}
+
+async function enriquecerMateriaisComRecomendacao(materiais, usuarioId) {
+  return Promise.all(
+    (materiais || []).map(async (material) => {
+      const quantidadeAtual = toNumber(material?.quantidade_atual, 0);
+      const quantidadeMinima = toNumber(material?.quantidade_minima, 0);
+      const deficit = Math.max(0, quantidadeMinima - quantidadeAtual);
+      const fornecedor = String(material?.fornecedor || '').trim().toLowerCase();
+      const tipoItem = fornecedor === 'produção interna' || fornecedor === 'producao interna'
+        ? 'Item final de produção'
+        : 'Material';
+
+      let recomendacaoCompra = await calcularRecomendacaoCompraHistorica({
+        materialId: material?.id,
+        usuarioId,
+        quantidadeAtual,
+        quantidadeMinima,
+        deficit
+      });
+
+      if (tipoItem === 'Item final de produção') {
+        recomendacaoCompra = await enriquecerRecomendacaoItemFinal(material, usuarioId, recomendacaoCompra);
+      }
+
+      return {
+        ...material,
+        deficit,
+        tipo_item: tipoItem,
+        recomendacao_compra: recomendacaoCompra
+      };
+    })
+  );
 }
 class MateriaisController {
   /**
    * GET /api/materiais/:id/receita
-   * Buscar receita de producao do item final
+  * Buscar receita de produção do item final
    */
   static async obterReceita(req, res) {
     try {
@@ -334,7 +367,7 @@ class MateriaisController {
       if (!material) {
         return res.status(404).json({
           success: false,
-          message: 'Material nao encontrado'
+          message: 'Material não encontrado'
         });
       }
 
@@ -342,7 +375,7 @@ class MateriaisController {
       if (!receita) {
         return res.status(404).json({
           success: false,
-          message: 'Receita de producao nao cadastrada para este item final'
+          message: 'Receita de produção não cadastrada para este item final'
         });
       }
 
@@ -354,7 +387,7 @@ class MateriaisController {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Erro ao obter receita de producao',
+        message: 'Erro ao obter receita de produção',
         error: error.message
       });
     }
@@ -362,7 +395,7 @@ class MateriaisController {
 
   /**
    * PUT /api/materiais/:id/receita
-   * Criar/atualizar receita de producao do item final
+  * Criar/atualizar receita de produção do item final
    */
   static async salvarReceita(req, res) {
     try {
@@ -374,7 +407,7 @@ class MateriaisController {
       if (!material) {
         return res.status(404).json({
           success: false,
-          message: 'Material nao encontrado'
+          message: 'Material não encontrado'
         });
       }
 
@@ -400,7 +433,7 @@ class MateriaisController {
         if (!Number.isInteger(materialId) || materialId <= 0 || !Number.isFinite(qtdTotal) || qtdTotal <= 0) {
           return res.status(400).json({
             success: false,
-            message: 'Componentes da receita estao invalidos'
+            message: 'Componentes da receita estão inválidos'
           });
         }
 
@@ -408,14 +441,14 @@ class MateriaisController {
         if (!materialComponente) {
           return res.status(404).json({
             success: false,
-            message: `Componente nao encontrado: ${materialId}`
+            message: `Componente não encontrado: ${materialId}`
           });
         }
 
         if (Number(materialId) === Number(id)) {
           return res.status(400).json({
             success: false,
-            message: 'O item final nao pode ser componente da propria receita'
+            message: 'O item final não pode ser componente da própria receita'
           });
         }
 
@@ -457,7 +490,7 @@ class MateriaisController {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Erro ao salvar receita de producao',
+        message: 'Erro ao salvar receita de produção',
         error: error.message
       });
     }
@@ -491,7 +524,7 @@ class MateriaisController {
 
   /**
    * GET /api/materiais/historico
-   * Listar movimentacoes de estoque do usuario
+  * Listar movimentações de estoque do usuário
    */
   static async listarHistorico(req, res) {
     try {
@@ -499,13 +532,13 @@ class MateriaisController {
 
       res.status(200).json({
         success: true,
-        message: 'Historico recuperado com sucesso',
+        message: 'Histórico recuperado com sucesso',
         data: movimentacoes
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Erro ao listar historico de estoque',
+        message: 'Erro ao listar histórico de estoque',
         error: error.message
       });
     }
@@ -513,7 +546,7 @@ class MateriaisController {
 
   /**
    * GET /api/materiais/:id
-   * Buscar material especifico por ID (do usuario)
+  * Buscar material específico por ID (do usuário)
    */
   static async obter(req, res) {
     try {
@@ -523,7 +556,7 @@ class MateriaisController {
       if (!material) {
         return res.status(404).json({
           success: false,
-          message: 'Material nao encontrado'
+          message: 'Material não encontrado'
         });
       }
 
@@ -554,7 +587,7 @@ class MateriaisController {
       if (!codigo_barras || !nome || !fornecedor) {
         return res.status(400).json({
           success: false,
-          message: 'Codigo de barras, nome e fornecedor sao obrigatorios'
+          message: 'Para cadastrar o item, informe código de barras, nome e fornecedor.'
         });
       }
 
@@ -562,7 +595,7 @@ class MateriaisController {
       if (materialExistente) {
         return res.status(409).json({
           success: false,
-          message: 'Material com este codigo de barras ja existe'
+          message: 'Já existe um item com este código de barras. Use outro código ou edite o item existente.'
         });
       }
 
@@ -602,7 +635,7 @@ class MateriaisController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Erro ao criar material',
+        message: 'Não foi possível cadastrar o item agora. Tente novamente em instantes.',
         error: error.message
       });
     }
@@ -610,7 +643,7 @@ class MateriaisController {
 
   /**
    * PUT /api/materiais/:id
-   * Atualizar material completo (somente do usuario)
+  * Atualizar material completo (somente do usuário)
    */
   static async atualizar(req, res) {
     try {
@@ -622,7 +655,7 @@ class MateriaisController {
       if (!material) {
         return res.status(404).json({
           success: false,
-          message: 'Material nao encontrado'
+          message: 'Material não encontrado'
         });
       }
 
@@ -631,7 +664,7 @@ class MateriaisController {
         if (materialComCodigo) {
           return res.status(409).json({
             success: false,
-            message: 'Ja existe um material com este codigo de barras'
+            message: 'Já existe um material com este código de barras'
           });
         }
       }
@@ -667,7 +700,7 @@ class MateriaisController {
         quantidade_anterior: qtdAnterior,
         quantidade_atual: qtdAtual,
         usuario_nome: req.usuario_nome || 'Sistema',
-        observacao: 'Edicao de dados do material'
+        observacao: 'Edição de dados do material'
       });
 
       await notificarBaixoEstoque(material, materialAtualizado, usuarioId);
@@ -688,7 +721,7 @@ class MateriaisController {
 
   /**
    * DELETE /api/materiais/:id
-   * Deletar material (somente do usuario)
+  * Deletar material (somente do usuário)
    */
   static async deletar(req, res) {
     try {
@@ -698,7 +731,7 @@ class MateriaisController {
       if (!material) {
         return res.status(404).json({
           success: false,
-          message: 'Material nao encontrado'
+          message: 'Material não encontrado'
         });
       }
 
@@ -711,7 +744,7 @@ class MateriaisController {
         quantidade_anterior: Number(material.quantidade_atual || 0),
         quantidade_atual: 0,
         usuario_nome: req.usuario_nome || 'Sistema',
-        observacao: 'Exclusao de material'
+        observacao: 'Exclusão de material'
       });
 
       await Material.delete(id, usuarioId);
@@ -743,7 +776,7 @@ class MateriaisController {
       if (diferenca === undefined || typeof diferenca !== 'number') {
         return res.status(400).json({
           success: false,
-          message: 'Diferenca de quantidade e obrigatoria e deve ser um numero'
+          message: 'Diferença de quantidade é obrigatória e deve ser um número'
         });
       }
 
@@ -751,7 +784,7 @@ class MateriaisController {
       if (!materialAntes) {
         return res.status(404).json({
           success: false,
-          message: 'Material nao encontrado'
+          message: 'Material não encontrado'
         });
       }
 
@@ -759,7 +792,7 @@ class MateriaisController {
       if (isVenda && Number(diferenca) >= 0) {
         return res.status(400).json({
           success: false,
-          message: 'Venda deve reduzir o estoque (diferenca negativa)'
+          message: 'Venda deve reduzir o estoque (diferença negativa)'
         });
       }
 
@@ -768,7 +801,7 @@ class MateriaisController {
       if (tentativaNovaQuantidade < 0) {
         return res.status(400).json({
           success: false,
-          message: 'Quantidade insuficiente em estoque para esta operacao'
+          message: 'Quantidade insuficiente em estoque para esta operação'
         });
       }
 
@@ -804,16 +837,18 @@ class MateriaisController {
 
   /**
    * GET /api/materiais/estoque/baixo
-   * Listar materiais com estoque baixo do usuario
+  * Listar materiais com estoque baixo do usuário
    */
   static async listarBaixoEstoque(req, res) {
     try {
-      const materiais = await Material.findBaixoEstoque(req.usuario_id);
+      const usuarioId = req.usuario_id;
+      const materiais = await Material.findBaixoEstoque(usuarioId);
+      const materiaisComRecomendacao = await enriquecerMateriaisComRecomendacao(materiais, usuarioId);
 
       res.status(200).json({
         success: true,
         message: 'Materiais com estoque baixo recuperados',
-        data: materiais
+        data: materiaisComRecomendacao
       });
     } catch (error) {
       res.status(500).json({

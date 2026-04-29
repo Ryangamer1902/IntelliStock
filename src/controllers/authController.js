@@ -182,6 +182,55 @@ class AuthController {
     }
   }
 
+  static async reenviarCodigo(req, res) {
+    const db = global.db;
+    if (!db) {
+      return res.status(503).json({
+        success: false,
+        message: 'Banco de dados não configurado.'
+      });
+    }
+
+    const { token_temp } = req.body || {};
+    if (!token_temp) {
+      return res.status(400).json({ success: false, message: 'Sessão inválida. Faça login novamente.' });
+    }
+
+    try {
+      const [rows] = await db.query(
+        `SELECT cv.usado, u.id, u.nome, u.email, u.ativo
+         FROM codigos_verificacao cv
+         JOIN usuarios u ON cv.usuario_id = u.id
+         WHERE cv.token_temp = ?
+         LIMIT 1`,
+        [token_temp]
+      );
+
+      if (!rows.length) {
+        return res.status(401).json({ success: false, message: 'Sessão inválida. Faça login novamente.' });
+      }
+
+      const usuario = rows[0];
+      if (Number(usuario.usado) === 1) {
+        return res.status(401).json({ success: false, message: 'Esta sessão já foi utilizada. Faça login novamente.' });
+      }
+
+      if (!Number(usuario.ativo)) {
+        return res.status(403).json({ success: false, message: 'Sua conta está inativa no momento.' });
+      }
+
+      const desafio = await criarDesafioVerificacao(db, usuario);
+      if (!desafio.success) {
+        return res.status(502).json(desafio);
+      }
+
+      return res.json(desafio);
+    } catch (err) {
+      console.error('Erro ao reenviar código 2FA:', err);
+      return res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
+    }
+  }
+
   static async logout(req, res) {
     const db = global.db;
     const authHeader = req.headers['authorization'] || '';

@@ -135,7 +135,7 @@
                 <th>Status</th>
                 <th>Custo unit.</th>
                 <th>Margem</th>
-                <th>Preço venda</th>
+                <th>Preço de venda</th>
               </tr>
             </thead>
             <tbody id="tableBody">
@@ -198,7 +198,7 @@
         </div>
         <div class="field">
           <label>Preço de venda (R$)</label>
-          <input type="number" id="fieldPreco" class="field-preco-readonly" placeholder="0.00" step="0.01" min="0" readonly>
+          <input type="number" id="fieldPreco" class="field-preco-readonly" placeholder="0.00" step="0.01" min="0">
         </div>
       </div>
       <div class="modal-actions">
@@ -315,10 +315,10 @@
     const defaultMockMateriais = [
       { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
       { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
-      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', fornecedor: 'Aco Forte Chapas', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
+      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', fornecedor: 'Aço Forte Chapas', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
       { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', fornecedor: 'EletroCabos Brasil', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75 },
       { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', fornecedor: 'SegMais EPIs', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00 },
-      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', fornecedor: 'Quimica Rapida', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
+      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', fornecedor: 'Química Rápida', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
       { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', fornecedor: 'EletroCabos Brasil', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90 },
     ];
 
@@ -689,6 +689,11 @@
     const saleOverlay = document.getElementById('saleOverlay');
     let saleMaterialId = null;
 
+    function syncModalScrollLock() {
+      const anyOpen = document.querySelectorAll('.overlay.open').length > 0;
+      document.body.classList.toggle('modal-open', anyOpen);
+    }
+
     function openSaleModal(material = null) {
       saleMaterialId = material ? Number(material.id || 0) : null;
       fillSaleMaterialOptions(saleMaterialId);
@@ -698,11 +703,13 @@
       fb.textContent = '';
       document.getElementById('btnSaveSale').disabled = document.getElementById('saleMaterial').disabled;
       saleOverlay.classList.add('open');
+      syncModalScrollLock();
       setTimeout(() => document.getElementById('saleQtd').focus(), 80);
     }
 
     function closeSaleModal() {
       saleOverlay.classList.remove('open');
+      syncModalScrollLock();
       saleMaterialId = null;
     }
 
@@ -716,6 +723,11 @@
 
     document.getElementById('btnCancelSale').addEventListener('click', closeSaleModal);
     saleOverlay.addEventListener('click', (e) => { if (e.target === saleOverlay) closeSaleModal(); });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (saleOverlay.classList.contains('open')) { closeSaleModal(); return; }
+      if (modalOverlay.classList.contains('open')) { closeModal(); }
+    });
 
     document.getElementById('btnSaveSale').addEventListener('click', async () => {
       const btn = document.getElementById('btnSaveSale');
@@ -836,8 +848,15 @@
     // ===== MODAL ADICIONAR/EDITAR =====
     const modalOverlay = document.getElementById('modalOverlay');
     let editingId = null;
+    let isManualPriceMode = false;
 
-    function calcVenda() {
+    function calcVenda(force = false) {
+      if (isManualPriceMode && !force) {
+        const manualRaw = String(document.getElementById('fieldPreco').value || '').trim().replace(',', '.');
+        const manualNum = Number(manualRaw);
+        return Number.isFinite(manualNum) ? manualNum : '';
+      }
+
       const custo = parseFloat(document.getElementById('fieldCusto').value) || 0;
       const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
       const venda = custo > 0 ? +(custo * (1 + margem / 100)).toFixed(2) : '';
@@ -851,6 +870,7 @@
 
     function openAddModal() {
       editingId = null;
+      isManualPriceMode = false;
       document.getElementById('modalTitle').textContent = 'Novo material';
       document.getElementById('modalSub').textContent = 'Preencha os dados do novo item de estoque.';
       document.getElementById('btnSaveModal').textContent = 'Salvar';
@@ -863,8 +883,9 @@
       document.getElementById('fieldMargem').value = '30';
       document.getElementById('fieldPreco').value = '';
       document.getElementById('modalFeedback').className = 'modal-feedback';
-      calcVenda();
+      calcVenda(true);
       modalOverlay.classList.add('open');
+      syncModalScrollLock();
       setTimeout(() => document.getElementById('fieldNome').focus(), 100);
     }
 
@@ -872,6 +893,7 @@
       const mat = allMateriais.find(m => m.id === id);
       if (!mat) return;
       editingId = id;
+      isManualPriceMode = true;
       document.getElementById('modalTitle').textContent = 'Editar material';
       document.getElementById('modalSub').textContent = 'Altere os dados do material.';
       document.getElementById('btnSaveModal').textContent = 'Atualizar';
@@ -884,13 +906,19 @@
       document.getElementById('fieldMargem').value = mat.margem_lucro != null ? mat.margem_lucro : 30;
       document.getElementById('fieldPreco').value = mat.preco_manual ?? '';
       document.getElementById('modalFeedback').className = 'modal-feedback';
-      calcVenda();
       modalOverlay.classList.add('open');
+      syncModalScrollLock();
       setTimeout(() => document.getElementById('fieldNome').focus(), 100);
     }
 
+    document.getElementById('fieldPreco').addEventListener('input', () => {
+      const raw = String(document.getElementById('fieldPreco').value || '').trim();
+      isManualPriceMode = raw !== '';
+    });
+
     function closeModal() {
       modalOverlay.classList.remove('open');
+      syncModalScrollLock();
     }
 
     document.getElementById('btnSaveModal').addEventListener('click', async () => {
@@ -901,17 +929,18 @@
       const qtdMin = parseInt(document.getElementById('fieldQtdMin').value);
       const custo = parseFloat(document.getElementById('fieldCusto').value);
       const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
-      const preco = calcVenda();
+      const precoRaw = String(document.getElementById('fieldPreco').value || '').trim().replace(',', '.');
+      const preco = precoRaw !== '' ? Number(precoRaw) : Number(calcVenda(true));
       const fb = document.getElementById('modalFeedback');
 
       if (!nome || !codigo || !fornecedor || isNaN(qtdMin) || isNaN(custo) || isNaN(preco)) {
-        fb.textContent = 'Preencha todos os campos obrigatórios.';
+        fb.textContent = 'Confira os campos obrigatórios: nome, código de barras, fornecedor, quantidade mínima, custo e preço.';
         fb.className = 'modal-feedback error';
         return;
       }
       // Validação do código de barras EAN-13
       if (!/^\d{13}$/.test(codigo)) {
-        fb.textContent = 'O código de barras deve ter exatamente 13 dígitos numéricos.';
+        fb.textContent = 'Código de barras inválido. Informe exatamente 13 números.';
         fb.className = 'modal-feedback error';
         return;
       }
@@ -951,7 +980,7 @@
         await carregarMateriais();
         showToast(editingId ? 'Material atualizado!' : 'Material cadastrado!');
       } catch (err) {
-        fb.textContent = 'Erro: ' + err.message;
+        fb.textContent = 'Não foi possível salvar o item. ' + err.message;
         fb.className = 'modal-feedback error';
       } finally {
         btn.disabled = false;

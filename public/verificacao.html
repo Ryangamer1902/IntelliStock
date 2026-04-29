@@ -58,7 +58,7 @@
       <button class="btn" id="confirmBtn" disabled>Confirmar acesso</button>
 
       <div class="footer-links">
-        <a href="/login.html" id="reenviarBtn">Reenviar código</a>
+        <a href="#" id="reenviarBtn">Reenviar código</a>
         <a href="/login.html">Voltar ao login</a>
       </div>
     </div>
@@ -68,7 +68,7 @@
 
   <script>
     // ----- Validar sessão -----
-    const session = window.AuthService.get2FASession();
+    let session = window.AuthService.get2FASession();
     if (!session || !session.token_temp) {
       window.AuthService.clear2FASession();
       window.location.href = '/login.html';
@@ -169,6 +169,20 @@
       }
     }, 1000);
 
+    function resetTimerAndInputs() {
+      secondsLeft = 10 * 60;
+      timerVal.textContent = fmt(secondsLeft);
+      timerVal.style.color = '';
+      timerWrap.classList.remove('expired');
+      boxes.forEach((b) => {
+        b.disabled = false;
+        b.value = '';
+        b.classList.remove('filled');
+      });
+      confirmBtn.disabled = true;
+      boxes[0].focus();
+    }
+
     // ----- Verificar -----
     async function doVerify() {
       const code = getCode();
@@ -204,6 +218,56 @@
     }
 
     confirmBtn.addEventListener('click', doVerify);
+
+    document.getElementById('reenviarBtn').addEventListener('click', async (event) => {
+      event.preventDefault();
+      feedback.className = 'form-feedback';
+      feedback.textContent = 'Reenviando código...';
+
+      try {
+        const data = await window.AuthService.reenviarCodigo({ token_temp: session.token_temp });
+        if (!data.success) {
+          feedback.classList.add('error');
+          feedback.textContent = data.message || 'Não foi possível reenviar o código.';
+          return;
+        }
+
+        session = {
+          ...session,
+          token_temp: data.token_temp,
+          nome: data.nome || session.nome,
+          email_enviado: data.email_enviado === true,
+          codigo_demo: data.codigo_demo || null
+        };
+        window.AuthService.save2FASession(session, session.remember === true);
+
+        if (session.email_enviado) {
+          feedback.innerHTML = `
+            <span class="feedback-row">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M8 12l2.5 2.5L16 9"></path>
+              </svg>
+              <span>Novo código enviado para seu e-mail. Confira caixa de entrada e spam.</span>
+            </span>
+          `;
+          feedback.classList.add('success');
+        } else {
+          feedback.classList.add('success');
+          feedback.textContent = 'Novo código gerado em modo local.';
+        }
+
+        if (session.codigo_demo) {
+          document.getElementById('demoBox').classList.remove('is-hidden');
+          document.getElementById('demoCode').textContent = session.codigo_demo;
+        }
+
+        resetTimerAndInputs();
+      } catch (_) {
+        feedback.classList.add('error');
+        feedback.textContent = 'Falha ao reenviar o código. Tente novamente.';
+      }
+    });
 
     // ----- Animação de entrada -----
     setTimeout(() => document.querySelector('.reveal-section').classList.add('visible'), 60);

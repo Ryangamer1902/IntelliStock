@@ -420,9 +420,15 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     .overlay.open { display: flex; }
+
+    body.modal-open {
+      overflow: hidden;
+    }
 
     #productionOverlay {
       align-items: flex-start;
@@ -435,6 +441,8 @@
       padding: 28px;
       width: 100%;
       max-width: 480px;
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
       box-shadow: 0 32px 80px rgba(0,0,0,0.22);
       animation: popIn 0.25s ease;
     }
@@ -919,7 +927,13 @@
       box-shadow: var(--shadow);
       overflow: hidden;
     }
-    .table-wrap { overflow-x: auto; }
+    .table-wrap {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 470px;
+      scrollbar-gutter: stable;
+      -webkit-overflow-scrolling: touch;
+    }
     table {
       width: 100%;
       min-width: 980px;
@@ -928,8 +942,7 @@
     thead th {
       position: sticky;
       top: 0;
-      background: rgba(14, 143, 131, 0.08);
-      backdrop-filter: blur(6px);
+      background: #d2e1e1;
       text-align: left;
       font-size: 0.78rem;
       text-transform: uppercase;
