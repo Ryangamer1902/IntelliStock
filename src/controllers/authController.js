@@ -47,6 +47,29 @@ function emailValido(email) {
   return /\S+@\S+\.\S+/.test(String(email || '').trim());
 }
 
+function isPublicHttpUrl(url) {
+  return /^https?:\/\//i.test(String(url || '')) && !/localhost|127\.0\.0\.1/i.test(String(url || ''));
+}
+
+function getAppBaseUrl(req) {
+  const appUrl = String(process.env.APP_URL || '').trim().replace(/\/$/, '');
+  if (isPublicHttpUrl(appUrl)) {
+    return appUrl;
+  }
+
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
+  const host = forwardedHost || String(req.get('host') || '').trim();
+  const protocol = forwardedProto || req.protocol || 'http';
+  const requestUrl = host ? `${protocol}://${host}`.replace(/\/$/, '') : '';
+
+  if (isPublicHttpUrl(requestUrl)) {
+    return requestUrl;
+  }
+
+  return `http://localhost:${process.env.PORT || 3001}`;
+}
+
 class AuthController {
   static async login(req, res) {
     const db = global.db;
@@ -275,7 +298,7 @@ class AuthController {
         [usuario.id, token, expiraEm]
       );
 
-      const baseUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3001}`;
+      const baseUrl = getAppBaseUrl(req);
       const link = `${baseUrl}/redefinir-senha.html?token=${token}`;
 
       const envio = await enviarLinkResetSenha({ para: usuario.email, nome: usuario.nome, link });
