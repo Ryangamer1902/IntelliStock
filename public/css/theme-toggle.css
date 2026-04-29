@@ -1,0 +1,133 @@
+.theme-toggle-btn {
+  border: 1px solid var(--line, rgba(18, 33, 39, 0.1));
+  background: var(--card, #ffffff);
+  color: var(--ink, #122127);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(8, 37, 44, 0.12);
+}
+
+.theme-toggle-btn .theme-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.theme-toggle-btn .theme-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+body.dark-mode {
+  --bg: #0e171b;
+  --ink: #e6f0f2;
+  --muted: #9ab0b5;
+  --line: rgba(214, 241, 247, 0.16);
+  --card: #132127;
+  --brand: #13a496;
+  --brand-strong: #77d9cc;
+  --danger: #ff9990;
+  background:
+    radial-gradient(circle at 8% 5%, rgba(19, 164, 150, 0.2), transparent 30%),
+    radial-gradient(circle at 95% 10%, rgba(238, 127, 59, 0.18), transparent 28%),
+    linear-gradient(180deg, #0b1318 0%, var(--bg) 72%);
+  color: var(--ink);
+}
+
+body.dark-mode header {
+  background: rgba(9, 18, 23, 0.82) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+body.dark-mode .theme-toggle-btn {
+  background: rgba(19, 164, 150, 0.12);
+  border-color: rgba(119, 217, 204, 0.35);
+  color: #dff7f3;
+}
+
+body.dark-mode .theme-toggle-btn:hover {
+  box-shadow: 0 10px 24px rgba(2, 8, 10, 0.45);
+}
+
+body.dark-mode .user-chip,
+body.dark-mode .user-pill,
+body.dark-mode .btn-logout,
+body.dark-mode .card,
+body.dark-mode .hero,
+body.dark-mode .kpi,
+body.dark-mode .kpi-card,
+body.dark-mode .table-card,
+body.dark-mode .plan-card,
+body.dark-mode .summary,
+body.dark-mode .user-menu-panel,
+body.dark-mode .modal-content,
+body.dark-mode .panel,
+body.dark-mode .empty-state,
+body.dark-mode .report,
+body.dark-mode .insight-card {
+  background: var(--card) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+
+body.dark-mode .sub-item,
+body.dark-mode .pill,
+body.dark-mode .badge,
+body.dark-mode .chip,
+body.dark-mode .period-btn,
+body.dark-mode .btn-soft {
+  border-color: var(--line) !important;
+}
+
+body.dark-mode nav a {
+  color: var(--muted) !important;
+}
+
+body.dark-mode nav a:hover,
+body.dark-mode nav a.active {
+  background: rgba(19, 164, 150, 0.18) !important;
+  color: #bdf5ed !important;
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background: #0f1b21 !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+
+body.dark-mode table,
+body.dark-mode th,
+body.dark-mode td {
+  border-color: var(--line) !important;
+}
+
+body.dark-mode thead th {
+  background: rgba(19, 33, 40, 0.95) !important;
+  color: var(--ink) !important;
+}
+
+body.dark-mode tbody tr:hover {
+  background: rgba(19, 164, 150, 0.08) !important;
+}
+
+body.dark-mode .muted,
+body.dark-mode p,
+body.dark-mode .kpi-sub,
+body.dark-mode .subscription-label,
+body.dark-mode .sub-item span {
+  color: var(--muted) !important;
+}

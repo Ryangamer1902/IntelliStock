@@ -7,8 +7,9 @@ CREATE TABLE IF NOT EXISTS materiais (
   codigo_barras VARCHAR(50) NOT NULL,
   nome VARCHAR(150) NOT NULL,
   fornecedor VARCHAR(150) NOT NULL DEFAULT 'Nao informado',
-  quantidade_atual INT NOT NULL DEFAULT 0,
-  quantidade_minima INT NOT NULL DEFAULT 10,
+  unidade ENUM('un', 'kg', 'm') NOT NULL DEFAULT 'un',
+  quantidade_atual DECIMAL(12, 3) NOT NULL DEFAULT 0,
+  quantidade_minima DECIMAL(12, 3) NOT NULL DEFAULT 10,
   preco_custo DECIMAL(10, 2) NOT NULL DEFAULT 0,
   margem_lucro DECIMAL(5, 2) NOT NULL DEFAULT 0,
   preco_manual DECIMAL(10, 2) NOT NULL,
@@ -54,6 +55,28 @@ PREPARE stmt_add_fornecedor FROM @sql_add_fornecedor;
 EXECUTE stmt_add_fornecedor;
 DEALLOCATE PREPARE stmt_add_fornecedor;
 
+-- Migracao: adicionar unidade em materiais (bancos existentes)
+SET @col_mat_unidade_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'materiais'
+    AND COLUMN_NAME = 'unidade'
+);
+SET @sql_mat_unidade := IF(
+  @col_mat_unidade_exists = 0,
+  'ALTER TABLE materiais ADD COLUMN unidade ENUM(''un'',''kg'',''m'') NOT NULL DEFAULT ''un'' AFTER fornecedor',
+  'SELECT 1'
+);
+PREPARE stmt_mat_unidade FROM @sql_mat_unidade;
+EXECUTE stmt_mat_unidade;
+DEALLOCATE PREPARE stmt_mat_unidade;
+
+-- Migracao: permitir quantidades fracionadas em materiais
+ALTER TABLE materiais
+  MODIFY COLUMN quantidade_atual DECIMAL(12, 3) NOT NULL DEFAULT 0,
+  MODIFY COLUMN quantidade_minima DECIMAL(12, 3) NOT NULL DEFAULT 10;
+
 CREATE TABLE IF NOT EXISTS alertas_estoque (
   id INT AUTO_INCREMENT PRIMARY KEY,
   material_id INT NOT NULL,
@@ -84,9 +107,9 @@ CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
   material_id INT NULL,
   material_nome_snapshot VARCHAR(150) NOT NULL,
   tipo_movimento ENUM('CADASTRO', 'AJUSTE', 'EDICAO', 'REMOCAO') NOT NULL,
-  quantidade_delta INT NOT NULL DEFAULT 0,
-  quantidade_anterior INT NOT NULL DEFAULT 0,
-  quantidade_atual INT NOT NULL DEFAULT 0,
+  quantidade_delta DECIMAL(12, 3) NOT NULL DEFAULT 0,
+  quantidade_anterior DECIMAL(12, 3) NOT NULL DEFAULT 0,
+  quantidade_atual DECIMAL(12, 3) NOT NULL DEFAULT 0,
   usuario_nome VARCHAR(100) NOT NULL DEFAULT 'Sistema',
   observacao VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -113,6 +136,12 @@ SET @sql_mov_uid := IF(
 PREPARE stmt_mov_uid FROM @sql_mov_uid;
 EXECUTE stmt_mov_uid;
 DEALLOCATE PREPARE stmt_mov_uid;
+
+-- Migracao: permitir historico de movimentacoes com valores fracionados
+ALTER TABLE movimentacoes_estoque
+  MODIFY COLUMN quantidade_delta DECIMAL(12, 3) NOT NULL DEFAULT 0,
+  MODIFY COLUMN quantidade_anterior DECIMAL(12, 3) NOT NULL DEFAULT 0,
+  MODIFY COLUMN quantidade_atual DECIMAL(12, 3) NOT NULL DEFAULT 0;
 
 -- Compatibilidade TiDB:
 -- TiDB nao suporta TRIGGER (nem comandos de cliente como DELIMITER) da mesma forma que MySQL.

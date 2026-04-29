@@ -11,6 +11,17 @@ class Material {
     }
   }
 
+  static async hasUnidadeColumn(connection) {
+    const [rows] = await connection.query(
+      `SELECT COUNT(*) AS total
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'materiais'
+         AND COLUMN_NAME = 'unidade'`
+    );
+    return Number(rows?.[0]?.total || 0) > 0;
+  }
+
   /**
    * Buscar todos os materiais do usuario
    */
@@ -67,7 +78,7 @@ class Material {
    * Criar novo material vinculado ao usuario
    */
   static async create(dados) {
-    const { usuario_id, codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = dados;
+    const { usuario_id, codigo_barras, nome, fornecedor, unidade, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = dados;
 
     if (!usuario_id || !codigo_barras || !nome || !fornecedor || quantidade_minima === undefined || preco_custo === undefined || preco_manual === undefined) {
       throw new Error('Campos obrigatorios faltando');
@@ -75,12 +86,23 @@ class Material {
 
     const connection = await global.db.getConnection();
     try {
-      const [result] = await connection.query(
-        `INSERT INTO materiais
-          (usuario_id, codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [usuario_id, codigo_barras, nome, fornecedor, quantidade_atual || 0, quantidade_minima, preco_custo, margem_lucro || 0, preco_manual]
-      );
+      const hasUnidade = await Material.hasUnidadeColumn(connection);
+      let result;
+      if (hasUnidade) {
+        [result] = await connection.query(
+          `INSERT INTO materiais
+            (usuario_id, codigo_barras, nome, fornecedor, unidade, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [usuario_id, codigo_barras, nome, fornecedor, unidade || 'un', quantidade_atual || 0, quantidade_minima, preco_custo, margem_lucro || 0, preco_manual]
+        );
+      } else {
+        [result] = await connection.query(
+          `INSERT INTO materiais
+            (usuario_id, codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [usuario_id, codigo_barras, nome, fornecedor, quantidade_atual || 0, quantidade_minima, preco_custo, margem_lucro || 0, preco_manual]
+        );
+      }
       return result.insertId;
     } finally {
       connection.release();
@@ -93,8 +115,20 @@ class Material {
   static async update(id, dados, usuarioId) {
     const connection = await global.db.getConnection();
     try {
-      const fields = Object.keys(dados).map(k => `${k} = ?`).join(', ');
-      const values = [...Object.values(dados), id, usuarioId];
+      const dadosUpdate = { ...dados };
+      if (Object.prototype.hasOwnProperty.call(dadosUpdate, 'unidade')) {
+        const hasUnidade = await Material.hasUnidadeColumn(connection);
+        if (!hasUnidade) {
+          delete dadosUpdate.unidade;
+        }
+      }
+
+      if (!Object.keys(dadosUpdate).length) {
+        return false;
+      }
+
+      const fields = Object.keys(dadosUpdate).map(k => `${k} = ?`).join(', ');
+      const values = [...Object.values(dadosUpdate), id, usuarioId];
       const [result] = await connection.query(`UPDATE materiais SET ${fields} WHERE id = ? AND usuario_id = ?`, values);
       return result.affectedRows > 0;
     } finally {

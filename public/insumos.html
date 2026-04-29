@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/insumos.css">
+  <link rel="stylesheet" href="/css/theme-toggle.css">
+  <script src="/js/theme-toggle.js" defer></script>
 
 </head>
 <body>
@@ -168,15 +170,23 @@
         <input type="text" id="fieldFornecedor" list="fornecedorSuggestions" placeholder="Ex: ACME Ltda" required>
         <datalist id="fornecedorSuggestions"></datalist>
       </div>
+      <div class="field">
+        <label>Unidade de medida *</label>
+        <select id="fieldUnidade">
+          <option value="un" selected>Unidade (un)</option>
+          <option value="kg">Quilo (kg)</option>
+          <option value="m">Metro (m)</option>
+        </select>
+      </div>
       <div class="field-row">
         <div class="field">
           <label id="labelQtd">Quantidade *</label>
-          <input type="number" id="fieldQtd" placeholder="0" min="0">
+          <input type="number" id="fieldQtd" placeholder="0" min="0" step="1">
           <small id="labelQtdMeta" class="is-hidden"></small>
         </div>
         <div class="field">
           <label>Quantidade mínima *</label>
-          <input type="number" id="fieldQtdMin" placeholder="10" min="0">
+          <input type="number" id="fieldQtdMin" placeholder="10" min="0" step="1">
         </div>
       </div>
       <div class="field">
@@ -213,7 +223,7 @@
       </div>
       <div class="field">
         <label>Quantidade vendida *</label>
-        <input type="number" id="saleQtd" min="1" placeholder="Ex: 3">
+        <input type="number" id="saleQtd" min="0.001" step="0.001" placeholder="Ex: 3">
       </div>
       <div class="modal-actions">
         <button class="btn btn-soft" id="btnCancelSale">Cancelar</button>
@@ -371,6 +381,27 @@
         : n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
     }
 
+    function normalizeUnidade(value) {
+      const unidade = String(value || '').trim().toLowerCase();
+      if (unidade === 'kg' || unidade === 'm' || unidade === 'un') return unidade;
+      return 'un';
+    }
+
+    function unidadeLabel(unidade) {
+      const map = { un: 'un', kg: 'kg', m: 'm' };
+      return map[normalizeUnidade(unidade)] || 'un';
+    }
+
+    function isUnidadeFracionada(unidade) {
+      const unit = normalizeUnidade(unidade);
+      return unit === 'kg' || unit === 'm';
+    }
+
+    function parseQuantidadeInput(value) {
+      const parsed = Number(String(value || '').replace(',', '.'));
+      return Number.isFinite(parsed) ? parsed : NaN;
+    }
+
     function escHtml(str) {
       return String(str)
         .replace(/&/g, '&amp;')
@@ -393,7 +424,7 @@
         nome: item.nome,
         preco_custo_un: item.preco_custo,
         qtd_atual: item.quantidade_atual,
-        unidade: item.unidade || 'un',
+        unidade: normalizeUnidade(item.unidade),
         fornecedor_nome: item.fornecedor,
         ponto_pedido: item.quantidade_minima,
         codigo_barras: item.codigo_barras,
@@ -657,6 +688,42 @@
 
     let editItemId = null;
 
+    function updateQuantityInputsByUnidade(unidade) {
+      const unit = normalizeUnidade(unidade);
+      const fieldQtd = document.getElementById('fieldQtd');
+      const fieldQtdMin = document.getElementById('fieldQtdMin');
+
+      if (isUnidadeFracionada(unit)) {
+        fieldQtd.step = '0.001';
+        fieldQtdMin.step = '0.001';
+      } else {
+        fieldQtd.step = '1';
+        fieldQtdMin.step = '1';
+      }
+    }
+
+    function updateSaleQuantityInputs() {
+      const selectedId = Number(document.getElementById('saleMaterial').value || saleMaterialId || 0);
+      const item = allInsumos.find((row) => Number(row.id) === selectedId);
+      const saleQtd = document.getElementById('saleQtd');
+      const saleSub = document.getElementById('saleSub');
+      const unidade = unidadeLabel(item?.unidade);
+
+      if (item && isUnidadeFracionada(item.unidade)) {
+        saleQtd.step = '0.001';
+        saleQtd.min = '0.001';
+      } else {
+        saleQtd.step = '1';
+        saleQtd.min = '1';
+      }
+
+      if (saleSub) {
+        saleSub.textContent = item
+          ? `Informe a quantidade vendida em ${unidade} para dar baixa no estoque.`
+          : 'Informe a quantidade vendida para dar baixa no estoque.';
+      }
+    }
+
     async function openEditModal(item) {
       let currentItem = item;
 
@@ -675,20 +742,30 @@
       editItemId = Number(currentItem.id);
       editingProductionItem = isProductionItem(currentItem);
       document.getElementById('btnEditProductionRecipe').classList.toggle('is-hidden', !editingProductionItem);
+
+      const unidadeAtual = normalizeUnidade(currentItem.unidade);
+      const unidadeAtualLabel = unidadeLabel(unidadeAtual);
+      const quantidadeAtual = Number(currentItem.qtd_atual ?? 0);
       const labelQtdEl = document.getElementById('labelQtd');
       const labelQtdMetaEl = document.getElementById('labelQtdMeta');
+
       document.getElementById('modalTitle').textContent = editingProductionItem ? 'Adicionar produção no item final' : 'Editar material';
       document.getElementById('modalSub').textContent = editingProductionItem
         ? 'Para item final de produção, você pode informar produção adicional e também ajustar o preço de venda manual.'
         : 'Altere os dados do material e salve.';
       document.getElementById('btnSaveModal').textContent = editingProductionItem ? 'Salvar ajustes' : 'Salvar alterações';
       document.getElementById('btnDeleteModal').classList.remove('is-hidden');
-      labelQtdEl.textContent = 'Quantidade *';
-      labelQtdMetaEl.textContent = `Atual: ${fmtNum(currentItem.qtd_atual ?? 0)}`;
+
+      labelQtdEl.textContent = editingProductionItem
+        ? `Quantidade de produção adicional (${unidadeAtualLabel}) *`
+        : `Quantidade a adicionar em ${unidadeAtualLabel} *`;
+      labelQtdMetaEl.textContent = `Atual: ${fmtNum(quantidadeAtual)} ${unidadeAtualLabel}`;
       labelQtdMetaEl.classList.remove('is-hidden');
+
       document.getElementById('fieldNome').value = currentItem.nome || '';
       document.getElementById('fieldCodigo').value = currentItem.codigo_barras || '';
       document.getElementById('fieldFornecedor').value = currentItem.fornecedor_nome || '';
+      document.getElementById('fieldUnidade').value = unidadeAtual;
       document.getElementById('fieldQtd').value = 0;
       document.getElementById('fieldQtdMin').value = currentItem.ponto_pedido ?? '';
       document.getElementById('fieldCusto').value = currentItem.preco_custo_un ?? '';
@@ -698,12 +775,14 @@
       document.getElementById('fieldNome').disabled = editingProductionItem;
       document.getElementById('fieldCodigo').disabled = editingProductionItem;
       document.getElementById('fieldFornecedor').disabled = editingProductionItem;
+      document.getElementById('fieldUnidade').disabled = editingProductionItem;
       document.getElementById('fieldQtdMin').disabled = editingProductionItem;
       document.getElementById('fieldCusto').disabled = editingProductionItem;
       document.getElementById('fieldMargem').disabled = editingProductionItem;
       document.getElementById('fieldPreco').readOnly = false;
 
       document.getElementById('modalFeedback').className = 'modal-feedback';
+      updateQuantityInputsByUnidade(unidadeAtual);
       modalOverlay.classList.add('open');
       syncModalScrollLock();
       setTimeout(() => (editingProductionItem ? document.getElementById('fieldQtd') : document.getElementById('fieldNome')).focus(), 80);
@@ -723,7 +802,7 @@
         const precoCusto = Number(item.preco_custo_un || 0);
         const valorEstoque = quantidadeAtual * precoCusto;
         const fornecedor = item.fornecedor_nome || 'Sem fornecedor';
-        const unidade = String(item.unidade || '-').toLowerCase();
+        const unidade = unidadeLabel(item.unidade);
 
         return `
           <tr>
@@ -750,14 +829,16 @@
       const options = allInsumos.map((item) => {
         const id = Number(item.id || 0);
         const qtd = Number(item.qtd_atual || 0);
+        const unidade = unidadeLabel(item.unidade);
         const isSelected = selectedId !== null && id === Number(selectedId);
-        return `<option value="${id}" ${isSelected ? 'selected' : ''}>${escHtml(item.nome || 'Material')} (estoque: ${fmtNum(qtd)})</option>`;
+        return `<option value="${id}" ${isSelected ? 'selected' : ''}>${escHtml(item.nome || 'Material')} (estoque: ${fmtNum(qtd)} ${unidade})</option>`;
       });
 
       select.innerHTML = options.join('');
       if (selectedId === null && allInsumos.length) {
         select.value = String(allInsumos[0].id);
       }
+      updateSaleQuantityInputs();
     }
 
     let productionRowSeq = 0;
@@ -941,7 +1022,8 @@
       const options = [`<option value="">${escHtml(placeholder)}</option>`];
       allInsumos.forEach((item) => {
         const id = Number(item.id || 0);
-        options.push(`<option value="${id}">${escHtml(item.nome || 'Material')}</option>`);
+        const unidade = unidadeLabel(item.unidade);
+        options.push(`<option value="${id}">${escHtml(item.nome || 'Material')} (${unidade})</option>`);
       });
       return options.join('');
     }
@@ -1033,8 +1115,17 @@
       const stock = Number(item?.qtd_atual || 0);
       const unitPrice = Number(item?.preco_custo_un || 0);
       const totalPrice = unitPrice * (Number.isFinite(qtyTotal) ? qtyTotal : 0);
+      const unidade = unidadeLabel(item?.unidade);
 
-      stockEl.textContent = item ? fmtNum(stock) : '-';
+      if (item && isUnidadeFracionada(item.unidade)) {
+        qtyEl.step = '0.001';
+        qtyEl.min = '0.001';
+      } else {
+        qtyEl.step = '1';
+        qtyEl.min = '1';
+      }
+
+      stockEl.textContent = item ? `${fmtNum(stock)} ${unidade}` : '-';
       unitPriceEl.textContent = item ? fmtMoney(unitPrice) : '-';
       totalPriceEl.textContent = item && qtyTotal > 0 ? fmtMoney(totalPrice) : '-';
     }
@@ -1293,8 +1384,18 @@
           throw new Error('Preencha material e quantidade válidos para cada componente informado.');
         }
 
+        const materialId = Number(materialIdRaw);
+        const item = allInsumos.find((m) => Number(m.id) === materialId);
+        if (!item) {
+          throw new Error('Componente inválido informado na receita.');
+        }
+
+        if (!isUnidadeFracionada(item.unidade) && !Number.isInteger(qtyTotal)) {
+          throw new Error(`O componente ${item.nome} usa unidade "un" e aceita apenas números inteiros.`);
+        }
+
         ingredients.push({
-          materialId: Number(materialIdRaw),
+          materialId,
           qtyTotal
         });
       });
@@ -1380,12 +1481,14 @@
       document.getElementById('fieldNome').value = '';
       document.getElementById('fieldCodigo').value = '';
       document.getElementById('fieldFornecedor').value = '';
+      document.getElementById('fieldUnidade').value = 'un';
       document.getElementById('fieldQtd').value = '';
       document.getElementById('fieldQtdMin').value = '';
       document.getElementById('fieldCusto').value = '';
       document.getElementById('fieldMargem').value = '30';
       document.getElementById('fieldPreco').value = '';
       document.getElementById('modalFeedback').className = 'modal-feedback';
+      updateQuantityInputsByUnidade('un');
       calcVenda();
       modalOverlay.classList.add('open');
       syncModalScrollLock();
@@ -1431,6 +1534,21 @@
         showToast(error.message || 'Falha ao abrir editor de receita.', 'error');
       }
     });
+
+    document.getElementById('fieldUnidade').addEventListener('change', (event) => {
+      const unidade = normalizeUnidade(event.target.value);
+      updateQuantityInputsByUnidade(unidade);
+
+      if (editItemId === null) {
+        document.getElementById('labelQtd').textContent = `Quantidade de chegada (${unidadeLabel(unidade)})`;
+        document.getElementById('labelQtdMeta').classList.add('is-hidden');
+      } else {
+        const atual = Number(allInsumos.find((i) => Number(i.id) === editItemId)?.qtd_atual || 0);
+        document.getElementById('labelQtd').textContent = `Quantidade a adicionar em ${unidadeLabel(unidade)} *`;
+        document.getElementById('labelQtdMeta').textContent = `Atual: ${fmtNum(atual)} ${unidadeLabel(unidade)}`;
+        document.getElementById('labelQtdMeta').classList.remove('is-hidden');
+      }
+    });
     document.getElementById('fieldCusto').addEventListener('input', calcVenda);
     document.getElementById('fieldMargem').addEventListener('input', calcVenda);
     document.getElementById('btnCancelModal').addEventListener('click', closeModal);
@@ -1472,6 +1590,7 @@
     });
     document.getElementById('btnCancelSale').addEventListener('click', closeSaleModal);
     saleOverlay.addEventListener('click', (e) => { if (e.target === saleOverlay) closeSaleModal(); });
+    document.getElementById('saleMaterial').addEventListener('change', updateSaleQuantityInputs);
     document.getElementById('btnCancelProduction').addEventListener('click', closeProductionModal);
     productionOverlay.addEventListener('click', (e) => { if (e.target === productionOverlay) closeProductionModal(); });
     document.addEventListener('keydown', (event) => {
@@ -1600,7 +1719,7 @@
     document.getElementById('btnSaveSale').addEventListener('click', async () => {
       const btn = document.getElementById('btnSaveSale');
       const fb = document.getElementById('saleFeedback');
-      const quantidadeVendida = parseInt(document.getElementById('saleQtd').value, 10);
+      const quantidadeVendida = parseQuantidadeInput(document.getElementById('saleQtd').value);
       const selectedId = Number(document.getElementById('saleMaterial').value || saleMaterialId || 0);
       const item = allInsumos.find((row) => Number(row.id) === selectedId);
       saleMaterialId = selectedId;
@@ -1617,9 +1736,15 @@
         return;
       }
 
+      if (!isUnidadeFracionada(item.unidade) && !Number.isInteger(quantidadeVendida)) {
+        fb.textContent = 'Para itens em unidade (un), a venda deve ser inteira.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
       const estoqueAtual = Number(item.qtd_atual || 0);
       if (quantidadeVendida > estoqueAtual) {
-        fb.textContent = `Estoque insuficiente. Disponível: ${fmtNum(estoqueAtual)}.`;
+        fb.textContent = `Estoque insuficiente. Disponível: ${fmtNum(estoqueAtual)} ${unidadeLabel(item.unidade)}.`;
         fb.className = 'modal-feedback error';
         return;
       }
@@ -1676,7 +1801,7 @@
 
         closeSaleModal();
         await carregarInsumos();
-        showToast(`Venda registrada: ${quantidadeVendida} un. de ${item.nome}.`);
+        showToast(`Venda registrada: ${fmtNum(quantidadeVendida)} ${unidadeLabel(item.unidade)} de ${item.nome}.`);
       } catch (error) {
         fb.textContent = `Erro: ${error.message}`;
         fb.className = 'modal-feedback error';
@@ -1936,13 +2061,14 @@
         const item = allInsumos.find((row) => Number(row.id) === ing.materialId);
         const stock = Number(item?.qtd_atual || 0);
         const totalNeeded = Number(ing.qtyTotal || 0);
+        const unidade = unidadeLabel(item?.unidade);
         if (!item) {
           fb.textContent = 'Um dos componentes informados não foi encontrado.';
           fb.className = 'modal-feedback error';
           return;
         }
         if (totalNeeded > stock) {
-          fb.textContent = `Estoque insuficiente para ${item.nome}. Necessário: ${fmtNum(totalNeeded)} | Disponível: ${fmtNum(stock)}.`;
+          fb.textContent = `Estoque insuficiente para ${item.nome}. Necessário: ${fmtNum(totalNeeded)} ${unidade} | Disponível: ${fmtNum(stock)} ${unidade}.`;
           fb.className = 'modal-feedback error';
           return;
         }
@@ -1981,6 +2107,7 @@
                 fornecedor: 'Produção Interna',
                 quantidade_atual: producedQty,
                 quantidade_minima: Math.floor(finalMinQty),
+                unidade: 'un',
                 preco_custo: finalUnitCost,
                 margem_lucro: 0,
                 preco_manual: finalSalePrice
@@ -2083,6 +2210,9 @@
               fornecedor: 'Produção Interna',
               quantidade_atual: producedQty,
               quantidade_minima: Math.floor(finalMinQty),
+              unidade: 'un',
+              quantidade_atual: producedQty,
+              quantidade_minima: Math.floor(finalMinQty),
               preco_custo: finalUnitCost,
               margem_lucro: 0,
               preco_manual: finalSalePrice
@@ -2162,8 +2292,11 @@
       const nome = document.getElementById('fieldNome').value.trim();
       const codigo = document.getElementById('fieldCodigo').value.trim();
       const fornecedor = document.getElementById('fieldFornecedor').value.trim();
-      const qtdInput = parseInt(document.getElementById('fieldQtd').value, 10) || 0;
-      const qtdMin = parseInt(document.getElementById('fieldQtdMin').value, 10);
+      const unidade = normalizeUnidade(document.getElementById('fieldUnidade').value);
+      const qtdInputRaw = parseQuantidadeInput(document.getElementById('fieldQtd').value);
+      const qtdMinRaw = parseQuantidadeInput(document.getElementById('fieldQtdMin').value);
+      const qtdInput = Number.isNaN(qtdInputRaw) ? 0 : qtdInputRaw;
+      const qtdMin = qtdMinRaw;
       const custo = parseFloat(document.getElementById('fieldCusto').value);
       const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
       const precoRaw = String(document.getElementById('fieldPreco').value || '').trim().replace(',', '.');
@@ -2247,6 +2380,12 @@
         return;
       }
 
+      if (!isUnidadeFracionada(unidade) && (!Number.isInteger(qtdInput) || !Number.isInteger(qtdMin))) {
+        fb.textContent = 'Para itens em unidade (un), use valores inteiros em quantidade de chegada e mínima.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
       if (!/^\d{13}$/.test(codigo)) {
         fb.textContent = 'Código de barras inválido. Informe exatamente 13 números.';
         fb.className = 'modal-feedback error';
@@ -2268,6 +2407,7 @@
               nome,
               codigo_barras: codigo,
               fornecedor,
+              unidade,
               quantidade_atual: qtd,
               quantidade_minima: qtdMin,
               preco_custo: custo,
@@ -2283,7 +2423,7 @@
             const idx = lista.findIndex((m) => Number(m.id) === editItemId);
             if (idx >= 0) {
               const estoqueBase = Number(lista[idx].quantidade_atual || 0);
-              lista[idx] = { ...lista[idx], nome, codigo_barras: codigo, fornecedor, quantidade_atual: estoqueBase + qtdInput, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco };
+              lista[idx] = { ...lista[idx], nome, codigo_barras: codigo, fornecedor, unidade, quantidade_atual: estoqueBase + qtdInput, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco };
             }
             const nextId = parseInt(localStorage.getItem(MOCK_MATERIAIS_NEXT_ID_KEY) || '1', 10) || 1;
             persistMockMateriais(lista, nextId);
@@ -2293,7 +2433,7 @@
               ...lista.map((item) => (Number(item.id) || 0) + 1),
               1
             );
-            lista.unshift({ id: nextId, codigo_barras: codigo, nome, fornecedor, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco });
+            lista.unshift({ id: nextId, codigo_barras: codigo, nome, fornecedor, unidade, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco });
             persistMockMateriais(lista, nextId + 1);
           }
         }

@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/theme-toggle.css">
+  <script src="/js/theme-toggle.js" defer></script>
 
 </head>
 <body>
@@ -114,6 +116,11 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="searchInput" placeholder="Buscar material por nome...">
         </div>
+        <div class="category-filters" id="categoryFilters" aria-label="Filtrar por categoria">
+          <button class="filter-chip active" type="button" data-category="all">Todos</button>
+          <button class="filter-chip" type="button" data-category="produto_final">Produto final</button>
+          <button class="filter-chip" type="button" data-category="materia_prima">Matéria-prima</button>
+        </div>
         <button class="btn btn-soft" id="btnOpenSaleGlobal">Vendas</button>
         <button class="btn btn-soft" id="btnRefresh">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -128,6 +135,7 @@
             <thead>
               <tr>
                 <th>Material</th>
+                <th>Categoria</th>
                 <th>Código</th>
                 <th>Fornecedor</th>
                 <th>Quantidade</th>
@@ -176,6 +184,13 @@
         <label>Fornecedor *</label>
         <input type="text" id="fieldFornecedor" list="fornecedorSuggestions" placeholder="Ex: ACME Ltda" required>
         <datalist id="fornecedorSuggestions"></datalist>
+      </div>
+      <div class="field">
+        <label>Categoria</label>
+        <select id="fieldCategoria">
+          <option value="materia_prima" selected>Matéria-prima</option>
+          <option value="produto_final">Produto final</option>
+        </select>
       </div>
       <div class="field-row">
         <div class="field">
@@ -312,15 +327,84 @@
     const MOCK_STORAGE_KEY = 'intellistock_mock_materiais_v1';
     const MOCK_NEXT_ID_KEY = 'intellistock_mock_next_id_v1';
     const MOCK_MOVIMENTACOES_STORAGE_KEY = 'intellistock_mock_movimentacoes_v1';
+    const MATERIAL_CATEGORY_MAP_KEY = 'intellistock_material_category_map_v1';
     const defaultMockMateriais = [
-      { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
-      { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
-      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', fornecedor: 'Aço Forte Chapas', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90 },
-      { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', fornecedor: 'EletroCabos Brasil', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75 },
-      { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', fornecedor: 'SegMais EPIs', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00 },
-      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', fornecedor: 'Química Rápida', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50 },
-      { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', fornecedor: 'EletroCabos Brasil', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90 },
+      { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45, categoria: 'materia_prima' },
+      { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30, categoria: 'materia_prima' },
+      { id: 3, codigo_barras: '7891234000034', nome: 'Chapa de Aço 2mm', fornecedor: 'Aco Forte Chapas', quantidade_atual: 8, quantidade_minima: 20, preco_custo: 39.90, margem_lucro: 22, preco_manual: 48.90, categoria: 'materia_prima' },
+      { id: 4, codigo_barras: '7891234000041', nome: 'Cabo Elétrico 2.5mm (metro)', fornecedor: 'EletroCabos Brasil', quantidade_atual: 0, quantidade_minima: 50, preco_custo: 2.90, margem_lucro: 29, preco_manual: 3.75, categoria: 'materia_prima' },
+      { id: 5, codigo_barras: '7891234000058', nome: 'Luva de Proteção par', fornecedor: 'SegMais EPIs', quantidade_atual: 15, quantidade_minima: 10, preco_custo: 9.20, margem_lucro: 30, preco_manual: 12.00, categoria: 'produto_final' },
+      { id: 6, codigo_barras: '7891234000065', nome: 'Tinta Spray Preta 400ml', fornecedor: 'Quimica Rapida', quantidade_atual: 4, quantidade_minima: 10, preco_custo: 14.00, margem_lucro: 32, preco_manual: 18.50, categoria: 'produto_final' },
+      { id: 7, codigo_barras: '7891234000072', nome: 'Rolo de Fita Isolante', fornecedor: 'EletroCabos Brasil', quantidade_atual: 32, quantidade_minima: 15, preco_custo: 3.70, margem_lucro: 32, preco_manual: 4.90, categoria: 'materia_prima' },
     ];
+
+    function normalizeCategory(value) {
+      if (!value) return null;
+      const normalized = String(value).trim().toLowerCase();
+      if (normalized === 'produto_final' || normalized === 'produto final' || normalized === 'final') {
+        return 'produto_final';
+      }
+      if (normalized === 'materia_prima' || normalized === 'matéria-prima' || normalized === 'materia prima') {
+        return 'materia_prima';
+      }
+      return null;
+    }
+
+    function readMaterialCategoryMap() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(MATERIAL_CATEGORY_MAP_KEY) || '{}');
+        if (!raw || typeof raw !== 'object') return {};
+        return raw;
+      } catch (_) {
+        return {};
+      }
+    }
+
+    let materialCategoryMap = readMaterialCategoryMap();
+
+    function persistMaterialCategoryMap() {
+      localStorage.setItem(MATERIAL_CATEGORY_MAP_KEY, JSON.stringify(materialCategoryMap));
+    }
+
+    function getMaterialCategory(material) {
+      const byModel = normalizeCategory(material?.categoria || material?.tipo_item || material?.tipo);
+      if (byModel) return byModel;
+
+      const codigo = String(material?.codigo_barras || '').trim();
+      const byMap = codigo ? normalizeCategory(materialCategoryMap[codigo]) : null;
+      if (byMap) return byMap;
+
+      return 'materia_prima';
+    }
+
+    function setMaterialCategory(codigoBarras, categoria) {
+      const codigo = String(codigoBarras || '').trim();
+      const categoriaNormalizada = normalizeCategory(categoria) || 'materia_prima';
+      if (!codigo) return;
+      materialCategoryMap[codigo] = categoriaNormalizada;
+      persistMaterialCategoryMap();
+    }
+
+    function removeMaterialCategory(codigoBarras) {
+      const codigo = String(codigoBarras || '').trim();
+      if (!codigo || !Object.prototype.hasOwnProperty.call(materialCategoryMap, codigo)) return;
+      delete materialCategoryMap[codigo];
+      persistMaterialCategoryMap();
+    }
+
+    function enrichMaterialCategory(material) {
+      return { ...material, categoria: getMaterialCategory(material) };
+    }
+
+    function categoryLabel(categoria) {
+      return categoria === 'produto_final' ? 'Produto final' : 'Matéria-prima';
+    }
+
+    function categoryBadge(categoria) {
+      const normalized = normalizeCategory(categoria) || 'materia_prima';
+      const cls = normalized === 'produto_final' ? 'badge-cat-final' : 'badge-cat-raw';
+      return `<span class="badge badge-category ${cls}">${categoryLabel(normalized)}</span>`;
+    }
 
     function readMockMateriais() {
       try {
@@ -555,6 +639,8 @@
 
     // ===== RENDER TABLE =====
     let allMateriais = [];
+    let currentCategoryFilter = 'all';
+    let currentSearchQuery = '';
 
     function renderTable(lista) {
       const tbody = document.getElementById('tableBody');
@@ -570,6 +656,7 @@
           <td class="td-nome">
             <strong>${escHtml(m.nome)}</strong>
           </td>
+          <td>${categoryBadge(m.categoria)}</td>
           <td class="cell-muted-sm">${escHtml(m.codigo_barras)}</td>
           <td class="cell-muted-sm">${escHtml(m.fornecedor || '')}</td>
           <td>
@@ -635,6 +722,27 @@
       document.getElementById('kpiZeroSub').textContent = zero === 0 ? 'nenhum zerado' : 'sem nenhuma unidade';
     }
 
+    function updateCategoryFilterButtons() {
+      document.querySelectorAll('#categoryFilters .filter-chip').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.category === currentCategoryFilter);
+      });
+    }
+
+    function applyFilters() {
+      const query = currentSearchQuery;
+      const filtered = allMateriais.filter((m) => {
+        const sameCategory = currentCategoryFilter === 'all' || m.categoria === currentCategoryFilter;
+        if (!sameCategory) return false;
+        if (!query) return true;
+        return String(m.nome || '').toLowerCase().includes(query)
+          || String(m.codigo_barras || '').includes(query)
+          || String(m.fornecedor || '').toLowerCase().includes(query);
+      });
+
+      renderTable(filtered);
+      updateKpis(filtered);
+    }
+
     // ===== CARREGAR MATERIAIS =====
     async function carregarMateriais() {
       try {
@@ -642,18 +750,18 @@
           const res = await fetch('/api/materiais', { headers: getAuthHeaders() });
           const data = await res.json();
           if (data.success) {
-            allMateriais = data.data;
+            allMateriais = (data.data || []).map((item) => enrichMaterialCategory(item));
           } else {
             throw new Error(data.message);
           }
         } else {
-          allMateriais = mockMateriais.map(item => ({ ...item }));
+          allMateriais = mockMateriais.map(item => enrichMaterialCategory(item));
         }
-        renderTable(allMateriais);
-        updateKpis(allMateriais);
+        applyFilters();
       } catch (err) {
         showToast('Erro ao carregar materiais: ' + err.message, 'error');
         renderTable([]);
+        updateKpis([]);
       }
     }
 
@@ -663,15 +771,17 @@
       clearTimeout(searchTimer);
       const q = this.value.trim().toLowerCase();
       searchTimer = setTimeout(() => {
-        if (!q) {
-          renderTable(allMateriais);
-          return;
-        }
-        const filtrado = allMateriais.filter(m =>
-          m.nome.toLowerCase().includes(q) || m.codigo_barras.includes(q)
-        );
-        renderTable(filtrado);
+        currentSearchQuery = q;
+        applyFilters();
       }, 250);
+    });
+
+    document.querySelectorAll('#categoryFilters .filter-chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentCategoryFilter = btn.dataset.category || 'all';
+        updateCategoryFilterButtons();
+        applyFilters();
+      });
     });
 
     // ===== REFRESH =====
@@ -849,6 +959,7 @@
     const modalOverlay = document.getElementById('modalOverlay');
     let editingId = null;
     let isManualPriceMode = false;
+    let editingOriginalCode = null;
 
     function calcVenda(force = false) {
       if (isManualPriceMode && !force) {
@@ -871,12 +982,14 @@
     function openAddModal() {
       editingId = null;
       isManualPriceMode = false;
+      editingOriginalCode = null;
       document.getElementById('modalTitle').textContent = 'Novo material';
       document.getElementById('modalSub').textContent = 'Preencha os dados do novo item de estoque.';
       document.getElementById('btnSaveModal').textContent = 'Salvar';
       document.getElementById('fieldNome').value = '';
       document.getElementById('fieldCodigo').value = '';
       document.getElementById('fieldFornecedor').value = '';
+      document.getElementById('fieldCategoria').value = 'materia_prima';
       document.getElementById('fieldQtd').value = '';
       document.getElementById('fieldQtdMin').value = '';
       document.getElementById('fieldCusto').value = '';
@@ -894,12 +1007,14 @@
       if (!mat) return;
       editingId = id;
       isManualPriceMode = true;
+      editingOriginalCode = String(mat.codigo_barras || '').trim();
       document.getElementById('modalTitle').textContent = 'Editar material';
       document.getElementById('modalSub').textContent = 'Altere os dados do material.';
       document.getElementById('btnSaveModal').textContent = 'Atualizar';
       document.getElementById('fieldNome').value = mat.nome;
       document.getElementById('fieldCodigo').value = mat.codigo_barras;
       document.getElementById('fieldFornecedor').value = mat.fornecedor || '';
+      document.getElementById('fieldCategoria').value = getMaterialCategory(mat);
       document.getElementById('fieldQtd').value = mat.quantidade_atual;
       document.getElementById('fieldQtdMin').value = mat.quantidade_minima;
       document.getElementById('fieldCusto').value = mat.preco_custo ?? mat.preco_manual ?? '';
@@ -925,6 +1040,7 @@
       const nome = document.getElementById('fieldNome').value.trim();
       const codigo = document.getElementById('fieldCodigo').value.trim();
       const fornecedor = document.getElementById('fieldFornecedor').value.trim();
+      const categoria = normalizeCategory(document.getElementById('fieldCategoria').value) || 'materia_prima';
       const qtd = parseInt(document.getElementById('fieldQtd').value) || 0;
       const qtdMin = parseInt(document.getElementById('fieldQtdMin').value);
       const custo = parseFloat(document.getElementById('fieldCusto').value);
@@ -967,14 +1083,19 @@
           if (editingId) {
             const idx = mockMateriais.findIndex(m => m.id === editingId);
             if (idx !== -1) {
-              mockMateriais[idx] = { ...mockMateriais[idx], nome, codigo_barras: codigo, fornecedor, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco };
+              mockMateriais[idx] = { ...mockMateriais[idx], nome, codigo_barras: codigo, fornecedor, categoria, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco };
               persistMockMateriais();
             }
           } else {
-            mockMateriais.unshift({ id: mockNextId++, codigo_barras: codigo, nome, fornecedor, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco });
+            mockMateriais.unshift({ id: mockNextId++, codigo_barras: codigo, nome, fornecedor, categoria, quantidade_atual: qtd, quantidade_minima: qtdMin, preco_custo: custo, margem_lucro: margem, preco_manual: preco });
             persistMockMateriais();
           }
         }
+
+        if (editingOriginalCode && editingOriginalCode !== codigo) {
+          removeMaterialCategory(editingOriginalCode);
+        }
+        setMaterialCategory(codigo, categoria);
 
         closeModal();
         await carregarMateriais();
@@ -1028,6 +1149,7 @@
     // ===== INICIAR =====
     carregarAssinatura();
     carregarFornecedorSuggestions();
+    updateCategoryFilterButtons();
     carregarMateriais();
   </script>
 </body>

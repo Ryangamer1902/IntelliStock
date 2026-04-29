@@ -19,6 +19,12 @@ function toNumber(value, defaultValue = 0) {
   return Number.isFinite(num) ? num : defaultValue;
 }
 
+function normalizarUnidade(unidade) {
+  const value = String(unidade || '').trim().toLowerCase();
+  if (value === 'kg' || value === 'm' || value === 'un') return value;
+  return 'un';
+}
+
 function calcularDeficit(material) {
   const atual = toNumber(material?.quantidade_atual, 0);
   const minimo = toNumber(material?.quantidade_minima, 0);
@@ -580,9 +586,10 @@ class MateriaisController {
    */
   static async criar(req, res) {
     try {
-      const { codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
+      const { codigo_barras, nome, fornecedor, unidade, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
       const usuarioId = req.usuario_id;
       const precoVenda = preco_manual !== undefined ? Number(preco_manual) : calcularPrecoVenda(preco_custo, margem_lucro);
+      const unidadeNormalizada = normalizarUnidade(unidade);
 
       if (!codigo_barras || !nome || !fornecedor) {
         return res.status(400).json({
@@ -604,6 +611,7 @@ class MateriaisController {
         codigo_barras,
         nome,
         fornecedor,
+        unidade: unidadeNormalizada,
         quantidade_atual: quantidade_atual || 0,
         quantidade_minima: quantidade_minima || 10,
         preco_custo: preco_custo || 0,
@@ -649,7 +657,7 @@ class MateriaisController {
     try {
       const { id } = req.params;
       const usuarioId = req.usuario_id;
-      const { codigo_barras, nome, fornecedor, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
+      const { codigo_barras, nome, fornecedor, unidade, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
 
       const material = await Material.findById(id, usuarioId);
       if (!material) {
@@ -673,6 +681,7 @@ class MateriaisController {
       if (codigo_barras !== undefined) dadosAtualizacao.codigo_barras = codigo_barras;
       if (nome !== undefined) dadosAtualizacao.nome = nome;
       if (fornecedor !== undefined) dadosAtualizacao.fornecedor = fornecedor;
+      if (unidade !== undefined) dadosAtualizacao.unidade = normalizarUnidade(unidade);
       if (quantidade_atual !== undefined) dadosAtualizacao.quantidade_atual = quantidade_atual;
       if (quantidade_minima !== undefined) dadosAtualizacao.quantidade_minima = quantidade_minima;
       if (preco_custo !== undefined) dadosAtualizacao.preco_custo = preco_custo;

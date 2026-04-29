@@ -379,6 +379,36 @@
       box-shadow: 0 0 0 4px rgba(14, 143, 131, 0.12);
     }
 
+    .category-filters {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    .filter-chip:hover {
+      border-color: rgba(14, 143, 131, 0.4);
+      color: var(--brand-strong);
+    }
+
+    .filter-chip.active {
+      background: rgba(14, 143, 131, 0.12);
+      border-color: rgba(14, 143, 131, 0.38);
+      color: var(--brand-strong);
+    }
+
     .btn {
       border: 0;
       padding: 10px 18px;
@@ -525,6 +555,21 @@
     .badge-ok { color: #0a6359; background: rgba(14, 143, 131, 0.14); }
     .badge-low { color: #954518; background: rgba(238, 127, 59, 0.2); }
     .badge-zero { color: #c0392b; background: rgba(192, 57, 43, 0.14); }
+    .badge-category {
+      border: 1px solid transparent;
+      text-transform: none;
+      font-size: 0.74rem;
+    }
+    .badge-cat-final {
+      color: #1f4c92;
+      background: rgba(51, 119, 255, 0.14);
+      border-color: rgba(51, 119, 255, 0.24);
+    }
+    .badge-cat-raw {
+      color: #0b5f56;
+      background: rgba(14, 143, 131, 0.14);
+      border-color: rgba(14, 143, 131, 0.24);
+    }
 
     .qty-wrap {
       display: flex;
@@ -764,6 +809,10 @@
 
       .toolbar {
         align-items: stretch;
+      }
+
+      .category-filters {
+        width: 100%;
       }
     }
 
