@@ -258,7 +258,7 @@
       </div>
 
       <div class="field production-components-field">
-        <label>Componentes da produção *</label>
+          <label>Componentes da produção (opcional)</label>
         <div id="prodComponentsList" class="prod-components-list"></div>
         <button class="btn btn-soft" id="btnAddProdComponent" type="button">+ Adicionar componente</button>
       </div>
@@ -1443,10 +1443,6 @@
         });
       });
 
-      if (!ingredients.length) {
-        throw new Error('Adicione ao menos 1 componente para a produção.');
-      }
-
       return ingredients;
     }
 
@@ -1718,12 +1714,6 @@
       const row = removeBtn.closest('.prod-component-row');
       if (!row) return;
 
-      const rows = getProductionRows();
-      if (rows.length <= 1) {
-        showToast('A produção precisa de pelo menos 1 componente.', 'error');
-        return;
-      }
-
       row.remove();
       updateProductionSummary();
     });
@@ -1869,10 +1859,6 @@
       }
 
       const lote = buildRecipeLotFromStored(receita, producedQty);
-      if (!lote.ingredients.length) {
-        throw new Error('Receita inválida: sem componentes para debitar.');
-      }
-
       for (const ing of lote.ingredients) {
         const componente = allInsumos.find((row) => Number(row.id) === Number(ing.materialId));
         if (!componente) {

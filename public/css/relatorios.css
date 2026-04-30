@@ -802,6 +802,72 @@
         flex-wrap: wrap;
       }
       .user-menu-panel { right: 0; }
+
+      .table-wrap {
+        max-height: none;
+        overflow: visible;
+        border: none;
+        box-shadow: none;
+        background: transparent;
+      }
+
+      table {
+        min-width: 0;
+        border-spacing: 0 10px;
+      }
+
+      .table-wrap thead,
+      table thead {
+        display: none;
+      }
+
+      table tbody,
+      table tr,
+      table td {
+        display: block;
+        width: 100%;
+      }
+
+      table tbody tr {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        box-shadow: 0 8px 20px rgba(7, 33, 40, 0.08);
+        overflow: hidden;
+      }
+
+      table tbody td {
+        text-align: left;
+        border-bottom: 1px solid rgba(18, 33, 39, 0.08);
+        padding: 10px 12px;
+      }
+
+      table tbody td:last-child {
+        border-bottom: 0;
+      }
+
+      table tbody td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--muted);
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+
+      table tbody td:nth-child(7) {
+        text-align: left;
+      }
+
+      .rec-action {
+        padding: 6px 8px;
+      }
+
+      .recommendation-meta {
+        gap: 6px;
+      }
     }
 
     @media (max-width: 560px) {

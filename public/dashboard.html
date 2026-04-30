@@ -254,6 +254,28 @@
         <label>Quantidade vendida *</label>
         <input type="number" id="saleQtd" min="1" placeholder="Ex: 3">
       </div>
+      <div class="field">
+        <label>Canal da venda (opcional)</label>
+        <select id="saleChannel">
+          <option value="">Venda direta</option>
+          <option value="Shopee">Shopee</option>
+          <option value="Mercado Livre">Mercado Livre</option>
+          <option value="WhatsApp">WhatsApp</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Valor bruto vendido (R$)</label>
+          <input type="number" id="saleGrossValue" min="0" step="0.01" placeholder="Ex: 89.90">
+        </div>
+        <div class="field">
+          <label>Taxa da plataforma (%)</label>
+          <input type="number" id="saleFeePercent" min="0" max="100" step="0.01" placeholder="Ex: 20">
+        </div>
+      </div>
+      <p class="sub" id="saleNetPreview" style="margin-top:-4px;">Valor líquido estimado: -</p>
       <div class="modal-actions">
         <button class="btn btn-soft" id="btnCancelSale">Cancelar</button>
         <button class="btn btn-main" id="btnSaveSale">Confirmar venda</button>
@@ -715,6 +737,28 @@
       }
     }
 
+    function parseDecimalInput(value) {
+      const raw = String(value || '').trim().replace(',', '.');
+      if (!raw) return null;
+      const num = Number(raw);
+      return Number.isFinite(num) ? num : null;
+    }
+
+    function updateSaleNetPreview() {
+      const previewEl = document.getElementById('saleNetPreview');
+      const gross = parseDecimalInput(document.getElementById('saleGrossValue').value);
+      const fee = parseDecimalInput(document.getElementById('saleFeePercent').value);
+
+      if (gross === null || gross <= 0) {
+        previewEl.textContent = 'Valor líquido estimado: -';
+        return;
+      }
+
+      const feePct = fee === null ? 0 : Math.max(0, Math.min(100, fee));
+      const net = gross * (1 - (feePct / 100));
+      previewEl.textContent = `Valor líquido estimado: ${fmt(net)}`;
+    }
+
     function escHtml(str) {
       return String(str)
         .replace(/&/g, '&amp;')
@@ -825,9 +869,13 @@
       saleMaterialId = material ? Number(material.id || 0) : null;
       fillSaleMaterialOptions(saleMaterialId);
       document.getElementById('saleQtd').value = '';
+      document.getElementById('saleChannel').value = '';
+      document.getElementById('saleGrossValue').value = '';
+      document.getElementById('saleFeePercent').value = '';
       const fb = document.getElementById('saleFeedback');
       fb.className = 'modal-feedback';
       fb.textContent = '';
+      updateSaleNetPreview();
       document.getElementById('btnSaveSale').disabled = document.getElementById('saleMaterial').disabled;
       saleOverlay.classList.add('open');
       syncModalScrollLock();
@@ -850,6 +898,8 @@
 
     document.getElementById('btnCancelSale').addEventListener('click', closeSaleModal);
     saleOverlay.addEventListener('click', (e) => { if (e.target === saleOverlay) closeSaleModal(); });
+    document.getElementById('saleGrossValue').addEventListener('input', updateSaleNetPreview);
+    document.getElementById('saleFeePercent').addEventListener('input', updateSaleNetPreview);
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
       if (saleOverlay.classList.contains('open')) { closeSaleModal(); return; }
@@ -861,6 +911,10 @@
       const fb = document.getElementById('saleFeedback');
       const quantidadeVendida = parseInt(document.getElementById('saleQtd').value, 10);
       const selectedId = Number(document.getElementById('saleMaterial').value || saleMaterialId || 0);
+      const channel = String(document.getElementById('saleChannel').value || '').trim();
+      const grossValue = parseDecimalInput(document.getElementById('saleGrossValue').value);
+      const feePercentRaw = parseDecimalInput(document.getElementById('saleFeePercent').value);
+      const feePercent = feePercentRaw === null ? 0 : feePercentRaw;
       const item = allMateriais.find((row) => Number(row.id) === selectedId);
       saleMaterialId = selectedId;
 
@@ -875,6 +929,28 @@
         fb.className = 'modal-feedback error';
         return;
       }
+
+      if (grossValue !== null && grossValue < 0) {
+        fb.textContent = 'Informe um valor bruto válido.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      if (!Number.isFinite(feePercent) || feePercent < 0 || feePercent > 100) {
+        fb.textContent = 'A taxa da plataforma deve estar entre 0 e 100%.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      const netValue = grossValue !== null
+        ? Number((grossValue * (1 - (feePercent / 100))).toFixed(2))
+        : null;
+      const saleObservationParts = ['Venda registrada'];
+      if (channel) saleObservationParts.push(`Canal: ${channel}`);
+      if (grossValue !== null) saleObservationParts.push(`Valor bruto: ${fmt(grossValue)}`);
+      if (grossValue !== null) saleObservationParts.push(`Taxa: ${feePercent.toFixed(2)}%`);
+      if (netValue !== null) saleObservationParts.push(`Valor líquido: ${fmt(netValue)}`);
+      const saleObservation = saleObservationParts.join(' | ');
 
       const estoqueAtual = Number(item.quantidade_atual || 0);
       if (quantidadeVendida > estoqueAtual) {
@@ -898,7 +974,7 @@
             body: JSON.stringify({
               diferenca: -quantidadeVendida,
               motivo: 'VENDA',
-              observacao: 'Venda registrada',
+              observacao: saleObservation,
               usuario_nome: usuario?.nome || 'Sistema'
             })
           });
@@ -925,7 +1001,7 @@
             quantidade_anterior: qtdAnterior,
             quantidade_atual: qtdAtualizada,
             usuario_nome: usuario?.nome || 'Sistema',
-            observacao: 'Venda registrada',
+            observacao: saleObservation,
             created_at: new Date().toISOString()
           });
           persistMockMovimentacoes(movs);
@@ -933,7 +1009,8 @@
 
         closeSaleModal();
         await carregarMateriais();
-        showToast(`Venda registrada: ${quantidadeVendida} un. de ${item.nome}.`);
+        const netText = netValue !== null ? ` | líquido: ${fmt(netValue)}` : '';
+        showToast(`Venda registrada: ${quantidadeVendida} un. de ${item.nome}${netText}.`);
       } catch (error) {
         fb.textContent = `Erro: ${error.message}`;
         fb.className = 'modal-feedback error';

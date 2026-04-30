@@ -425,15 +425,10 @@ class MateriaisController {
         });
       }
 
-      if (!Array.isArray(componentes) || componentes.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Informe ao menos 1 componente para a receita'
-        });
-      }
+      const componentesArray = Array.isArray(componentes) ? componentes : [];
 
       const componentesNormalizados = [];
-      for (const comp of componentes) {
+      for (const comp of componentesArray) {
         const materialId = Number(comp?.material_id || comp?.materialId || 0);
         const qtdTotal = Number(comp?.qty_total || comp?.qtyTotal || 0);
         if (!Number.isInteger(materialId) || materialId <= 0 || !Number.isFinite(qtdTotal) || qtdTotal <= 0) {

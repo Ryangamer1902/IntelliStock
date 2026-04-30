@@ -607,13 +607,13 @@
 
       target.innerHTML = analytics.map(item =>
         '<tr class="table-row-' + urgencyLevel(item) + '">' +
-          '<td><strong class="item-name">' + escHtml(item.nome) + '</strong><div class="cell-sub">' + escHtml(item.tipo_item || 'Material') + '</div></td>' +
-          '<td><span class="metric-value">' + Number(item.quantidade_atual || item.estoque || 0) + ' un.</span></td>' +
-          '<td><span class="metric-value metric-alert">' + Number(item.deficit || 0) + ' un.</span></td>' +
-          '<td>' + urgencyBadge(urgencyLevel(item)) + '</td>' +
-          '<td><span class="buy-when">' + escHtml(item.recomendacao_compra?.quandoComprar || 'Monitorar diariamente') + '</span></td>' +
-          '<td><span class="metric-value metric-suggested">' + Math.max(0, Number(item.recomendacao_compra?.quantidadeSugerida || item.deficit || 0)) + ' un.</span></td>' +
-          '<td>' + recommendationText(item) + '</td>' +
+          '<td data-label="Item"><strong class="item-name">' + escHtml(item.nome) + '</strong><div class="cell-sub">' + escHtml(item.tipo_item || 'Material') + '</div></td>' +
+          '<td data-label="Estoque atual"><span class="metric-value">' + Number(item.quantidade_atual || item.estoque || 0) + ' un.</span></td>' +
+          '<td data-label="Falta p/ mínimo"><span class="metric-value metric-alert">' + Number(item.deficit || 0) + ' un.</span></td>' +
+          '<td data-label="Urgência">' + urgencyBadge(urgencyLevel(item)) + '</td>' +
+          '<td data-label="Quando comprar"><span class="buy-when">' + escHtml(item.recomendacao_compra?.quandoComprar || 'Monitorar diariamente') + '</span></td>' +
+          '<td data-label="Qtd. sugerida"><span class="metric-value metric-suggested">' + Math.max(0, Number(item.recomendacao_compra?.quantidadeSugerida || item.deficit || 0)) + ' un.</span></td>' +
+          '<td data-label="Recomendação exibida">' + recommendationText(item) + '</td>' +
         '</tr>'
       ).join('');
     }
