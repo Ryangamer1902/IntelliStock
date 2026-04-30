@@ -367,6 +367,12 @@
     }
 
     function getMaterialCategory(material) {
+      // Detecta automaticamente pelo fornecedor (itens de produção)
+      const fornecedor = String(material?.fornecedor || '').trim().toLowerCase();
+      if (fornecedor === 'produção interna' || fornecedor === 'producao interna') {
+        return 'produto_final';
+      }
+
       const byModel = normalizeCategory(material?.categoria || material?.tipo_item || material?.tipo);
       if (byModel) return byModel;
 
@@ -452,6 +458,16 @@
     // ===== CURRENCY =====
     function fmt(val) {
       return Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function fmtQty(val) {
+      const n = Number(val) || 0;
+      // Remove zeros desnecessários: 200.000 → "200", 19.758 → "19,758", 1000 → "1.000"
+      if (Number.isInteger(n)) {
+        return n.toLocaleString('pt-BR');
+      }
+      // Até 3 casas decimais, remove zeros à direita
+      return n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
     }
 
     function formatCpf(value) {
@@ -661,10 +677,11 @@
           <td class="cell-muted-sm">${escHtml(m.fornecedor || '')}</td>
           <td>
             <div class="qty-wrap">
-              <span class="qty-num">${m.quantidade_atual}</span>
+              <span class="qty-num">${fmtQty(m.quantidade_atual)}</span>
+              ${m.unidade && m.unidade !== 'un' ? `<span class="qty-unit">${escHtml(m.unidade)}</span>` : ''}
             </div>
           </td>
-          <td class="cell-muted-md">${m.quantidade_minima}</td>
+          <td class="cell-muted-md">${fmtQty(m.quantidade_minima)}${m.unidade && m.unidade !== 'un' ? ' ' + escHtml(m.unidade) : ''}</td>
           <td>${statusBadge(m.quantidade_atual, m.quantidade_minima)}</td>
           <td class="cell-bold">${fmt(m.preco_custo ?? m.preco_manual ?? 0)}</td>
           <td class="cell-muted-md">${m.margem_lucro != null ? m.margem_lucro + '%' : '—'}</td>

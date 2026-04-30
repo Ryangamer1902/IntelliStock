@@ -128,6 +128,7 @@
             <thead>
               <tr>
                 <th>Insumo</th>
+                <th>Tipo</th>
                 <th>Fornecedor</th>
                 <th>Estoque atual</th>
                 <th>Ponto pedido</th>
@@ -141,7 +142,7 @@
             </thead>
             <tbody id="tableBody">
               <tr>
-                <td colspan="10" class="empty-state">Carregando insumos...</td>
+                <td colspan="11" class="empty-state">Carregando insumos...</td>
               </tr>
             </tbody>
           </table>
@@ -167,8 +168,10 @@
       </div>
       <div class="field">
         <label>Fornecedor *</label>
-        <input type="text" id="fieldFornecedor" list="fornecedorSuggestions" placeholder="Ex: ACME Ltda" required>
-        <datalist id="fornecedorSuggestions"></datalist>
+        <div style="position:relative;">
+          <input type="text" id="fieldFornecedor" placeholder="Ex: ACME Ltda" autocomplete="off" required>
+          <ul id="fornecedorDropdown" class="fornecedor-dropdown is-hidden"></ul>
+        </div>
       </div>
       <div class="field">
         <label>Unidade de medida *</label>
@@ -461,12 +464,46 @@
     }
 
     function renderFornecedorSuggestions() {
-      const datalist = document.getElementById('fornecedorSuggestions');
-      if (!datalist) return;
+      // Dados já em fornecedoresSugestoes; autocomplete configurado via setupFornecedorAutocomplete
+    }
 
-      datalist.innerHTML = fornecedoresSugestoes
-        .map((nome) => `<option value="${escHtml(nome)}"></option>`)
-        .join('');
+    function setupFornecedorAutocomplete() {
+      const input = document.getElementById('fieldFornecedor');
+      const dropdown = document.getElementById('fornecedorDropdown');
+      if (!input || !dropdown) return;
+
+      function buildItems(list) {
+        if (!list.length) { dropdown.classList.add('is-hidden'); return; }
+        dropdown.innerHTML = list
+          .map((nome) => `<li class="fornecedor-dropdown-item" data-value="${escHtml(nome)}">${escHtml(nome)}</li>`)
+          .join('');
+        dropdown.classList.remove('is-hidden');
+      }
+
+      function hide() { dropdown.classList.add('is-hidden'); }
+
+      input.addEventListener('input', () => {
+        const q = input.value.trim().toLowerCase();
+        if (!q) { hide(); return; }
+        buildItems(fornecedoresSugestoes.filter((n) => n.toLowerCase().includes(q)));
+      });
+
+      input.addEventListener('focus', () => {
+        const q = input.value.trim().toLowerCase();
+        buildItems(q ? fornecedoresSugestoes.filter((n) => n.toLowerCase().includes(q)) : fornecedoresSugestoes);
+      });
+
+      dropdown.addEventListener('mousedown', (e) => {
+        const item = e.target.closest('.fornecedor-dropdown-item');
+        if (!item) return;
+        e.preventDefault(); // evita blur antes do click
+        input.value = item.dataset.value;
+        hide();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) hide();
+      });
     }
 
     async function carregarFornecedorSuggestions() {
@@ -792,7 +829,7 @@
       const tbody = document.getElementById('tableBody');
 
       if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Nenhum insumo encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Nenhum insumo encontrado.</td></tr>';
         return;
       }
 
@@ -803,6 +840,10 @@
         const valorEstoque = quantidadeAtual * precoCusto;
         const fornecedor = item.fornecedor_nome || 'Sem fornecedor';
         const unidade = unidadeLabel(item.unidade);
+        const isProd = isProductionItem(item);
+        const catBadge = isProd
+          ? '<span class="badge badge-cat-final">Produto Final</span>'
+          : '<span class="badge badge-cat-raw">Mat\u00e9ria-Prima</span>';
 
         return `
           <tr>
@@ -810,6 +851,7 @@
               <span class="material-name">${escHtml(item.nome || 'Sem nome')}</span>
               <span class="material-id">ID: ${item.id || '-'}</span>
             </td>
+            <td>${catBadge}</td>
             <td>${escHtml(fornecedor)}</td>
             <td>${fmtNum(quantidadeAtual)}</td>
             <td>${pontoPedido > 0 ? fmtNum(pontoPedido) : '-'}</td>
@@ -1023,7 +1065,8 @@
       allInsumos.forEach((item) => {
         const id = Number(item.id || 0);
         const unidade = unidadeLabel(item.unidade);
-        options.push(`<option value="${id}">${escHtml(item.nome || 'Material')} (${unidade})</option>`);
+        const stock = Number(item.qtd_atual || 0);
+        options.push(`<option value="${id}">${escHtml(item.nome || 'Material')} (${unidade}) — estoque: ${fmtNum(stock)}</option>`);
       });
       return options.join('');
     }
@@ -2452,6 +2495,7 @@
 
     carregarAssinatura();
     carregarFornecedorSuggestions();
+    setupFornecedorAutocomplete();
     carregarInsumos();
 
     const revealEls = document.querySelectorAll('.reveal-section');

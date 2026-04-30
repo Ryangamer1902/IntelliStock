@@ -26,13 +26,14 @@
     .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
     .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-save { background: var(--brand); color: white; }
-    .btn-cancel { background: #eee; color: #333; }
-    .btn-cancel:hover { background: #ddd; }
+    .btn-cancel { background: rgba(14, 143, 131, 0.1); color: var(--brand-strong); border: 1px solid rgba(14, 143, 131, 0.25); }
+    .btn-cancel:hover { background: rgba(14, 143, 131, 0.2); }
     .table-actions { display: flex; gap: 8px; }
-    .btn-edit, .btn-delete { padding: 6px 12px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; }
-    .btn-edit { background: #f0f0f0; color: #333; }
-    .btn-delete { background: #fee; color: #c00; }
-    .btn-delete:hover { background: #fdd; }
+    .btn-edit, .btn-delete { padding: 6px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; cursor: pointer; font-family: 'Manrope', sans-serif; transition: background 0.18s, transform 0.15s; }
+    .btn-edit { background: rgba(14, 143, 131, 0.1); color: var(--brand-strong); border: 1px solid rgba(14, 143, 131, 0.28); }
+    .btn-edit:hover { background: rgba(14, 143, 131, 0.2); transform: translateY(-1px); }
+    .btn-delete { background: rgba(192, 57, 43, 0.08); color: var(--danger); border: 1px solid rgba(192, 57, 43, 0.28); }
+    .btn-delete:hover { background: rgba(192, 57, 43, 0.18); transform: translateY(-1px); }
     .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 16px; border-radius: 8px; z-index: 2000; }
 
     @media (max-width: 760px) {

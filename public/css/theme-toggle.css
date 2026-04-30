@@ -131,3 +131,526 @@ body.dark-mode .subscription-label,
 body.dark-mode .sub-item span {
   color: var(--muted) !important;
 }
+
+/* ===== DARK MODE - CORES HARDCODED ===== */
+
+/* Cabeçalho da tabela */
+body.dark-mode thead th,
+body.dark-mode .table-wrap thead th {
+  background: #1a2f38 !important;
+  color: var(--ink) !important;
+}
+
+/* Nomes e labels com cor fixa */
+body.dark-mode .td-nome strong,
+body.dark-mode .sub-item strong,
+body.dark-mode .modal h2,
+body.dark-mode .page-head h1,
+body.dark-mode .kpi-value {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .field label {
+  color: #c9dfe4 !important;
+}
+
+body.dark-mode .modal .sub,
+body.dark-mode .page-head p {
+  color: var(--muted) !important;
+}
+
+/* Inputs e selects dentro de modais/cards */
+body.dark-mode .field input,
+body.dark-mode .field select,
+body.dark-mode .field-preco-readonly {
+  background: #0f1b21 !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+
+/* Badges de status */
+body.dark-mode .badge-ok {
+  color: #77d9cc !important;
+  background: rgba(19, 164, 150, 0.2) !important;
+}
+
+body.dark-mode .badge-low {
+  color: #f4a96a !important;
+  background: rgba(238, 127, 59, 0.22) !important;
+}
+
+body.dark-mode .badge-zero {
+  color: #ff9990 !important;
+  background: rgba(255, 100, 80, 0.18) !important;
+}
+
+body.dark-mode .badge-cat-final {
+  color: #90b8ff !important;
+  background: rgba(51, 119, 255, 0.2) !important;
+  border-color: rgba(51, 119, 255, 0.35) !important;
+}
+
+body.dark-mode .badge-cat-raw {
+  color: #77d9cc !important;
+  background: rgba(19, 164, 150, 0.2) !important;
+  border-color: rgba(19, 164, 150, 0.35) !important;
+}
+
+/* KPI sub coloridos */
+body.dark-mode .kpi-sub.ok { color: #77d9cc !important; }
+body.dark-mode .kpi-sub.danger { color: #ff9990 !important; }
+
+/* Botões */
+body.dark-mode .btn-soft {
+  background: rgba(19, 164, 150, 0.15) !important;
+  color: var(--brand-strong) !important;
+  border-color: rgba(119, 217, 204, 0.3) !important;
+}
+
+body.dark-mode .btn-danger {
+  background: rgba(255, 100, 80, 0.15) !important;
+  color: #ff9990 !important;
+  border-color: rgba(255, 100, 80, 0.3) !important;
+}
+
+/* Botões +/- de quantidade */
+body.dark-mode .qty-btn {
+  background: rgba(19, 164, 150, 0.08) !important;
+  border-color: var(--line) !important;
+  color: var(--muted) !important;
+}
+
+body.dark-mode .qty-btn:hover {
+  background: rgba(19, 164, 150, 0.22) !important;
+  color: var(--brand-strong) !important;
+}
+
+/* Status de assinatura */
+body.dark-mode .subscription-status {
+  background: rgba(238, 127, 59, 0.22) !important;
+  color: #f4a96a !important;
+}
+
+body.dark-mode .subscription-status.is-active {
+  background: rgba(19, 164, 150, 0.22) !important;
+  color: #77d9cc !important;
+}
+
+/* Filtro de categorias ativo */
+body.dark-mode .filter-chip {
+  background: var(--card) !important;
+  color: var(--muted) !important;
+  border-color: var(--line) !important;
+}
+
+body.dark-mode .filter-chip.active {
+  background: rgba(19, 164, 150, 0.2) !important;
+  border-color: rgba(119, 217, 204, 0.4) !important;
+  color: var(--brand-strong) !important;
+}
+
+/* Feedback de erro no modal */
+body.dark-mode .modal-feedback.error {
+  color: #f4a96a !important;
+  background: rgba(238, 127, 59, 0.18) !important;
+  border-color: rgba(238, 127, 59, 0.38) !important;
+}
+
+/* User chip */
+body.dark-mode .user-chip {
+  color: var(--ink) !important;
+  background: var(--card) !important;
+  border-color: var(--line) !important;
+}
+
+/* Skeleton loader */
+body.dark-mode .skeleton {
+  background: linear-gradient(90deg,
+    rgba(214,241,247,0.06) 25%,
+    rgba(214,241,247,0.12) 50%,
+    rgba(214,241,247,0.06) 75%) !important;
+  background-size: 200% !important;
+}
+
+/* ===== RELATÓRIOS - INSIGHT CARDS ===== */
+
+body.dark-mode .insight-card {
+  background: var(--card) !important;
+  border-color: var(--line) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .insight-card.is-highlight {
+  background: rgba(19, 33, 40, 0.9) !important;
+}
+
+body.dark-mode .insight-card .insight-label {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .insight-card .insight-value {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .insight-card .insight-note {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .insight-card .insight-product {
+  background: rgba(19, 164, 150, 0.2) !important;
+  border-color: rgba(19, 164, 150, 0.35) !important;
+  color: #77d9cc !important;
+}
+
+body.dark-mode .insight-card.is-critical .insight-product {
+  background: rgba(255, 100, 80, 0.18) !important;
+  border-color: rgba(255, 100, 80, 0.35) !important;
+  color: #ff9990 !important;
+}
+
+/* Tabela de relatórios */
+body.dark-mode .table-wrap {
+  background: var(--card) !important;
+  border-color: var(--line) !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode tbody tr:nth-child(even) td {
+  background: rgba(19, 164, 150, 0.04) !important;
+}
+
+body.dark-mode .item-name {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .metric-value {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .metric-alert {
+  color: #ff9990 !important;
+}
+
+body.dark-mode .metric-suggested {
+  color: var(--brand-strong) !important;
+  background: rgba(19, 164, 150, 0.15) !important;
+}
+
+body.dark-mode .buy-when {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .rec-title {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .rec-action {
+  background: rgba(19, 164, 150, 0.12) !important;
+  color: var(--ink) !important;
+}
+
+body.dark-mode .rec-action strong,
+body.dark-mode .rec-action span {
+  color: var(--brand-strong) !important;
+  opacity: 1 !important;
+}
+
+body.dark-mode .rec-summary {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .recommendation-meta {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .recommendation-meta strong {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .empty-report {
+  background: rgba(19, 33, 40, 0.6) !important;
+  border-color: var(--line) !important;
+  color: var(--muted) !important;
+}
+
+/* Barras de progresso */
+body.dark-mode .bar {
+  background: rgba(214, 241, 247, 0.1) !important;
+}
+
+/* Badges de relatório */
+body.dark-mode .badge-up {
+  color: #77d9cc !important;
+  background: rgba(19, 164, 150, 0.2) !important;
+}
+
+body.dark-mode .badge-down,
+body.dark-mode .badge-warn {
+  color: #f4a96a !important;
+  background: rgba(238, 127, 59, 0.2) !important;
+}
+
+body.dark-mode .badge-critical {
+  color: #ff9990 !important;
+  background: rgba(255, 100, 80, 0.18) !important;
+}
+
+/* Painel de ranking */
+body.dark-mode .full-panel,
+body.dark-mode .panel {
+  background: var(--card) !important;
+  border-color: var(--line) !important;
+}
+
+body.dark-mode .full-panel h2,
+body.dark-mode .panel h2 {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .full-panel > p,
+body.dark-mode .panel > p {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .period-filters {
+  background: var(--card) !important;
+  border-color: var(--line) !important;
+}
+
+body.dark-mode .period-filters span {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .period-btn {
+  background: rgba(19, 164, 150, 0.1) !important;
+  color: var(--brand-strong) !important;
+  border-color: rgba(119, 217, 204, 0.3) !important;
+}
+
+body.dark-mode .period-btn.active {
+  background: linear-gradient(135deg, var(--brand), #0fb8a9) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+/* ===== INSUMOS - MODAL DE PRODUÇÃO ===== */
+
+body.dark-mode .prod-component-row {
+  background: rgba(19, 33, 40, 0.8) !important;
+  border-color: var(--line) !important;
+}
+
+body.dark-mode .prod-component-row .prod-comp-select,
+body.dark-mode .prod-component-row .prod-comp-qty,
+body.dark-mode .prod-component-row .prod-extra-cost-label,
+body.dark-mode .prod-component-row .prod-extra-cost-value {
+  background: #0f1b21 !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+
+body.dark-mode .prod-component-price {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .prod-component-price strong {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .production-summary {
+  background: rgba(19, 164, 150, 0.1) !important;
+  border-color: rgba(119, 217, 204, 0.25) !important;
+  color: var(--brand-strong) !important;
+}
+
+body.dark-mode .prod-summary-item {
+  background: rgba(19, 33, 40, 0.9) !important;
+  border-color: rgba(119, 217, 204, 0.15) !important;
+}
+
+body.dark-mode .prod-summary-label {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .prod-summary-value {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .prod-summary-item-total {
+  background: rgba(19, 164, 150, 0.15) !important;
+}
+
+body.dark-mode .production-summary.is-profit-positive {
+  border-color: rgba(11, 200, 110, 0.3) !important;
+  background: rgba(11, 200, 110, 0.08) !important;
+  color: #5de8a0 !important;
+}
+
+body.dark-mode .production-summary.is-profit-negative {
+  border-color: rgba(255, 100, 80, 0.3) !important;
+  background: rgba(255, 100, 80, 0.08) !important;
+  color: #ff9990 !important;
+}
+
+body.dark-mode .production-summary.is-profit-neutral {
+  border-color: var(--line) !important;
+  background: rgba(214, 241, 247, 0.05) !important;
+  color: var(--muted) !important;
+}
+
+body.dark-mode .prod-profit-positive .prod-summary-label,
+body.dark-mode .prod-profit-positive .prod-summary-value {
+  color: #5de8a0 !important;
+}
+
+body.dark-mode .prod-profit-negative .prod-summary-label,
+body.dark-mode .prod-profit-negative .prod-summary-value {
+  color: #ff9990 !important;
+}
+
+body.dark-mode .prod-profit-neutral .prod-summary-label,
+body.dark-mode .prod-profit-neutral .prod-summary-value {
+  color: var(--muted) !important;
+}
+
+body.dark-mode #labelQtdMeta {
+  color: var(--brand-strong) !important;
+}
+
+/* ===== INSUMOS - NOMES E IDs DA TABELA ===== */
+
+body.dark-mode .material-name {
+  color: var(--ink) !important;
+}
+
+body.dark-mode .material-id {
+  color: var(--muted) !important;
+  opacity: 1 !important;
+}
+
+/* Badges de insumos */
+body.dark-mode .badge-ok {
+  color: #77d9cc !important;
+  background: rgba(19, 164, 150, 0.2) !important;
+}
+
+body.dark-mode .badge-low {
+  color: #f4a96a !important;
+  background: rgba(238, 127, 59, 0.22) !important;
+}
+
+body.dark-mode .badge-zero {
+  color: #ff9990 !important;
+  background: rgba(255, 100, 80, 0.18) !important;
+}
+
+/* ===== OVERRIDES GLOBAIS PARA TODAS AS PÁGINAS ===== */
+
+/* Cabeçalhos de tabela com fundo fixo claro */
+body.dark-mode thead th {
+  background: #1a2f38 !important;
+  color: #c9dfe4 !important;
+}
+
+/* Textos com cores escuras hardcoded comuns */
+body.dark-mode .field label,
+body.dark-mode label {
+  color: #c9dfe4 !important;
+}
+
+/* Campos de formulário com fundo claro fixo */
+body.dark-mode input:not([type="checkbox"]):not([type="radio"]),
+body.dark-mode select,
+body.dark-mode textarea {
+  background: #0f1b21 !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+
+/* Textos que usam cores hardcoded escuras (#16353c, #194149, #1f3840, #173a42) */
+body.dark-mode strong,
+body.dark-mode b {
+  color: inherit;
+}
+
+body.dark-mode .sub-item strong,
+body.dark-mode .td-nome strong,
+body.dark-mode .cell-bold {
+  color: var(--ink) !important;
+}
+
+/* Datalist/autocomplete */
+body.dark-mode datalist {
+  background: #0f1b21 !important;
+  color: var(--ink) !important;
+}
+
+/* Placeholders */
+body.dark-mode ::placeholder {
+  color: var(--muted) !important;
+  opacity: 0.7;
+}
+
+/* Scrollbar em dark mode */
+body.dark-mode ::-webkit-scrollbar {
+  background: #0e171b;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: rgba(119, 217, 204, 0.2);
+  border-radius: 99px;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(119, 217, 204, 0.35);
+}
+
+/* Cards de insight/relatório */
+body.dark-mode .insight-card,
+body.dark-mode .report-card,
+body.dark-mode .section-card,
+body.dark-mode .filter-bar {
+  background: var(--card) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+
+/* Subtextos dentro de cards */
+body.dark-mode .kpi-label,
+body.dark-mode .card-label,
+body.dark-mode .section-label {
+  color: var(--muted) !important;
+}
+
+/* Links de navegação */
+body.dark-mode a:not(.btn):not(.brand) {
+  color: var(--muted);
+}
+
+body.dark-mode a:not(.btn):not(.brand):hover {
+  color: var(--brand-strong);
+}
+
+/* Divisores e separadores */
+body.dark-mode hr {
+  border-color: var(--line) !important;
+}
+
+/* Overlay do modal */
+body.dark-mode .overlay {
+  background: rgba(5, 12, 16, 0.65) !important;
+}
+
+/* Period buttons (relatórios) */
+body.dark-mode .period-btn {
+  background: var(--card) !important;
+  color: var(--muted) !important;
+  border-color: var(--line) !important;
+}
+
+body.dark-mode .period-btn.active,
+body.dark-mode .period-btn:hover {
+  background: rgba(19, 164, 150, 0.2) !important;
+  color: var(--brand-strong) !important;
+  border-color: rgba(119, 217, 204, 0.4) !important;
+}

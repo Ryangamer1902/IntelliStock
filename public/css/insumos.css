@@ -982,6 +982,16 @@
     .badge-ok { color: #0a6a5f; background: rgba(14, 143, 131, 0.14); }
     .badge-low { color: #9a4b1b; background: rgba(238, 127, 59, 0.22); }
     .badge-zero { color: #8e2f24; background: rgba(192, 57, 43, 0.14); }
+    .badge-cat-final {
+      color: #1a4fb5;
+      background: rgba(51, 119, 255, 0.12);
+      border: 1px solid rgba(51, 119, 255, 0.28);
+    }
+    .badge-cat-raw {
+      color: #0a6a5f;
+      background: rgba(14, 143, 131, 0.12);
+      border: 1px solid rgba(14, 143, 131, 0.28);
+    }
     .cell-actions {
       white-space: nowrap;
     }
@@ -1020,6 +1030,34 @@
       border-color: rgba(192, 57, 43, 0.7);
     }
     .is-hidden { display: none !important; }
+
+    .fornecedor-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      background: var(--card);
+      border: 1px solid rgba(14, 143, 131, 0.3);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(8, 37, 44, 0.18);
+      padding: 4px 0;
+      list-style: none;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .fornecedor-dropdown-item {
+      padding: 9px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .fornecedor-dropdown-item:hover {
+      background: rgba(14, 143, 131, 0.12);
+      color: var(--brand-strong);
+    }
     .empty-state {
       text-align: center;
       padding: 42px 10px;
