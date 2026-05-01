@@ -82,6 +82,17 @@ body.dark-mode .insight-card {
   color: var(--ink) !important;
 }
 
+body.dark-mode .btn-logout {
+  background: rgba(192, 57, 43, 0.18) !important;
+  border-color: rgba(192, 57, 43, 0.55) !important;
+  color: #f08070 !important;
+}
+
+body.dark-mode .btn-logout:hover {
+  background: rgba(192, 57, 43, 0.28) !important;
+  border-color: rgba(192, 57, 43, 0.85) !important;
+}
+
 body.dark-mode .sub-item,
 body.dark-mode .pill,
 body.dark-mode .badge,

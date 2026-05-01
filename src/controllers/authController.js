@@ -47,8 +47,67 @@ function emailValido(email) {
   return /\S+@\S+\.\S+/.test(String(email || '').trim());
 }
 
+function listarEmailsBypass() {
+  const bruto = String(
+    process.env.DEV_ACCESS_EMAILS ||
+    process.env.FREE_ACCESS_EMAILS ||
+    ''
+  );
+
+  if (!bruto.trim()) return [];
+
+  return [...new Set(
+    bruto
+      .split(/[;,\s]+/)
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter((item) => /\S+@\S+\.\S+/.test(item))
+  )];
+}
+
+function emailTemBypass(email) {
+  const normalizado = String(email || '').trim().toLowerCase();
+  if (!normalizado) return false;
+  return listarEmailsBypass().includes(normalizado);
+}
+
+async function obterStatusAcessoUsuario(db, usuarioId) {
+  const [rows] = await db.query(
+    `SELECT
+       u.id,
+       u.email,
+       u.ativo,
+       u.is_admin,
+       (SELECT COUNT(*)
+        FROM assinaturas a
+        WHERE a.usuario_id = u.id
+          AND a.status = 'ativa'
+          AND a.data_expiracao > NOW()) AS assinatura_ativa
+     FROM usuarios u
+     WHERE u.id = ?
+     LIMIT 1`,
+    [usuarioId]
+  );
+
+  return rows[0] || null;
+}
+
 function isPublicHttpUrl(url) {
   return /^https?:\/\//i.test(String(url || '')) && !/localhost|127\.0\.0\.1/i.test(String(url || ''));
+}
+
+function normalizePublicOrigin(rawUrl) {
+  try {
+    const parsed = new URL(String(rawUrl || '').trim());
+    const protocol = parsed.protocol.toLowerCase();
+    const hostname = parsed.hostname.toLowerCase();
+
+    if (!['http:', 'https:'].includes(protocol)) return '';
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return '';
+
+    return `${protocol}//${parsed.host}`;
+  } catch (_) {
+    return '';
+  }
 }
 
 function getAppBaseUrl(req) {
@@ -63,8 +122,20 @@ function getAppBaseUrl(req) {
   const protocol = forwardedProto || req.protocol || 'http';
   const requestUrl = host ? `${protocol}://${host}`.replace(/\/$/, '') : '';
 
+  // Alguns proxies não repassam host/proto corretamente; usa Origin/Referer como fallback.
+  const originHeader = normalizePublicOrigin(req.headers.origin);
+  const refererHeader = normalizePublicOrigin(req.headers.referer);
+
   if (isPublicHttpUrl(requestUrl)) {
     return requestUrl;
+  }
+
+  if (originHeader) {
+    return originHeader;
+  }
+
+  if (refererHeader) {
+    return refererHeader;
   }
 
   return `http://localhost:${process.env.PORT || 3001}`;
@@ -101,21 +172,47 @@ class AuthController {
         return res.status(401).json({ success: false, message: 'E-mail ou senha incorretos.' });
       }
 
-      if (!usuario.ativo) {
+      let statusAcesso = await obterStatusAcessoUsuario(db, usuario.id);
+      if (!statusAcesso) {
+        return res.status(401).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
+      if (!Number(statusAcesso.ativo)) {
         try {
           const reconciliacao = await reconciliarUsuarioPorPagamento(db, usuario.id);
           if (reconciliacao.success && reconciliacao.approved) {
-            usuario.ativo = 1;
+            statusAcesso = await obterStatusAcessoUsuario(db, usuario.id);
           }
         } catch (reconciliacaoError) {
           console.error('Erro ao reconciliar pagamento no login:', reconciliacaoError.message);
         }
       }
 
-      if (!usuario.ativo) {
+      if (!Number(statusAcesso?.ativo)) {
         return res.status(403).json({
           success: false,
           message: 'Sua conta ainda está aguardando confirmação do pagamento. Se você já pagou, tente entrar novamente em alguns instantes.'
+        });
+      }
+
+      const bypassAtivo = emailTemBypass(statusAcesso.email);
+      const exigeAssinatura = !Number(statusAcesso.is_admin) && !bypassAtivo;
+
+      if (exigeAssinatura && Number(statusAcesso.assinatura_ativa) <= 0) {
+        try {
+          await reconciliarUsuarioPorPagamento(db, usuario.id);
+          statusAcesso = await obterStatusAcessoUsuario(db, usuario.id);
+        } catch (reconciliacaoError) {
+          console.error('Erro ao reconciliar assinatura no login:', reconciliacaoError.message);
+        }
+      }
+
+      if (exigeAssinatura && Number(statusAcesso?.assinatura_ativa) <= 0) {
+        return res.status(402).json({
+          success: false,
+          code: 'SUBSCRIPTION_REQUIRED',
+          message: 'Assinatura ativa necessária para acessar a plataforma.',
+          redirect: '/produtos.html'
         });
       }
 
@@ -279,7 +376,20 @@ class AuthController {
 
     try {
       const [rows] = await db.query(
-        'SELECT id, nome, email FROM usuarios WHERE email = ? AND ativo = 1 LIMIT 1',
+        `SELECT
+           u.id,
+           u.nome,
+           u.email,
+           u.ativo,
+           u.is_admin,
+           (SELECT COUNT(*)
+            FROM assinaturas a
+            WHERE a.usuario_id = u.id
+              AND a.status = 'ativa'
+              AND a.data_expiracao > NOW()) AS assinatura_ativa
+         FROM usuarios u
+         WHERE u.email = ?
+         LIMIT 1`,
         [email]
       );
 
@@ -289,6 +399,16 @@ class AuthController {
       }
 
       const usuario = rows[0];
+      const acessoPermitido = Number(usuario.ativo) === 1 && (
+        Number(usuario.is_admin) === 1 ||
+        emailTemBypass(usuario.email) ||
+        Number(usuario.assinatura_ativa) > 0
+      );
+
+      if (!acessoPermitido) {
+        return res.json({ success: true, message: 'Se este e-mail estiver cadastrado, você receberá as instruções em instantes.' });
+      }
+
       const token = crypto.randomBytes(32).toString('hex');
       const expiraEm = new Date(Date.now() + 30 * 60 * 1000);
 
@@ -327,8 +447,21 @@ class AuthController {
 
     try {
       const [rows] = await db.query(
-        `SELECT tr.id, tr.usuario_id, tr.expira_em, tr.usado
+        `SELECT
+           tr.id,
+           tr.usuario_id,
+           tr.expira_em,
+           tr.usado,
+           u.email,
+           u.ativo,
+           u.is_admin,
+           (SELECT COUNT(*)
+            FROM assinaturas a
+            WHERE a.usuario_id = u.id
+              AND a.status = 'ativa'
+              AND a.data_expiracao > NOW()) AS assinatura_ativa
          FROM tokens_reset_senha tr
+         JOIN usuarios u ON u.id = tr.usuario_id
          WHERE tr.token = ?`,
         [token]
       );
@@ -338,6 +471,21 @@ class AuthController {
       const reg = rows[0];
       if (reg.usado) return res.status(401).json({ success: false, message: 'Este link já foi utilizado.' });
       if (new Date() > new Date(reg.expira_em)) return res.status(401).json({ success: false, message: 'Link expirado. Solicite um novo.' });
+
+      const acessoPermitido = Number(reg.ativo) === 1 && (
+        Number(reg.is_admin) === 1 ||
+        emailTemBypass(reg.email) ||
+        Number(reg.assinatura_ativa) > 0
+      );
+
+      if (!acessoPermitido) {
+        return res.status(403).json({
+          success: false,
+          code: 'SUBSCRIPTION_REQUIRED',
+          message: 'Assinatura ativa necessária para redefinir senha.',
+          redirect: '/produtos.html'
+        });
+      }
 
       const senhaHash = await bcrypt.hash(novaSenha, 10);
       await db.query('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [senhaHash, reg.usuario_id]);

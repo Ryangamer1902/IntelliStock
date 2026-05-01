@@ -65,7 +65,7 @@
       <div class="user-area">
         <button class="user-chip" id="userChip" type="button">
           <div class="avatar" id="avatarInitial">?</div>
-          <span>Olá, <strong id="userName">...</strong></span>
+          <span><span class="chip-greeting">Olá, </span><strong id="userName">...</strong></span>
         </button>
         <button class="btn-logout" id="btnLogout">Sair</button>
       </div>
@@ -193,7 +193,9 @@
 
     if (usuario) {
       const nome = usuario.nome || 'Usuário';
-      document.getElementById('userName').textContent = nome;
+      const nomeExibido = nome.split(' ').slice(0, 2).join(' ') || nome;
+      document.getElementById('userName').textContent = nomeExibido;
+      document.getElementById('userChip').title = nome;
       const initials = nome.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
       document.getElementById('avatarInitial').textContent = initials || '?';
     }
