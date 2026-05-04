@@ -25,7 +25,7 @@
         <a href="/insumos.html">Insumos</a>
         <a href="/fornecedores.html">Fornecedores</a>
       </nav>
-      <div class="user-area is-hidden" id="userArea">
+      <div class="user-area">
         <button class="user-chip user-menu-trigger" id="userMenuTrigger" type="button">
           <div class="avatar" id="avatarInitial">?</div>
           <span><span class="chip-greeting">Olá, </span><strong id="userName">...</strong></span>
@@ -65,7 +65,7 @@
               <option value="anual">Plano anual</option>
             </select>
             <input id="renewCpf" type="text" placeholder="CPF/CNPJ para renovação" maxlength="18">
-            <button class="period-btn" id="btnRenewSubscription" type="button">Renovar assinatura</button>
+            <button class="btn btn-main" id="btnRenewSubscription" type="button">Renovar assinatura</button>
           </div>
         </div>
       </div>
@@ -180,42 +180,45 @@
   <script src="/js/auth-service.js"></script>
   <script>
     const _usuario = window.AuthService.getCurrentUser();
+    if (!_usuario) {
+      window.location.href = '/login.html';
+    }
+
     if (_usuario) {
-      const area = document.getElementById('userArea');
-      area.classList.remove('is-hidden');
       document.getElementById('userName').textContent = _usuario.nome || 'Usuário';
       const ini = (_usuario.nome || 'U').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
       document.getElementById('avatarInitial').textContent = ini;
-      document.getElementById('btnLogout').addEventListener('click', async () => {
-        const token = window.AuthService.getSessionToken();
-        if (token) {
-          try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
-        }
-        window.AuthService.clearAuthState();
-        window.location.href = '/login.html';
-      });
-
-      const userMenuTrigger = document.getElementById('userMenuTrigger');
-      const userMenuPanel = document.getElementById('userMenuPanel');
-      userMenuTrigger.addEventListener('click', (event) => {
-        event.stopPropagation();
-        userMenuPanel.classList.toggle('open');
-      });
-
-      userMenuPanel.addEventListener('click', (event) => {
-        event.stopPropagation();
-      });
-
-      document.addEventListener('click', () => {
-        userMenuPanel.classList.remove('open');
-      });
-
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-          userMenuPanel.classList.remove('open');
-        }
-      });
     }
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      const token = window.AuthService.getSessionToken();
+      if (token) {
+        try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
+      }
+      window.AuthService.clearAuthState();
+      window.location.href = '/login.html';
+    });
+
+    const userMenuTrigger = document.getElementById('userMenuTrigger');
+    const userMenuPanel = document.getElementById('userMenuPanel');
+    userMenuTrigger.addEventListener('click', (event) => {
+      event.stopPropagation();
+      userMenuPanel.classList.toggle('open');
+    });
+
+    userMenuPanel.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+
+    document.addEventListener('click', () => {
+      userMenuPanel.classList.remove('open');
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        userMenuPanel.classList.remove('open');
+      }
+    });
 
     function getAuthHeaders() {
       const token = window.AuthService.getSessionToken();
@@ -670,14 +673,15 @@
     function updateKpis(analytics) {
       const totalItens = analytics.length;
       const totalSaidas = analytics.reduce((sum, item) => sum + item.saidasPeriodo, 0);
-      const topItem = [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo)[0];
+      const topItem = [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo)[0] || null;
+      const topItemValido = topItem && Number(topItem.saidasPeriodo || 0) > 0 ? topItem : null;
       const criticos = analytics.filter(item => item.estoque < item.minimo).length;
       document.getElementById('kpiItens').textContent = totalItens;
       document.getElementById('kpiItensSub').textContent = totalItens === 1 ? 'item monitorado' : 'itens monitorados';
       document.getElementById('kpiSaidas').textContent = totalSaidas + ' un.';
       document.getElementById('kpiSaidasSub').textContent = 'vendas registradas no histórico';
-      document.getElementById('kpiTop').textContent = topItem ? topItem.nome : '-';
-      document.getElementById('kpiTopSub').textContent = topItem ? topItem.saidasPeriodo + ' un. vendidas' : 'sem leitura disponível';
+      document.getElementById('kpiTop').textContent = topItemValido ? topItemValido.nome : '-';
+      document.getElementById('kpiTopSub').textContent = topItemValido ? topItemValido.saidasPeriodo + ' un. vendidas' : 'sem leitura disponível';
       document.getElementById('kpiCriticos').textContent = criticos;
       document.getElementById('kpiCriticosSub').textContent = criticos === 0 ? 'nenhum item crítico agora' : 'precisam de reposição';
     }

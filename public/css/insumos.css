@@ -588,8 +588,7 @@
 
       .prod-row-main,
       .prod-row-inputs,
-      .field-row,
-      .subscription-grid {
+      .field-row {
         grid-template-columns: 1fr;
       }
 

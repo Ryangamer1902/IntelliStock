@@ -564,6 +564,7 @@
       padding: 4px 9px;
       font-weight: 800;
       font-size: 0.75rem;
+      white-space: nowrap;
     }
 
     .badge-ok { color: #0a6359; background: rgba(14, 143, 131, 0.14); }
@@ -575,14 +576,14 @@
       font-size: 0.74rem;
     }
     .badge-cat-final {
-      color: #1f4c92;
-      background: rgba(51, 119, 255, 0.14);
-      border-color: rgba(51, 119, 255, 0.24);
+      color: #1a4fb5;
+      background: rgba(51, 119, 255, 0.12);
+      border-color: rgba(51, 119, 255, 0.28);
     }
     .badge-cat-raw {
-      color: #0b5f56;
-      background: rgba(14, 143, 131, 0.14);
-      border-color: rgba(14, 143, 131, 0.24);
+      color: #0a6a5f;
+      background: rgba(14, 143, 131, 0.12);
+      border-color: rgba(14, 143, 131, 0.28);
     }
 
     .qty-wrap {

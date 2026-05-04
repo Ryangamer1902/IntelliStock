@@ -521,14 +521,91 @@
         grid-template-columns: 1fr;
       }
 
+      /* Tabela responsiva: transforma linhas em cards */
       .compare table {
-        min-width: 100%;
+        border: none;
+        background: transparent;
       }
 
-      .compare th,
+      .compare thead {
+        display: none;
+      }
+
+      .compare tbody,
+      .compare tr,
       .compare td {
-        padding: 9px 8px;
-        font-size: 0.82rem;
+        display: block;
+        width: 100%;
+      }
+
+      .compare tr {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        margin-bottom: 12px;
+        overflow: hidden;
+      }
+
+      .compare tr.annual-highlight {
+        border: 2px solid rgba(238, 127, 59, 0.55);
+        background: rgba(238, 127, 59, 0.04);
+      }
+
+      .compare tr.annual-highlight td {
+        background: transparent;
+        border-top: none;
+        border-bottom: 1px solid rgba(238, 127, 59, 0.15);
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+      }
+
+      .compare tr.annual-highlight td:first-child,
+      .compare tr.annual-highlight td:last-child {
+        border: none;
+        border-bottom: 1px solid rgba(238, 127, 59, 0.15);
+        border-radius: 0;
+      }
+
+      .compare tr.annual-highlight td:last-child {
+        border-bottom: none;
+      }
+
+      .compare tr:last-child td {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .compare tr:last-child td:last-child {
+        border-bottom: none;
+      }
+
+      .compare td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--line);
+        border-radius: 0;
+      }
+
+      .compare td:last-child {
+        border-bottom: none;
+      }
+
+      .compare td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--muted);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        flex-shrink: 0;
+        margin-right: 12px;
+      }
+
+      .compare td .saving-wrap {
+        text-align: right;
       }
 
       .saving-wrap {

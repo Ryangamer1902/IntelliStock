@@ -616,6 +616,10 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
   background: rgba(119, 217, 204, 0.35);
 }
 
+body.dark-mode ::-webkit-scrollbar-corner {
+  background: #0e171b;
+}
+
 /* Cards de insight/relatório */
 body.dark-mode .insight-card,
 body.dark-mode .report-card,

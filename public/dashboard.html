@@ -1059,14 +1059,35 @@
     let isManualPriceMode = false;
     let editingOriginalCode = null;
 
+    function parseLocaleNumber(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return NaN;
+
+      let normalized = raw.replace(/\s+/g, '');
+      const hasDot = normalized.includes('.');
+      const hasComma = normalized.includes(',');
+
+      if (hasDot && hasComma) {
+        // Ex.: 11.000,75 -> 11000.75
+        normalized = normalized.replace(/\./g, '').replace(',', '.');
+      } else if (hasComma) {
+        // Ex.: 11,75 -> 11.75
+        normalized = normalized.replace(',', '.');
+      } else if (/^-?\d{1,3}(\.\d{3})+$/.test(normalized)) {
+        // Ex.: 11.000 -> 11000
+        normalized = normalized.replace(/\./g, '');
+      }
+
+      return Number(normalized);
+    }
+
     function calcVenda(force = false) {
       if (isManualPriceMode && !force) {
-        const manualRaw = String(document.getElementById('fieldPreco').value || '').trim().replace(',', '.');
-        const manualNum = Number(manualRaw);
+        const manualNum = parseLocaleNumber(document.getElementById('fieldPreco').value);
         return Number.isFinite(manualNum) ? manualNum : '';
       }
 
-      const custo = parseFloat(document.getElementById('fieldCusto').value) || 0;
+      const custo = parseLocaleNumber(document.getElementById('fieldCusto').value) || 0;
       const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
       const venda = custo > 0 ? +(custo * (1 + margem / 100)).toFixed(2) : '';
       document.getElementById('fieldPreco').value = venda;
@@ -1141,10 +1162,10 @@
       const categoria = normalizeCategory(document.getElementById('fieldCategoria').value) || 'materia_prima';
       const qtd = parseInt(document.getElementById('fieldQtd').value) || 0;
       const qtdMin = parseInt(document.getElementById('fieldQtdMin').value);
-      const custo = parseFloat(document.getElementById('fieldCusto').value);
+      const custo = parseLocaleNumber(document.getElementById('fieldCusto').value);
       const margem = parseFloat(document.getElementById('fieldMargem').value) || 0;
-      const precoRaw = String(document.getElementById('fieldPreco').value || '').trim().replace(',', '.');
-      const preco = precoRaw !== '' ? Number(precoRaw) : Number(calcVenda(true));
+      const precoRaw = String(document.getElementById('fieldPreco').value || '').trim();
+      const preco = precoRaw !== '' ? parseLocaleNumber(precoRaw) : Number(calcVenda(true));
       const fb = document.getElementById('modalFeedback');
 
       if (!nome || !codigo || !fornecedor || isNaN(qtdMin) || isNaN(custo) || isNaN(preco)) {

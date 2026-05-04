@@ -8,8 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/produtos.css">
-  <link rel="stylesheet" href="/css/theme-toggle.css">
-  <script src="/js/theme-toggle.js" defer></script>
 
 </head>
 <body id="topo">
@@ -140,40 +138,40 @@
         </thead>
         <tbody>
           <tr>
-            <td>Semanal</td>
-            <td>R$ 59/semana</td>
-            <td>R$ 236/mês</td>
-            <td>
+            <td data-label="Assinatura">Semanal</td>
+            <td data-label="Preço">R$ 59/semana</td>
+            <td data-label="Custo mensal equiv.">R$ 236/mês</td>
+            <td data-label="Economia vs semanal">
               <div class="saving-wrap">
                 <span class="saving-text">Assinatura base</span>
                 <div class="saving-track"><div class="saving-fill"></div></div>
               </div>
             </td>
-            <td><span class="plan-chip chip-base">Entrada</span></td>
+            <td data-label="Nível"><span class="plan-chip chip-base">Entrada</span></td>
           </tr>
           <tr>
-            <td>Mensal</td>
-            <td>R$ 179/mês</td>
-            <td>R$ 179/mês</td>
-            <td>
+            <td data-label="Assinatura">Mensal</td>
+            <td data-label="Preço">R$ 179/mês</td>
+            <td data-label="Custo mensal equiv.">R$ 179/mês</td>
+            <td data-label="Economia vs semanal">
               <div class="saving-wrap">
                 <span class="saving-text">R$ 57/mês (24%)</span>
                 <div class="saving-track"><div class="saving-fill monthly"></div></div>
               </div>
             </td>
-            <td><span class="plan-chip chip-popular">Mais vendido</span></td>
+            <td data-label="Nível"><span class="plan-chip chip-popular">Mais vendido</span></td>
           </tr>
           <tr class="annual-highlight">
-            <td>Anual</td>
-            <td>R$ 1.690/ano</td>
-            <td>R$ 140,83/mês</td>
-            <td>
+            <td data-label="Assinatura">Anual</td>
+            <td data-label="Preço">R$ 1.690/ano</td>
+            <td data-label="Custo mensal equiv.">R$ 140,83/mês</td>
+            <td data-label="Economia vs semanal">
               <div class="saving-wrap">
                 <span class="saving-text">R$ 95,17/mês (40%)</span>
                 <div class="saving-track"><div class="saving-fill annual"></div></div>
               </div>
             </td>
-            <td><span class="plan-chip chip-best">Melhor valor</span></td>
+            <td data-label="Nível"><span class="plan-chip chip-best">Melhor valor</span></td>
           </tr>
         </tbody>
       </table>

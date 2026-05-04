@@ -63,11 +63,48 @@
         <a href="/fornecedores.html" class="active">Fornecedores</a>
       </nav>
       <div class="user-area">
-        <button class="user-chip" id="userChip" type="button">
+        <button class="user-chip user-menu-trigger" id="userMenuTrigger" type="button">
           <div class="avatar" id="avatarInitial">?</div>
           <span><span class="chip-greeting">Olá, </span><strong id="userName">...</strong></span>
         </button>
         <button class="btn-logout" id="btnLogout">Sair</button>
+
+        <div class="user-menu-panel" id="userMenuPanel">
+          <div class="subscription-top">
+            <div>
+              <div class="subscription-label">Assinatura IntelliStock</div>
+              <h2 id="subscriptionPlan">Carregando assinatura...</h2>
+            </div>
+            <span class="subscription-status" id="subscriptionStatus">...</span>
+          </div>
+          <div class="subscription-grid">
+            <div class="sub-item">
+              <span>Nome completo</span>
+              <strong id="subscriptionFullName">-</strong>
+            </div>
+            <div class="sub-item">
+              <span>CPF/CNPJ</span>
+              <strong id="subscriptionCpf">-</strong>
+            </div>
+            <div class="sub-item">
+              <span>Cartão para pagamento</span>
+              <strong id="subscriptionCardMask">Não informado</strong>
+            </div>
+            <div class="sub-item">
+              <span>Dias para renovar</span>
+              <strong id="subscriptionDays">-</strong>
+            </div>
+          </div>
+          <div class="subscription-actions">
+            <select id="renewPlan">
+              <option value="semanal">Plano semanal</option>
+              <option value="mensal" selected>Plano mensal</option>
+              <option value="anual">Plano anual</option>
+            </select>
+            <input id="renewCpf" type="text" placeholder="CPF/CNPJ para renovação" maxlength="18">
+            <button class="btn btn-main" id="btnRenewSubscription" type="button">Renovar assinatura</button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -195,7 +232,7 @@
       const nome = usuario.nome || 'Usuário';
       const nomeExibido = nome.split(' ').slice(0, 2).join(' ') || nome;
       document.getElementById('userName').textContent = nomeExibido;
-      document.getElementById('userChip').title = nome;
+      document.getElementById('userMenuTrigger').title = nome;
       const initials = nome.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
       document.getElementById('avatarInitial').textContent = initials || '?';
     }
@@ -213,6 +250,27 @@
       const token = window.AuthService.getSessionToken();
       return token ? { 'Authorization': 'Bearer ' + token } : {};
     }
+
+    function getMode() {
+      const saved = localStorage.getItem('auth_mode');
+      return saved === 'mock' ? 'mock' : 'api';
+    }
+
+    const userMenuTrigger = document.getElementById('userMenuTrigger');
+    const userMenuPanel = document.getElementById('userMenuPanel');
+
+    userMenuTrigger.addEventListener('click', (event) => {
+      event.stopPropagation();
+      userMenuPanel.classList.toggle('open');
+    });
+
+    userMenuPanel.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+
+    document.addEventListener('click', () => {
+      userMenuPanel.classList.remove('open');
+    });
 
     function fmtMoney(value) {
       return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -236,6 +294,125 @@
 
     function escHtml(str) {
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatCpf(value) {
+      const digits = String(value || '').replace(/\D/g, '');
+      if (digits.length === 11) {
+        return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      }
+      if (digits.length === 14) {
+        return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+      }
+      return value || '-';
+    }
+
+    function statusAssinaturaLabel(status) {
+      const map = {
+        ativa: 'Ativa',
+        expirada: 'Expirada',
+        cancelada: 'Cancelada',
+        pendente: 'Pendente',
+        suspensa: 'Suspensa'
+      };
+      return map[status] || 'Sem assinatura';
+    }
+
+    function setSubscriptionUi(payload) {
+      const cliente = payload?.cliente || {};
+      const assinatura = payload?.assinatura || null;
+
+      if (cliente.nome) {
+        const nomeExibido = cliente.nome.split(' ').slice(0, 2).join(' ') || cliente.nome;
+        document.getElementById('userName').textContent = nomeExibido;
+        document.getElementById('userMenuTrigger').title = cliente.nome;
+        const initials = cliente.nome.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+        document.getElementById('avatarInitial').textContent = initials || '?';
+      }
+
+      document.getElementById('subscriptionFullName').textContent = cliente.nome || (usuario?.nome || '-');
+      document.getElementById('subscriptionCpf').textContent = cliente.cpf_mask || formatCpf(cliente.cpf_cnpj || '');
+
+      if (!assinatura) {
+        document.getElementById('subscriptionPlan').textContent = 'Sem assinatura ativa';
+        document.getElementById('subscriptionStatus').textContent = 'Sem assinatura';
+        document.getElementById('subscriptionStatus').classList.remove('is-active');
+        document.getElementById('subscriptionCardMask').textContent = 'Será informado no checkout';
+        document.getElementById('subscriptionDays').textContent = '0 dias';
+        return;
+      }
+
+      const planoLabel = assinatura.plano ? `Plano ${assinatura.plano}` : 'Plano não definido';
+      const statusLabel = statusAssinaturaLabel(assinatura.status);
+      const dias = Number(assinatura.dias_restantes || 0);
+      const mascaraCartao = assinatura.cartao?.mascarado || 'Será informado no checkout';
+      const bandeira = assinatura.cartao?.bandeira ? `${assinatura.cartao.bandeira.toUpperCase()} ` : '';
+
+      document.getElementById('subscriptionPlan').textContent = planoLabel;
+      document.getElementById('subscriptionStatus').textContent = statusLabel;
+      document.getElementById('subscriptionStatus').classList.toggle('is-active', assinatura.status === 'ativa');
+      document.getElementById('subscriptionCardMask').textContent = `${bandeira}${mascaraCartao}`.trim();
+      document.getElementById('subscriptionDays').textContent = `${dias} dia${dias === 1 ? '' : 's'}`;
+    }
+
+    async function carregarAssinatura() {
+      if (getMode() !== 'api') {
+        setSubscriptionUi({
+          cliente: { nome: usuario?.nome || 'Usuário Demo', cpf_mask: '000.***.***-00' },
+          assinatura: { plano: 'mensal', status: 'ativa', dias_restantes: 15, cartao: { mascarado: '**** **** **** 1234', bandeira: 'visa' } }
+        });
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/assinaturas/status', { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message || 'Falha ao carregar assinatura');
+        }
+        setSubscriptionUi(data);
+
+        const cpfRaw = data?.cliente?.cpf_cnpj || '';
+        if (cpfRaw) {
+          document.getElementById('renewCpf').value = formatCpf(cpfRaw);
+        }
+      } catch (_) {
+        setSubscriptionUi({
+          cliente: { nome: usuario?.nome || 'Usuário', cpf_mask: '-' },
+          assinatura: null
+        });
+      }
+    }
+
+    async function renovarAssinatura() {
+      if (getMode() !== 'api') return;
+
+      const plano = document.getElementById('renewPlan').value;
+      const cpfCnpj = document.getElementById('renewCpf').value.replace(/\D/g, '');
+      if (cpfCnpj.length < 11) return;
+
+      const btn = document.getElementById('btnRenewSubscription');
+      btn.disabled = true;
+      btn.textContent = 'Redirecionando...';
+
+      try {
+        const res = await fetch('/api/assinaturas/renovar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
+          body: JSON.stringify({ plano, cpf_cnpj: cpfCnpj })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Não foi possível iniciar a renovação.');
+
+        window.location.href = data.init_point;
+      } catch (_) {
+        btn.disabled = false;
+        btn.textContent = 'Renovar assinatura';
+        return;
+      }
     }
 
     function showToast(msg) {
@@ -365,13 +542,17 @@
     document.getElementById('btnNovoFornecedor').addEventListener('click', abrirModal);
     document.getElementById('btnRefresh').addEventListener('click', carregarFornecedores);
     document.getElementById('searchInput').addEventListener('input', applySearchFilter);
+    document.getElementById('btnRenewSubscription').addEventListener('click', renovarAssinatura);
     const fornecedorModal = document.getElementById('fornecedorModal');
     document.getElementById('btnCancelar').addEventListener('click', () => {
       fornecedorModal.classList.remove('active');
     });
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && fornecedorModal.classList.contains('active')) {
-        fornecedorModal.classList.remove('active');
+      if (event.key === 'Escape') {
+        userMenuPanel.classList.remove('open');
+        if (fornecedorModal.classList.contains('active')) {
+          fornecedorModal.classList.remove('active');
+        }
       }
     });
 
@@ -414,6 +595,7 @@
     });
 
     carregarFornecedores();
+    carregarAssinatura();
 
     const revealEls = document.querySelectorAll('.reveal-section');
     const revealObserver = new IntersectionObserver((entries) => {
