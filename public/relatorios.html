@@ -501,24 +501,43 @@
       });
     }
 
+    function toStockNumber(value) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    function isStockout(estoque) {
+      return toStockNumber(estoque) <= 0;
+    }
+
+    function isLowStock(estoque, minimo) {
+      const atual = toStockNumber(estoque);
+      const min = toStockNumber(minimo);
+      return atual > 0 && min > 0 && atual <= min;
+    }
+
+    function isAttentionStock(estoque, minimo) {
+      return isStockout(estoque) || isLowStock(estoque, minimo);
+    }
+
     function buildAnalytics(material, vendasMap) {
-      const estoque = Number(material.quantidade_atual || 0);
-      const minimo = Math.max(Number(material.quantidade_minima || 0), 1);
+      const estoque = toStockNumber(material.quantidade_atual);
+      const minimo = Math.max(toStockNumber(material.quantidade_minima), 0);
       const precoVenda = Number(material.preco_manual || 0);
       const precoCusto = Number(material.preco_custo != null ? material.preco_custo : (material.preco_manual || 0));
       const margem = Number(material.margem_lucro != null ? material.margem_lucro : (precoCusto > 0 ? ((precoVenda - precoCusto) / precoCusto) * 100 : 0));
       const keyId = `id:${material.id}`;
       const keyNome = `nome:${String(material.nome || '').toLowerCase()}`;
       const saidasPeriodo = Number(vendasMap.get(keyId) || vendasMap.get(keyNome) || 0);
-      const cobertura = estoque / minimo;
+      const cobertura = minimo > 0 ? (estoque / minimo) : 0;
       const lucroUnitario = Math.max(precoVenda - precoCusto, 0);
       const lucroEstimado = lucroUnitario * saidasPeriodo;
       const excessoEstoque = Math.max(estoque - (minimo * 2), 0);
       const capitalParado = excessoEstoque * precoCusto;
       let tendenciaLabel = 'Boa saída';
       let tendenciaClass = 'badge-up';
-      if (estoque === 0) { tendenciaLabel = 'Sem estoque'; tendenciaClass = 'badge-down'; }
-      else if (estoque < minimo) { tendenciaLabel = 'Reposição urgente'; tendenciaClass = 'badge-down'; }
+      if (isStockout(estoque)) { tendenciaLabel = 'Sem estoque'; tendenciaClass = 'badge-down'; }
+      else if (isLowStock(estoque, minimo)) { tendenciaLabel = 'Reposição urgente'; tendenciaClass = 'badge-down'; }
       else if (cobertura < 1.5) { tendenciaLabel = 'Monitorar'; tendenciaClass = 'badge-down'; }
       else if (cobertura > 3.2) { tendenciaLabel = 'Estoque estável'; tendenciaClass = 'badge-up'; }
       return { ...material, estoque, minimo, precoVenda, precoCusto, margem, saidasPeriodo, cobertura, lucroEstimado, capitalParado, tendenciaLabel, tendenciaClass };
@@ -539,8 +558,8 @@
     function renderInsights(analytics, consumoInternoStats) {
       const target = document.getElementById('insightGrid');
       if (!analytics.length) { target.innerHTML = '<div class="empty-report">Cadastre materiais para visualizar insights executivos.</div>'; return; }
-      const criticos = analytics.filter(item => item.estoque < item.minimo).length;
-      const semEstoque = analytics.filter(item => item.estoque === 0).length;
+      const criticos = analytics.filter(item => isLowStock(item.estoque, item.minimo)).length;
+      const semEstoque = analytics.filter(item => isStockout(item.estoque)).length;
       const capitalParado = analytics.reduce((sum, item) => sum + item.capitalParado, 0);
       const lucroEstimado = analytics.reduce((sum, item) => sum + item.lucroEstimado, 0);
       const melhorMargem = [...analytics].sort((a, b) => b.margem - a.margem)[0];
@@ -655,14 +674,25 @@
         const res = await fetch('/api/materiais/estoque/baixo', { headers: getAuthHeaders() });
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Erro ao carregar itens de atenção');
-        return data.data || [];
+        return (data.data || [])
+          .map((item) => {
+            const quantidadeAtual = toStockNumber(item.quantidade_atual);
+            const quantidadeMinima = Math.max(toStockNumber(item.quantidade_minima), 0);
+            return {
+              ...item,
+              quantidade_atual: quantidadeAtual,
+              quantidade_minima: quantidadeMinima,
+              deficit: Math.max(0, quantidadeMinima - quantidadeAtual)
+            };
+          })
+          .filter((item) => isAttentionStock(item.quantidade_atual, item.quantidade_minima));
       }
 
       return (materiais || [])
-        .filter((item) => Number(item.quantidade_atual || 0) < Number(item.quantidade_minima || 0))
+        .filter((item) => isAttentionStock(item.quantidade_atual, item.quantidade_minima))
         .map((item) => ({
         ...item,
-        deficit: Math.max(0, Number(item.quantidade_minima || 0) - Number(item.quantidade_atual || 0)),
+        deficit: Math.max(0, toStockNumber(item.quantidade_minima) - toStockNumber(item.quantidade_atual)),
         tipo_item: String(item.fornecedor || '').toLowerCase().includes('produção interna') || String(item.fornecedor || '').toLowerCase().includes('producao interna')
           ? 'Item final de produção'
           : 'Material',
@@ -675,7 +705,7 @@
       const totalSaidas = analytics.reduce((sum, item) => sum + item.saidasPeriodo, 0);
       const topItem = [...analytics].sort((a, b) => b.saidasPeriodo - a.saidasPeriodo)[0] || null;
       const topItemValido = topItem && Number(topItem.saidasPeriodo || 0) > 0 ? topItem : null;
-      const criticos = analytics.filter(item => item.estoque < item.minimo).length;
+      const criticos = analytics.filter(item => isLowStock(item.estoque, item.minimo)).length;
       document.getElementById('kpiItens').textContent = totalItens;
       document.getElementById('kpiItensSub').textContent = totalItens === 1 ? 'item monitorado' : 'itens monitorados';
       document.getElementById('kpiSaidas').textContent = totalSaidas + ' un.';
@@ -727,7 +757,7 @@
         }
         renderRankList('highStockList', [...analytics].sort((a, b) => b.estoque - a.estoque).slice(0, 4), 'estoque', v => v + ' un.', item => 'Mínimo em ' + item.minimo + ' un. Preço de venda ' + fmtMoney(item.precoVenda) + '.', false);
         const lowStockRanking = analytics
-          .filter((item) => item.estoque < item.minimo)
+          .filter((item) => isLowStock(item.estoque, item.minimo))
           .sort((a, b) => a.estoque - b.estoque)
           .slice(0, 4);
 
