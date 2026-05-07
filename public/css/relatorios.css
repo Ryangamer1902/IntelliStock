@@ -302,38 +302,319 @@
     }
 
     .period-filters {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      grid-template-areas:
+        'label quick calendar'
+        'hint hint hint'
+        'feedback feedback feedback';
+      align-items: end;
+      gap: 10px 14px;
       border: 1px solid var(--line);
       border-radius: 12px;
       background: var(--card);
-      padding: 8px 10px;
+      padding: 12px;
       margin-bottom: 18px;
+      width: 100%;
     }
 
-    .period-filters span {
+    .period-filters > span {
+      grid-area: label;
       color: var(--muted);
-      font-size: 0.82rem;
+      font-size: 0.9rem;
       font-weight: 700;
-      margin-right: 4px;
+      white-space: nowrap;
+      align-self: center;
+    }
+
+    .period-quick {
+      grid-area: quick;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
     }
 
     .period-btn {
-      border: 1px solid rgba(14, 143, 131, 0.25);
-      background: rgba(14, 143, 131, 0.08);
-      color: var(--brand-strong);
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 0.8rem;
-      font-weight: 800;
+      border: 1px solid rgba(18, 33, 39, 0.2);
+      background: #ffffff;
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.86rem;
+      font-weight: 700;
       cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .period-btn:hover {
+      background: rgba(14, 143, 131, 0.08);
+      border-color: rgba(14, 143, 131, 0.28);
     }
 
     .period-btn.active {
-      background: linear-gradient(135deg, var(--brand), #0fb8a9);
-      color: #fff;
-      border-color: transparent;
+      background: rgba(14, 143, 131, 0.15);
+      color: var(--brand-strong);
+      border-color: rgba(14, 143, 131, 0.4);
+    }
+
+    .period-btn.period-btn-secondary {
+      background: #ffffff;
+      border-color: rgba(18, 33, 39, 0.2);
+      color: var(--ink);
+    }
+
+    .period-calendar {
+      grid-area: calendar;
+      justify-self: end;
+      width: min(100%, 560px);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(140px, 1fr)) auto;
+      align-items: end;
+      gap: 8px;
+    }
+
+    .period-date {
+      display: grid;
+      gap: 4px;
+      min-width: 138px;
+    }
+
+    .period-date span {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .period-date input {
+      width: 100%;
+      border: 1px solid rgba(18, 33, 39, 0.18);
+      border-radius: 10px;
+      padding: 7px 9px;
+      font-size: 0.82rem;
+      font-family: 'Manrope', sans-serif;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+
+    .period-date input:focus {
+      border-color: rgba(14, 143, 131, 0.55);
+      box-shadow: 0 0 0 3px rgba(14, 143, 131, 0.12);
+    }
+
+    .period-date input::-webkit-calendar-picker-indicator {
+      filter: brightness(0) saturate(100%) invert(71%) sepia(59%) saturate(484%) hue-rotate(164deg) brightness(105%) contrast(95%);
+      cursor: pointer;
+      opacity: 1;
+    }
+
+    .period-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .period-hint {
+      grid-area: hint;
+      width: 100%;
+      color: #30535b;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-top: 0;
+    }
+
+    .period-feedback {
+      grid-area: feedback;
+      width: 100%;
+      color: #8f2419;
+      font-size: 0.76rem;
+      font-weight: 700;
+      min-height: 1.1em;
+    }
+
+    @media (max-width: 980px) {
+      .period-filters {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          'label'
+          'quick'
+          'calendar'
+          'hint'
+          'feedback';
+      }
+
+      .period-filters > span {
+        margin: 0;
+      }
+
+      .period-quick {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .period-calendar {
+        width: 100%;
+        justify-self: stretch;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .period-date {
+        min-width: 0;
+      }
+
+      .period-actions {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .period-actions .period-btn {
+        width: 100%;
+      }
+
+      .period-hint,
+      .period-feedback {
+        margin-top: 0;
+      }
+    }
+
+    body.dark-mode .period-filters {
+      background: linear-gradient(180deg, rgba(26, 50, 61, 0.96), rgba(20, 42, 52, 0.96));
+      border-color: rgba(138, 202, 214, 0.38);
+      box-shadow: inset 0 1px 0 rgba(196, 236, 243, 0.12);
+    }
+
+    body.dark-mode .period-filters span,
+    body.dark-mode .period-date span {
+      color: #b8d0d6;
+    }
+
+    body.dark-mode .period-btn {
+      background: #17313b;
+      color: #e5f2f5;
+      border-color: rgba(150, 210, 220, 0.42);
+    }
+
+    body.dark-mode .period-btn:hover {
+      background: #1b3a45;
+      border-color: rgba(166, 220, 228, 0.56);
+    }
+
+    body.dark-mode .period-btn.active {
+      background: rgba(19, 164, 150, 0.22);
+      color: #c9f7f0;
+      border-color: rgba(119, 217, 204, 0.46);
+      box-shadow: none;
+    }
+
+    body.dark-mode .period-btn.period-btn-secondary {
+      background: #17313b;
+      color: #e5f2f5;
+      border-color: rgba(150, 210, 220, 0.42);
+    }
+
+    body.dark-mode .period-date input {
+      background: #0f1b21 !important;
+      color: #d0eef5 !important;
+      border-color: rgba(130, 191, 202, 0.5) !important;
+      color-scheme: dark !important;
+      font-weight: 700;
+      -webkit-text-fill-color: #d0eef5;
+    }
+
+    body.dark-mode .period-date input:focus {
+      border-color: rgba(14, 143, 131, 0.7) !important;
+      box-shadow: 0 0 0 3px rgba(19, 164, 150, 0.2) !important;
+    }
+
+    body.dark-mode .period-date input::-webkit-datetime-edit,
+    body.dark-mode .period-date input::-webkit-datetime-edit-text,
+    body.dark-mode .period-date input::-webkit-datetime-edit-month-field,
+    body.dark-mode .period-date input::-webkit-datetime-edit-day-field,
+    body.dark-mode .period-date input::-webkit-datetime-edit-year-field {
+      color: #d0eef5;
+    }
+
+    body.dark-mode .period-date input::-webkit-calendar-picker-indicator {
+      filter: brightness(0) saturate(100%) invert(71%) sepia(59%) saturate(484%) hue-rotate(164deg) brightness(115%) contrast(95%) !important;
+      opacity: 1;
+      cursor: pointer;
+    }
+
+    body.dark-mode .period-hint {
+      color: #90cfc4;
+    }
+
+    body.dark-mode .period-feedback {
+      color: #ffb3aa;
+    }
+
+    body.dark-mode .page-head h1 {
+      color: #f1fbfd;
+      text-shadow: 0 2px 16px rgba(7, 22, 28, 0.4);
+    }
+
+    body.dark-mode .page-head p,
+    body.dark-mode .panel > p,
+    body.dark-mode .full-panel > p,
+    body.dark-mode .kpi-sub {
+      color: #bdd2d7;
+    }
+
+    body.dark-mode .kpi,
+    body.dark-mode .panel,
+    body.dark-mode .full-panel,
+    body.dark-mode .period-filters,
+    body.dark-mode .table-wrap {
+      background: linear-gradient(180deg, #1a3945 0%, #15323d 100%);
+      border-color: rgba(111, 182, 196, 0.42);
+      box-shadow:
+        inset 0 1px 0 rgba(199, 238, 245, 0.14),
+        0 14px 30px rgba(3, 14, 18, 0.22);
+    }
+
+    body.dark-mode .kpi::before {
+      height: 4px;
+      background: linear-gradient(90deg, #15b5a6, #0ec7b6);
+      box-shadow: 0 1px 12px rgba(22, 181, 166, 0.4);
+    }
+
+    body.dark-mode .kpi-label,
+    body.dark-mode .rank-foot,
+    body.dark-mode .cell-sub {
+      color: #c2d8de;
+    }
+
+    body.dark-mode .kpi-value,
+    body.dark-mode .panel h2,
+    body.dark-mode .full-panel h2,
+    body.dark-mode .rank-head,
+    body.dark-mode .item-name {
+      color: #ecf9fb;
+    }
+
+    body.dark-mode .bar {
+      background: rgba(196, 236, 243, 0.24);
+    }
+
+    body.dark-mode .table-wrap {
+      background: linear-gradient(180deg, #173641 0%, #13303a 100%);
+    }
+
+    body.dark-mode tbody tr:nth-child(even) td {
+      background: rgba(26, 57, 68, 0.6);
+    }
+
+    body.dark-mode tbody tr:hover td {
+      background: rgba(29, 178, 163, 0.26);
     }
 
     .btn {
@@ -825,17 +1106,41 @@
       .topbar {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+        align-items: stretch;
+        gap: 8px;
+        padding: 10px 0;
+      }
+      .brand {
+        font-size: 0.98rem;
       }
       nav {
         width: 100%;
         justify-content: flex-start;
-        padding-bottom: 4px;
+        gap: 4px;
+        padding-bottom: 2px;
+      }
+      nav a {
+        font-size: 0.83rem;
+        padding: 7px 10px;
       }
       .user-area {
         width: 100%;
+        display: flex;
         justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+      .user-chip {
+        display: none;
+      }
+      #themeToggleBtn {
+        margin-right: auto;
+        min-width: 112px;
+      }
+      .btn-logout {
+        margin-left: auto;
+        padding: 7px 11px;
+        font-size: 0.79rem;
       }
       .page-head {
         margin-bottom: 22px;
@@ -843,6 +1148,20 @@
       .period-filters {
         width: 100%;
         flex-wrap: wrap;
+      }
+      .period-calendar {
+        width: 100%;
+        margin-left: 0;
+      }
+      .period-date {
+        min-width: 0;
+        flex: 1 1 160px;
+      }
+      .period-actions {
+        width: 100%;
+      }
+      .period-actions .period-btn {
+        flex: 1 1 140px;
       }
       .user-menu-panel { right: 0; }
 
@@ -938,11 +1257,75 @@
       .insight-grid { grid-template-columns: 1fr; }
       .insight-grid { grid-template-columns: 1fr; }
       .insight-card.is-highlight { grid-column: span 1; }
-      .period-btn {
-        flex: 1 1 120px;
+      .shell {
+        width: 94%;
+      }
+      .page-head h1 {
+        font-size: clamp(1.1rem, 6vw, 1.45rem);
+        line-height: 1.28;
+      }
+      .page-head p {
+        font-size: 0.84rem;
+        line-height: 1.5;
+      }
+      nav a {
+        padding: 6px 9px;
+        font-size: 0.8rem;
+      }
+      .user-area {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+      #themeToggleBtn {
+        width: auto;
+        min-width: 108px;
+      }
+      .period-filters {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          'label'
+          'quick'
+          'calendar'
+          'hint'
+          'feedback';
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .period-filters > span {
+        margin: 0;
+        font-size: 0.88rem;
+      }
+      .period-quick {
+        grid-template-columns: 1fr;
+      }
+      .period-calendar {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        width: 100%;
+      }
+      .period-date {
+        width: 100%;
+      }
+      .period-date input {
+        font-size: 16px;
+        min-height: 44px;
+      }
+      .period-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .period-actions .period-btn {
+        width: 100%;
         text-align: center;
       }
-      .user-chip span { display: none; }
+      .period-hint,
+      .period-feedback {
+        margin-top: 0;
+      }
     }
 
     @media (max-width: 380px) {

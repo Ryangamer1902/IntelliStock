@@ -88,6 +88,10 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10l4 4v14H3V3h4z"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>
             Registrar produção
           </button>
+          <button class="btn btn-soft" id="btnOpenEntrada" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M3 19h18"/></svg>
+            Entrada de insumos
+          </button>
         </div>
       </section>
 
@@ -231,6 +235,35 @@
       <div class="modal-actions">
         <button class="btn btn-soft" id="btnCancelSale">Cancelar</button>
         <button class="btn btn-main" id="btnSaveSale">Confirmar venda</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="entradaOverlay">
+    <div class="modal modal-entrada">
+      <h2>Entradas de insumos</h2>
+      <p class="sub">Tudo que entrou no estoque — compras, ajustes positivos e reposições.</p>
+      <div class="entrada-search-wrap">
+        <input type="text" id="entradaBusca" placeholder="Buscar por item..." autocomplete="off">
+      </div>
+      <div class="entrada-table-wrap">
+      <table class="entrada-historico-table">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Item</th>
+            <th>Tipo</th>
+            <th>Qtd</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody id="entradaHistoricoBody">
+          <tr><td colspan="5">Carregando...</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="btn btn-soft" id="btnCancelEntrada">Fechar</button>
       </div>
     </div>
   </div>
@@ -985,6 +1018,7 @@
     }
 
     function renderProductionLockedRecipe(receita, producedQty) {
+      if (productionEditorMode) return;
       const lot = buildRecipeLotFromStored(receita, producedQty);
       document.getElementById('prodComponentsList').innerHTML = '';
       document.getElementById('prodExtraCostsList').innerHTML = '';
@@ -1413,6 +1447,10 @@
         addProductionComponentRow();
       }
 
+      if (productionEditorMode) {
+        setProductionComposerDisabled(false);
+      }
+
       const fb = document.getElementById('productionFeedback');
       fb.className = 'modal-feedback';
       fb.textContent = '';
@@ -1665,10 +1703,108 @@
     document.getElementById('btnCancelSale').addEventListener('click', closeSaleModal);
     saleOverlay.addEventListener('click', (e) => { if (e.target === saleOverlay) closeSaleModal(); });
     document.getElementById('saleMaterial').addEventListener('change', updateSaleQuantityInputs);
+
+    // ==================== ENTRADA DE INSUMOS ====================
+    const entradaOverlay = document.getElementById('entradaOverlay');
+
+    function populateEntradaSelect() {
+      const sel = document.getElementById('entradaMaterial');
+      sel.innerHTML = '<option value="">Selecione o item</option>';
+      (allInsumos || []).forEach((item) => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${escHtml(item.nome)} — estoque: ${fmtNum(item.qtd_atual || 0)}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function fmtDateTime(value) {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return '-';
+      return d.toLocaleString('pt-BR');
+    }
+
+    let todasEntradas = [];
+
+    async function carregarHistoricoEntradas() {
+      const tbody = document.getElementById('entradaHistoricoBody');
+      try {
+        const resp = await fetch('/api/materiais/historico', { headers: getAuthHeaders() });
+        const data = await resp.json();
+        if (!data.success || !Array.isArray(data.data)) throw new Error();
+        todasEntradas = data.data.filter((r) => Number(r.quantidade_delta) > 0 && r.tipo_movimento !== 'CADASTRO');
+        renderEntradas(todasEntradas);
+      } catch (_) {
+        tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar entradas.</td></tr>';
+      }
+    }
+
+    function getEntradaTipoBadge(item) {
+      let fornecedor = String(item?.material_fornecedor || '').trim();
+
+      // Fallback: historicos antigos podem nao trazer fornecedor; usa os itens ja carregados na tela.
+      if (!fornecedor) {
+        const byId = allInsumos.find((m) => Number(m.id) === Number(item?.material_id));
+        const byNome = byId || allInsumos.find((m) => String(m.nome || '').trim().toLowerCase() === String(item?.material_nome || '').trim().toLowerCase());
+        fornecedor = String(byNome?.fornecedor_nome || '').trim();
+      }
+
+      const fornecedorNorm = fornecedor.toLowerCase();
+      const isProd = fornecedorNorm === 'produção interna' || fornecedorNorm === 'producao interna';
+      if (isProd) return '<span class="badge badge-cat-final entrada-tipo-badge">Produto Final</span>';
+      if (fornecedorNorm) return '<span class="badge badge-cat-raw entrada-tipo-badge">Matéria-prima</span>';
+      return '<span class="entrada-tipo-desconhecido">-</span>';
+    }
+
+    function renderEntradas(lista) {
+      const tbody = document.getElementById('entradaHistoricoBody');
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="5">Nenhuma entrada encontrada.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = lista.slice(0, 50).map((r) => {
+        const obs = String(r.observacao || r.usuario_nome || '-');
+        return `
+        <tr>
+          <td class="entrada-col-data">${fmtDateTime(r.created_at)}</td>
+          <td class="entrada-col-item">${escHtml(r.material_nome || '-')}</td>
+          <td class="entrada-col-tipo">${getEntradaTipoBadge(r)}</td>
+          <td class="entrada-col-qtd"><span class="entrada-badge">+${fmtNum(r.quantidade_delta)}</span></td>
+          <td class="entrada-col-obs" title="${escHtml(obs)}">${escHtml(obs)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('entradaBusca').addEventListener('input', () => {
+      const q = document.getElementById('entradaBusca').value.trim().toLowerCase();
+      if (!q) { renderEntradas(todasEntradas); return; }
+      renderEntradas(todasEntradas.filter((r) => String(r.material_nome || '').toLowerCase().includes(q)));
+    });
+
+    function openEntradaModal() {
+      document.getElementById('entradaBusca').value = '';
+      todasEntradas = [];
+      document.getElementById('entradaHistoricoBody').innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
+      carregarHistoricoEntradas();
+      entradaOverlay.classList.add('open');
+      syncModalScrollLock();
+    }
+
+    function closeEntradaModal() {
+      entradaOverlay.classList.remove('open');
+      syncModalScrollLock();
+    }
+
+    document.getElementById('btnOpenEntrada').addEventListener('click', openEntradaModal);
+    document.getElementById('btnCancelEntrada').addEventListener('click', closeEntradaModal);
+    entradaOverlay.addEventListener('click', (e) => { if (e.target === entradaOverlay) closeEntradaModal(); });
+    // ==================== FIM ENTRADA DE INSUMOS ====================
+
     document.getElementById('btnCancelProduction').addEventListener('click', closeProductionModal);
     productionOverlay.addEventListener('click', (e) => { if (e.target === productionOverlay) closeProductionModal(); });
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
+      if (entradaOverlay.classList.contains('open')) { closeEntradaModal(); return; }
       if (productionOverlay.classList.contains('open')) { closeProductionModal(); return; }
       if (saleOverlay.classList.contains('open')) { closeSaleModal(); return; }
       if (modalOverlay.classList.contains('open')) { closeModal(); }
@@ -1686,7 +1822,7 @@
       syncProductionModeByFinalName().catch(() => {});
     });
     document.getElementById('prodQtd').addEventListener('input', () => {
-      if (productionLockedRecipe) {
+      if (productionLockedRecipe && !productionEditorMode) {
         renderProductionLockedRecipe(productionLockedRecipe, Number(document.getElementById('prodQtd').value || 0));
       }
       updateProductionSummary();
@@ -2006,7 +2142,7 @@
       let ingredients;
       let extraCosts;
 
-      if (finalItemByName && productionLockedRecipe) {
+      if (!productionEditorMode && finalItemByName && productionLockedRecipe) {
         const lote = buildRecipeLotFromStored(productionLockedRecipe, producedQty);
         ingredients = lote.ingredients;
         extraCosts = lote.extraCosts;

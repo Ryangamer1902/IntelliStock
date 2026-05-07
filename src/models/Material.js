@@ -223,6 +223,7 @@ class Material {
           m.id,
           m.material_id,
           COALESCE(mt.nome, m.material_nome_snapshot) AS material_nome,
+          mt.fornecedor AS material_fornecedor,
           m.tipo_movimento,
           m.quantidade_delta,
           m.quantidade_anterior,

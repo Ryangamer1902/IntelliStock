@@ -85,9 +85,27 @@
 
       <section class="period-filters reveal-section">
         <span>Período de vendas:</span>
-        <button class="period-btn active" data-period="today">Hoje</button>
-        <button class="period-btn" data-period="7d">7 dias</button>
-        <button class="period-btn" data-period="30d">30 dias</button>
+        <div class="period-quick">
+          <button class="period-btn active" data-period="today">Hoje</button>
+          <button class="period-btn" data-period="7d">7 dias</button>
+          <button class="period-btn" data-period="30d">30 dias</button>
+        </div>
+        <div class="period-calendar">
+          <label class="period-date">
+            <span>Início</span>
+            <input type="date" id="periodStartDate">
+          </label>
+          <label class="period-date">
+            <span>Fim</span>
+            <input type="date" id="periodEndDate">
+          </label>
+          <div class="period-actions">
+            <button class="period-btn period-btn-secondary" id="btnApplyPeriod" type="button">Aplicar</button>
+            <button class="period-btn period-btn-secondary" id="btnClearPeriod" type="button">Limpar</button>
+          </div>
+        </div>
+        <div class="period-hint" id="periodHint">Filtro ativo: Hoje</div>
+        <div class="period-feedback" id="periodFeedback"></div>
       </section>
 
       <div class="kpi-row">
@@ -347,6 +365,7 @@
     const MOCK_STORAGE_KEY = 'intellistock_mock_materiais_v1';
     const MOCK_MOVIMENTACOES_STORAGE_KEY = 'intellistock_mock_movimentacoes_v1';
     let selectedPeriod = 'today';
+    let customPeriodRange = null;
     const defaultMockMateriais = [
       { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45 },
       { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30 },
@@ -473,7 +492,75 @@
       return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
     }
 
+    function parseDateInputValue(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return null;
+      const d = new Date(raw + 'T00:00:00');
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function toInputDateValue(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + d;
+    }
+
+    function fmtDateBr(date) {
+      return date.toLocaleDateString('pt-BR');
+    }
+
+    function buildPeriodoHint() {
+      if (customPeriodRange?.start && customPeriodRange?.end) {
+        return 'Filtro ativo: ' + fmtDateBr(customPeriodRange.start) + ' até ' + fmtDateBr(customPeriodRange.end);
+      }
+
+      if (selectedPeriod === '7d') return 'Filtro ativo: Últimos 7 dias';
+      if (selectedPeriod === '30d') return 'Filtro ativo: Últimos 30 dias';
+      return 'Filtro ativo: Hoje';
+    }
+
+    function updatePeriodHint() {
+      document.getElementById('periodHint').textContent = buildPeriodoHint();
+    }
+
+    function setPeriodFeedback(message) {
+      document.getElementById('periodFeedback').textContent = message || '';
+    }
+
+    function setActivePeriodButton(period) {
+      document.querySelectorAll('.period-btn[data-period]').forEach((el) => {
+        el.classList.toggle('active', el.dataset.period === period);
+      });
+    }
+
+    function syncCalendarInputsWithPreset(period) {
+      const end = new Date();
+      end.setHours(0, 0, 0, 0);
+      const start = new Date(end);
+
+      if (period === '30d') {
+        start.setDate(start.getDate() - 29);
+      } else if (period === '7d') {
+        start.setDate(start.getDate() - 6);
+      }
+
+      document.getElementById('periodStartDate').value = toInputDateValue(start);
+      document.getElementById('periodEndDate').value = toInputDateValue(end);
+    }
+
     function filtrarMovimentacoesPorPeriodo(movimentacoes, periodo) {
+      if (customPeriodRange?.start && customPeriodRange?.end) {
+        const start = new Date(customPeriodRange.start);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(customPeriodRange.end);
+        end.setHours(23, 59, 59, 999);
+        return (movimentacoes || []).filter((mov) => {
+          const data = new Date(mov.created_at);
+          return !Number.isNaN(data.getTime()) && data >= start && data <= end;
+        });
+      }
+
       const now = new Date();
       if (periodo === '30d') {
         const start = new Date(now);
@@ -783,6 +870,7 @@
             return Number(b.deficit || 0) - Number(a.deficit || 0);
           })
         );
+        updatePeriodHint();
       } catch (error) {
         document.getElementById('topSoldList').innerHTML = '<div class="empty-report">Erro ao carregar: ' + escHtml(error.message) + '</div>';
         document.getElementById('lowSoldList').innerHTML = '<div class="empty-report">Não foi possível gerar os rankings.</div>';
@@ -790,7 +878,36 @@
         document.getElementById('lowStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';
         document.getElementById('insightGrid').innerHTML = '<div class="empty-report">Não foi possível montar o diagnóstico executivo.</div>';
         document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="7"><div class="empty-report">Não foi possível carregar o painel de atenção de compras.</div></td></tr>';
+        updatePeriodHint();
       }
+    }
+
+    async function applyCustomPeriodRange() {
+      const start = parseDateInputValue(document.getElementById('periodStartDate').value);
+      const end = parseDateInputValue(document.getElementById('periodEndDate').value);
+
+      if (!start || !end) {
+        setPeriodFeedback('Informe data inicial e final para aplicar o calendário.');
+        return;
+      }
+
+      if (start > end) {
+        setPeriodFeedback('A data inicial não pode ser maior que a data final.');
+        return;
+      }
+
+      customPeriodRange = { start, end };
+      setPeriodFeedback('');
+      document.querySelectorAll('.period-btn[data-period]').forEach((el) => el.classList.remove('active'));
+      await renderReports();
+    }
+
+    async function clearCustomPeriodRange() {
+      customPeriodRange = null;
+      setPeriodFeedback('');
+      setActivePeriodButton(selectedPeriod);
+      syncCalendarInputsWithPreset(selectedPeriod);
+      await renderReports();
     }
 
     const revealEls = document.querySelectorAll('.reveal-section');
@@ -806,12 +923,20 @@
 
     document.querySelectorAll('.period-btn').forEach((btn) => {
       btn.addEventListener('click', async () => {
+        if (!btn.dataset.period) return;
         selectedPeriod = btn.dataset.period;
-        document.querySelectorAll('.period-btn').forEach((el) => el.classList.remove('active'));
-        btn.classList.add('active');
+        customPeriodRange = null;
+        setPeriodFeedback('');
+        setActivePeriodButton(selectedPeriod);
+        syncCalendarInputsWithPreset(selectedPeriod);
         await renderReports();
       });
     });
+
+    document.getElementById('btnApplyPeriod').addEventListener('click', applyCustomPeriodRange);
+    document.getElementById('btnClearPeriod').addEventListener('click', clearCustomPeriodRange);
+    document.getElementById('periodStartDate').addEventListener('change', () => setPeriodFeedback(''));
+    document.getElementById('periodEndDate').addEventListener('change', () => setPeriodFeedback(''));
 
     if (_usuario) {
       carregarAssinatura();
@@ -821,6 +946,8 @@
       });
     }
 
+    syncCalendarInputsWithPreset(selectedPeriod);
+    updatePeriodHint();
     renderReports();
   </script>
 </body>
