@@ -7,6 +7,20 @@
   const TWO_FA_KEY = 'is_2fa_session';
   const REMEMBER_KEY = 'is_remember_me';
 
+  function isLocalDevHost() {
+    const host = String(window.location.hostname || '').trim().toLowerCase();
+    return host === 'localhost' || host === '127.0.0.1';
+  }
+
+  function normalizeMode(mode) {
+    // Em ambiente publicado, desativa mock para impedir mistura de dados locais.
+    if (!isLocalDevHost()) {
+      return 'api';
+    }
+
+    return mode === 'mock' ? 'mock' : 'api';
+  }
+
   const defaultMockUsers = [
     {
       id: 1,
@@ -128,17 +142,20 @@
 
   function getMode() {
     const saved = localStorage.getItem(MODE_KEY);
-      if (saved === 'mock' || saved === 'api') {
-        return saved;
-      }
+    if (saved === 'mock' || saved === 'api') {
+      return normalizeMode(saved);
+    }
 
-      return DEFAULT_MODE;
+    return normalizeMode(DEFAULT_MODE);
   }
 
   function setMode(mode) {
-    const safeMode = mode === 'api' ? 'api' : 'mock';
+    const safeMode = normalizeMode(mode);
     localStorage.setItem(MODE_KEY, safeMode);
   }
+
+  // Garante estado consistente entre recarregamentos.
+  setMode(getMode());
 
   function makeToken() {
     return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;

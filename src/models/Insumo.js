@@ -36,7 +36,7 @@ class Insumo {
           es.qtd_seguranca_minima,
           es.ponto_pedido
         FROM insumos i
-        LEFT JOIN fornecedores f ON f.id = i.id_fornecedor_pref
+        LEFT JOIN fornecedores f ON f.id = i.id_fornecedor_pref AND f.usuario_id = i.usuario_id AND f.ativo = 1
         LEFT JOIN estoque_seguranca es ON es.id_insumo = i.id
         ${whereSql}
         ORDER BY i.id DESC`,

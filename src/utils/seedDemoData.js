@@ -123,7 +123,10 @@ async function seedDemoInsumos(connection) {
   }
 
   for (const insumo of demoInsumos) {
-    const [supplierRows] = await connection.query('SELECT id FROM fornecedores WHERE nome = ? LIMIT 1', [insumo.fornecedor_nome]);
+    const [supplierRows] = await connection.query(
+      'SELECT id FROM fornecedores WHERE nome = ? AND usuario_id = ? LIMIT 1',
+      [insumo.fornecedor_nome, usuarioId]
+    );
     let fornecedorId = supplierRows[0] && supplierRows[0].id;
 
     if (!fornecedorId) {
