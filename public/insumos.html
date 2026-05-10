@@ -1772,11 +1772,12 @@
         return;
       }
       tbody.innerHTML = lista.slice(0, 50).map((r) => {
+        const itemNome = String(r.material_nome || '-');
         const obs = String(r.observacao || r.usuario_nome || '-');
         return `
         <tr>
           <td class="entrada-col-data">${fmtDateTime(r.created_at)}</td>
-          <td class="entrada-col-item">${escHtml(r.material_nome || '-')}</td>
+          <td class="entrada-col-item" title="${escHtml(itemNome)}">${escHtml(itemNome)}</td>
           <td class="entrada-col-tipo">${getEntradaTipoBadge(r)}</td>
           <td class="entrada-col-qtd"><span class="entrada-badge">+${fmtNum(r.quantidade_delta)}</span></td>
           <td class="entrada-col-obs" title="${escHtml(obs)}">${escHtml(obs)}</td>

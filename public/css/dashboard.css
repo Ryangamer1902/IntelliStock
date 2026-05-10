@@ -550,6 +550,10 @@
       font-size: 0.92rem;
       color: #16353c;
       margin-bottom: 2px;
+      max-width: 420px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .td-nome span {

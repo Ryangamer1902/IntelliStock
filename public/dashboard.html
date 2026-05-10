@@ -695,10 +695,13 @@
         return;
       }
 
-      tbody.innerHTML = lista.map(m => `
+      tbody.innerHTML = lista.map(m => {
+        const nomeCompleto = String(m.nome || '');
+        const nomeCurtoTabela = truncateOptionLabel(nomeCompleto, 48);
+        return `
         <tr>
           <td class="td-nome">
-            <strong>${escHtml(m.nome)}</strong>
+            <strong title="${escHtml(nomeCompleto)}">${escHtml(nomeCurtoTabela)}</strong>
           </td>
           <td>${categoryBadge(m.categoria)}</td>
           <td class="cell-muted-sm">${escHtml(m.codigo_barras)}</td>
@@ -715,7 +718,8 @@
           <td class="cell-muted-md">${m.margem_lucro != null ? m.margem_lucro + '%' : '—'}</td>
           <td class="cell-brand-strong">${fmt(m.preco_manual ?? m.preco_venda ?? 0)}</td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function fillSaleMaterialOptions(selectedId = null) {
