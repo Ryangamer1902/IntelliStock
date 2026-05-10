@@ -448,6 +448,12 @@
         .replace(/"/g, '&quot;');
     }
 
+    function truncateOptionLabel(value, maxLen = 20) {
+      const text = String(value || '').trim();
+      if (text.length <= maxLen) return text;
+      return `${text.slice(0, Math.max(1, maxLen - 3)).trim()}...`;
+    }
+
     function readMockMateriais() {
       try {
         const saved = JSON.parse(localStorage.getItem(MOCK_MATERIAIS_STORAGE_KEY) || 'null');
@@ -922,7 +928,8 @@
         const qtd = Number(item.qtd_atual || 0);
         const unidade = unidadeLabel(item.unidade);
         const isSelected = selectedId !== null && id === Number(selectedId);
-        return `<option value="${id}" ${isSelected ? 'selected' : ''}>${escHtml(item.nome || 'Material')} (estoque: ${fmtNum(qtd)} ${unidade})</option>`;
+        const nomeCurto = truncateOptionLabel(item.nome || 'Material', 20);
+        return `<option value="${id}" ${isSelected ? 'selected' : ''}>${escHtml(nomeCurto)} (estoque: ${fmtNum(qtd)} ${unidade})</option>`;
       });
 
       select.innerHTML = options.join('');
@@ -1116,7 +1123,8 @@
         const id = Number(item.id || 0);
         const unidade = unidadeLabel(item.unidade);
         const stock = Number(item.qtd_atual || 0);
-        options.push(`<option value="${id}">${escHtml(item.nome || 'Material')} (${unidade}) — estoque: ${fmtNum(stock)}</option>`);
+        const nomeCurto = truncateOptionLabel(item.nome || 'Material', 18);
+        options.push(`<option value="${id}">${escHtml(nomeCurto)} (${unidade}) — estoque: ${fmtNum(stock)}</option>`);
       });
       return options.join('');
     }
@@ -1713,7 +1721,8 @@
       (allInsumos || []).forEach((item) => {
         const opt = document.createElement('option');
         opt.value = item.id;
-        opt.textContent = `${escHtml(item.nome)} — estoque: ${fmtNum(item.qtd_atual || 0)}`;
+        const nomeCurto = truncateOptionLabel(item.nome || 'Material', 20);
+        opt.textContent = `${nomeCurto} — estoque: ${fmtNum(item.qtd_atual || 0)}`;
         sel.appendChild(opt);
       });
     }
