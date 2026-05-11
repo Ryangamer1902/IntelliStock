@@ -327,6 +327,22 @@ async function notificarBaixoEstoque(materialAntes, materialDepois, usuarioId) {
   console.log(`Alerta de estoque baixo enviado para ${resultado.recipients?.length || 0} destinatário(s) - material: ${String(snapshot?.nome || materialDepois?.nome || 'Material')} - atual: ${quantidadeAtual} - mínimo: ${quantidadeMinima}`);
 }
 
+async function registrarMovimentacaoSegura(movimentacao) {
+  try {
+    await Material.registrarMovimentacao(movimentacao);
+  } catch (error) {
+    console.warn(`Falha ao registrar movimentação (${error?.message || 'erro_desconhecido'})`);
+  }
+}
+
+async function notificarBaixoEstoqueSeguro(materialAntes, materialDepois, usuarioId) {
+  try {
+    await notificarBaixoEstoque(materialAntes, materialDepois, usuarioId);
+  } catch (error) {
+    console.warn(`Falha ao processar notificação de estoque baixo (${error?.message || 'erro_desconhecido'})`);
+  }
+}
+
 async function enriquecerMateriaisComRecomendacao(materiais, usuarioId) {
   return Promise.all(
     (materiais || []).map(async (material) => {
@@ -616,7 +632,7 @@ class MateriaisController {
 
       const novoMaterial = await Material.findById(novoMaterialId, usuarioId);
 
-      await Material.registrarMovimentacao({
+      await registrarMovimentacaoSegura({
         usuario_id: usuarioId,
         material_id: novoMaterialId,
         material_nome_snapshot: String(novoMaterial?.nome || nome),
@@ -628,7 +644,7 @@ class MateriaisController {
         observacao: 'Cadastro de novo material'
       });
 
-      await notificarBaixoEstoque(null, novoMaterial, usuarioId);
+      await notificarBaixoEstoqueSeguro(null, novoMaterial, usuarioId);
 
       res.status(201).json({
         success: true,
@@ -695,7 +711,7 @@ class MateriaisController {
 
       const qtdAnterior = Number(material.quantidade_atual || 0);
       const qtdAtual = Number(materialAtualizado.quantidade_atual || 0);
-      await Material.registrarMovimentacao({
+      await registrarMovimentacaoSegura({
         usuario_id: usuarioId,
         material_id: Number(id),
         material_nome_snapshot: String(materialAtualizado?.nome || material?.nome || 'Material'),
@@ -707,7 +723,7 @@ class MateriaisController {
         observacao: 'Edição de dados do material'
       });
 
-      await notificarBaixoEstoque(material, materialAtualizado, usuarioId);
+      await notificarBaixoEstoqueSeguro(material, materialAtualizado, usuarioId);
 
       res.status(200).json({
         success: true,
@@ -739,7 +755,7 @@ class MateriaisController {
         });
       }
 
-      await Material.registrarMovimentacao({
+      await registrarMovimentacaoSegura({
         usuario_id: usuarioId,
         material_id: Number(id),
         material_nome_snapshot: String(material?.nome || 'Material removido'),
@@ -811,7 +827,7 @@ class MateriaisController {
 
             const materialAtualizado = await Material.atualizarQuantidade(id, diferenca, usuarioId);
 
-      await Material.registrarMovimentacao({
+      await registrarMovimentacaoSegura({
         usuario_id: usuarioId,
         material_id: Number(id),
         material_nome_snapshot: String(materialAtualizado?.nome || materialAntes?.nome || 'Material'),
@@ -823,7 +839,7 @@ class MateriaisController {
         observacao: observacao || (isVenda ? 'Venda registrada' : 'Ajuste manual de quantidade')
       });
 
-      await notificarBaixoEstoque(materialAntes, materialAtualizado, usuarioId);
+      await notificarBaixoEstoqueSeguro(materialAntes, materialAtualizado, usuarioId);
 
       res.status(200).json({
         success: true,
