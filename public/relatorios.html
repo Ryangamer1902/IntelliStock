@@ -254,6 +254,12 @@
       return value || '-';
     }
 
+    function truncateLabel(value, maxLen = 34) {
+      const text = String(value || '').trim();
+      if (text.length <= maxLen) return text;
+      return text.slice(0, Math.max(1, maxLen - 3)).trimEnd() + '...';
+    }
+
     function statusAssinaturaLabel(status) {
       const map = {
         ativa: 'Ativa',
@@ -638,7 +644,9 @@
         const value = item[metricKey] || 0;
         const width = Math.max(8, Math.round((value / maxValue) * 100));
         const isLow = typeof lowVariant === 'function' ? !!lowVariant(item) : !!lowVariant;
-        return '<div class="rank-item"><div class="rank-head"><span>' + escHtml(item.nome) + '</span><span>' + formatter(value, item) + '</span></div><div class="bar"><div class="fill ' + (isLow ? 'fill-low' : '') + '" style="width:' + width + '%"></div></div><div class="rank-foot">' + footBuilder(item) + '</div></div>';
+        const nomeCompleto = String(item.nome || '-');
+        const nomeCurto = truncateLabel(nomeCompleto, 30);
+        return '<div class="rank-item"><div class="rank-head"><span class="rank-name" title="' + escHtml(nomeCompleto) + '">' + escHtml(nomeCurto) + '</span><span>' + formatter(value, item) + '</span></div><div class="bar"><div class="fill ' + (isLow ? 'fill-low' : '') + '" style="width:' + width + '%"></div></div><div class="rank-foot">' + footBuilder(item) + '</div></div>';
       }).join('');
     }
 
@@ -716,7 +724,7 @@
 
       target.innerHTML = analytics.map(item =>
         '<tr class="table-row-' + urgencyLevel(item) + '">' +
-          '<td data-label="Item"><strong class="item-name">' + escHtml(item.nome) + '</strong><div class="cell-sub">' + escHtml(item.tipo_item || 'Material') + '</div></td>' +
+          '<td data-label="Item"><strong class="item-name" title="' + escHtml(item.nome || '-') + '">' + escHtml(item.nome) + '</strong><div class="cell-sub">' + escHtml(item.tipo_item || 'Material') + '</div></td>' +
           '<td data-label="Estoque atual"><span class="metric-value">' + Number(item.quantidade_atual || item.estoque || 0) + ' un.</span></td>' +
           '<td data-label="Falta p/ mínimo"><span class="metric-value metric-alert">' + Number(item.deficit || 0) + ' un.</span></td>' +
           '<td data-label="Urgência">' + urgencyBadge(urgencyLevel(item)) + '</td>' +
@@ -797,7 +805,10 @@
       document.getElementById('kpiItensSub').textContent = totalItens === 1 ? 'item monitorado' : 'itens monitorados';
       document.getElementById('kpiSaidas').textContent = totalSaidas + ' un.';
       document.getElementById('kpiSaidasSub').textContent = 'vendas registradas no histórico';
-      document.getElementById('kpiTop').textContent = topItemValido ? topItemValido.nome : '-';
+      const kpiTopEl = document.getElementById('kpiTop');
+      const topNomeCompleto = topItemValido ? String(topItemValido.nome || '-') : '-';
+      kpiTopEl.textContent = topItemValido ? truncateLabel(topNomeCompleto, 28) : '-';
+      kpiTopEl.title = topNomeCompleto;
       document.getElementById('kpiTopSub').textContent = topItemValido ? topItemValido.saidasPeriodo + ' un. vendidas' : 'sem leitura disponível';
       document.getElementById('kpiCriticos').textContent = criticos;
       document.getElementById('kpiCriticosSub').textContent = criticos === 0 ? 'nenhum item crítico agora' : 'precisam de reposição';

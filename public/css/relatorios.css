@@ -682,6 +682,19 @@
       color: var(--ink);
       line-height: 1;
       margin-bottom: 4px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    #kpiTop {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      line-height: 1.08;
+      min-height: calc(1.08em * 2);
+      font-size: 1.55rem;
     }
 
     .kpi-sub {
@@ -726,6 +739,16 @@
       font-size: 0.88rem;
       font-weight: 700;
       margin-bottom: 4px;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .rank-name {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .bar {
@@ -976,6 +999,11 @@
     }
 
     .item-name {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-family: 'Sora', sans-serif;
       font-size: 1rem;
       letter-spacing: -0.2px;

@@ -163,22 +163,22 @@
       <p class="sub" id="modalSub">Preencha os dados do novo item de estoque.</p>
       <div class="modal-feedback" id="modalFeedback"></div>
       <div class="field">
-        <label>Nome do material *</label>
+        <label>Nome do material</label>
         <input type="text" id="fieldNome" placeholder="Ex: Parafuso M6 inox">
       </div>
       <div class="field">
-        <label>Código de barras (13 dígitos) *</label>
+        <label>Código de barras (13 dígitos)</label>
         <input type="text" id="fieldCodigo" placeholder="Ex: 7891234567890" maxlength="13" pattern="\\d{13}" required>
       </div>
       <div class="field">
-        <label>Fornecedor *</label>
+        <label>Fornecedor</label>
         <div style="position:relative;">
           <input type="text" id="fieldFornecedor" placeholder="Ex: ACME Ltda" autocomplete="off" required>
           <ul id="fornecedorDropdown" class="fornecedor-dropdown is-hidden"></ul>
         </div>
       </div>
       <div class="field">
-        <label>Unidade de medida *</label>
+        <label>Unidade de medida</label>
         <select id="fieldUnidade">
           <option value="un" selected>Unidade (un)</option>
           <option value="kg">Quilo (kg)</option>
@@ -187,17 +187,18 @@
       </div>
       <div class="field-row">
         <div class="field">
-          <label id="labelQtd">Quantidade *</label>
+          <label id="labelQtd">Quantidade</label>
           <input type="number" id="fieldQtd" placeholder="0" min="0" step="1">
           <small id="labelQtdMeta" class="is-hidden"></small>
         </div>
         <div class="field">
-          <label>Quantidade mínima *</label>
+          <label>Quantidade mínima</label>
           <input type="number" id="fieldQtdMin" placeholder="10" min="0" step="1">
+          <small class="field-meta-spacer" aria-hidden="true">&nbsp;</small>
         </div>
       </div>
       <div class="field">
-        <label>Preço de custo (R$) *</label>
+        <label>Preço de custo (R$)</label>
         <input type="number" id="fieldCusto" placeholder="0.00" step="0.01" min="0">
       </div>
       <div class="field-row">
@@ -229,7 +230,7 @@
         <select id="saleMaterial"></select>
       </div>
       <div class="field">
-        <label>Quantidade vendida *</label>
+        <label>Quantidade vendida</label>
         <input type="number" id="saleQtd" min="0.001" step="0.001" placeholder="Ex: 3">
       </div>
       <div class="modal-actions">
@@ -276,17 +277,17 @@
 
       <div class="field-row">
         <div class="field">
-          <label id="prodFinalNameLabel">Nome do novo item final *</label>
+          <label id="prodFinalNameLabel">Nome do novo item final</label>
           <input type="text" id="prodFinalName" placeholder="Ex: Kit Chave Estrela Premium">
         </div>
         <div class="field">
-          <label id="prodQtdLabel">Quantidade produzida *</label>
+          <label id="prodQtdLabel">Quantidade produzida</label>
           <input type="number" id="prodQtd" min="1" step="1" placeholder="Ex: 10">
         </div>
       </div>
 
       <div class="field">
-        <label id="prodQtdMinLabel">Estoque mínimo do item final *</label>
+        <label id="prodQtdMinLabel">Estoque mínimo do item final</label>
         <input type="number" id="prodQtdMin" min="0" step="1" placeholder="Ex: 10">
       </div>
 
@@ -849,8 +850,8 @@
       document.getElementById('btnDeleteModal').classList.remove('is-hidden');
 
       labelQtdEl.textContent = editingProductionItem
-        ? `Quantidade de produção adicional (${unidadeAtualLabel}) *`
-        : `Quantidade a adicionar em ${unidadeAtualLabel} *`;
+        ? `Quantidade de produção adicional (${unidadeAtualLabel})`
+        : `Quantidade a adicionar em ${unidadeAtualLabel}`;
       labelQtdMetaEl.textContent = `Atual: ${fmtNum(quantidadeAtual)} ${unidadeAtualLabel}`;
       labelQtdMetaEl.classList.remove('is-hidden');
 
@@ -903,7 +904,7 @@
         return `
           <tr>
             <td>
-              <span class="material-name">${escHtml(item.nome || 'Sem nome')}</span>
+              <span class="material-name" title="${escHtml(item.nome || 'Sem nome')}">${escHtml(item.nome || 'Sem nome')}</span>
               <span class="material-id">ID: ${item.id || '-'}</span>
             </td>
             <td>${catBadge}</td>
@@ -960,9 +961,9 @@
       productionManualPriceLocked = false;
       document.getElementById('productionTitle').textContent = 'Registrar produção';
       document.getElementById('productionSub').textContent = 'Crie um item final pelo nome e monte a receita com quantos componentes quiser. O sistema dá baixa nos componentes e entrada no item final.';
-      document.getElementById('prodFinalNameLabel').textContent = 'Nome do novo item final *';
-      document.getElementById('prodQtdLabel').textContent = 'Quantidade produzida *';
-      document.getElementById('prodQtdMinLabel').textContent = 'Estoque mínimo do item final *';
+      document.getElementById('prodFinalNameLabel').textContent = 'Nome do novo item final';
+      document.getElementById('prodQtdLabel').textContent = 'Quantidade produzida';
+      document.getElementById('prodQtdMinLabel').textContent = 'Estoque mínimo do item final';
       document.getElementById('btnSaveProduction').textContent = 'Confirmar produção';
       document.getElementById('prodFinalName').disabled = false;
     }
@@ -974,8 +975,8 @@
       document.getElementById('productionTitle').textContent = 'Editar receita do item final';
       document.getElementById('productionSub').textContent = 'Revise os componentes usados, remova o que não quiser e atualize o custo/preço do item final sem registrar nova produção.';
       document.getElementById('prodFinalNameLabel').textContent = 'Item final';
-      document.getElementById('prodQtdLabel').textContent = 'Lote base da receita *';
-      document.getElementById('prodQtdMinLabel').textContent = 'Estoque mínimo do item final *';
+      document.getElementById('prodQtdLabel').textContent = 'Lote base da receita';
+      document.getElementById('prodQtdMinLabel').textContent = 'Estoque mínimo do item final';
       document.getElementById('btnSaveProduction').textContent = 'Salvar receita';
       document.getElementById('prodFinalName').disabled = true;
     }
@@ -1584,7 +1585,7 @@
       editItemId = null;
       editingProductionItem = false;
       document.getElementById('btnEditProductionRecipe').classList.add('is-hidden');
-      document.getElementById('labelQtd').textContent = 'Quantidade *';
+      document.getElementById('labelQtd').textContent = 'Quantidade';
       document.getElementById('labelQtdMeta').textContent = '';
       document.getElementById('labelQtdMeta').classList.add('is-hidden');
       document.getElementById('btnDeleteModal').classList.add('is-hidden');
@@ -1664,7 +1665,7 @@
         document.getElementById('labelQtdMeta').classList.add('is-hidden');
       } else {
         const atual = Number(allInsumos.find((i) => Number(i.id) === editItemId)?.qtd_atual || 0);
-        document.getElementById('labelQtd').textContent = `Quantidade a adicionar em ${unidadeLabel(unidade)} *`;
+        document.getElementById('labelQtd').textContent = `Quantidade a adicionar em ${unidadeLabel(unidade)}`;
         document.getElementById('labelQtdMeta').textContent = `Atual: ${fmtNum(atual)} ${unidadeLabel(unidade)}`;
         document.getElementById('labelQtdMeta').classList.remove('is-hidden');
       }

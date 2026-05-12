@@ -1045,6 +1045,13 @@
       gap: 12px;
     }
 
+    .field-meta-spacer {
+      display: block;
+      min-height: 18px;
+      margin-top: 6px;
+      visibility: hidden;
+    }
+
     .modal-actions {
       display: flex;
       gap: 10px;
@@ -1119,6 +1126,10 @@
       color: #183841;
       margin-bottom: 2px;
       display: block;
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .material-id {
       color: var(--muted);
