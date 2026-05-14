@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard | IntelliStock</title>
+  <link rel="icon" type="image/svg+xml" href="/images/intellistock-logo.svg">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-511W6LFJMQ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-511W6LFJMQ');
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -173,8 +182,8 @@
       <div class="modal-feedback" id="modalFeedback"></div>
       <input type="hidden" id="editId">
       <div class="field">
-        <label>Nome do material</label>
-        <input type="text" id="fieldNome" placeholder="Ex: Parafuso M6 inox">
+        <label>Nome do material *</label>
+        <input type="text" id="fieldNome" placeholder="Ex: Parafuso M6 inox" maxlength="150">
       </div>
       <div class="field">
         <label>Código de barras (13 dígitos)</label>
@@ -352,6 +361,7 @@
     const MOCK_NEXT_ID_KEY = 'intellistock_mock_next_id_v1';
     const MOCK_MOVIMENTACOES_STORAGE_KEY = 'intellistock_mock_movimentacoes_v1';
     const MATERIAL_CATEGORY_MAP_KEY = 'intellistock_material_category_map_v1';
+    const MAX_NOME_ITEM = 150;
     const defaultMockMateriais = [
       { id: 1, codigo_barras: '7891234000010', nome: 'Parafuso M6 Inox', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 250, quantidade_minima: 100, preco_custo: 0.35, margem_lucro: 30, preco_manual: 0.45, categoria: 'materia_prima' },
       { id: 2, codigo_barras: '7891234000027', nome: 'Porca Sextavada M6', fornecedor: 'MetalSul Distribuidora', quantidade_atual: 180, quantidade_minima: 100, preco_custo: 0.22, margem_lucro: 35, preco_manual: 0.30, categoria: 'materia_prima' },
@@ -1186,6 +1196,13 @@
         fb.className = 'modal-feedback error';
         return;
       }
+
+      if (nome.length > MAX_NOME_ITEM) {
+        fb.textContent = `O nome do item deve ter no máximo ${MAX_NOME_ITEM} caracteres.`;
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
       // Validação do código de barras EAN-13
       if (!/^\d{13}$/.test(codigo)) {
         fb.textContent = 'Código de barras inválido. Informe exatamente 13 números.';

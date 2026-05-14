@@ -1,8 +1,18 @@
-</head>
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Insumos | IntelliStock</title>
+  <link rel="icon" type="image/svg+xml" href="/images/intellistock-logo.svg">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-511W6LFJMQ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-511W6LFJMQ');
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -163,8 +173,8 @@
       <p class="sub" id="modalSub">Preencha os dados do novo item de estoque.</p>
       <div class="modal-feedback" id="modalFeedback"></div>
       <div class="field">
-        <label>Nome do material</label>
-        <input type="text" id="fieldNome" placeholder="Ex: Parafuso M6 inox">
+        <label>Nome do material *</label>
+        <input type="text" id="fieldNome" placeholder="Ex: Parafuso M6 inox" maxlength="150">
       </div>
       <div class="field">
         <label>Código de barras (13 dígitos)</label>
@@ -277,8 +287,8 @@
 
       <div class="field-row">
         <div class="field">
-          <label id="prodFinalNameLabel">Nome do novo item final</label>
-          <input type="text" id="prodFinalName" placeholder="Ex: Kit Chave Estrela Premium">
+          <label id="prodFinalNameLabel">Nome do novo item final *</label>
+          <input type="text" id="prodFinalName" placeholder="Ex: Kit Chave Estrela Premium" maxlength="150">
         </div>
         <div class="field">
           <label id="prodQtdLabel">Quantidade produzida</label>
@@ -388,6 +398,7 @@
     const MOCK_MATERIAIS_STORAGE_KEY = 'intellistock_mock_materiais_v1';
     const MOCK_MATERIAIS_NEXT_ID_KEY = 'intellistock_mock_next_id_v1';
     const MOCK_MOVIMENTACOES_STORAGE_KEY = 'intellistock_mock_movimentacoes_v1';
+    const MAX_NOME_ITEM = 150;
 
     function getMode() {
       const saved = localStorage.getItem('auth_mode');
@@ -2118,6 +2129,12 @@
         return;
       }
 
+      if (finalName.length > MAX_NOME_ITEM) {
+        fb.textContent = `O nome do item final deve ter no máximo ${MAX_NOME_ITEM} caracteres.`;
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
       if (!Number.isFinite(producedQty) || producedQty <= 0) {
         fb.textContent = 'Informe uma quantidade produzida válida.';
         fb.className = 'modal-feedback error';
@@ -2587,6 +2604,12 @@
 
       if (!nome || !codigo || !fornecedor || Number.isNaN(qtdMin) || Number.isNaN(custo) || Number.isNaN(preco)) {
         fb.textContent = 'Confira os campos obrigatórios: nome, código de barras, fornecedor, quantidade mínima, custo e preço.';
+        fb.className = 'modal-feedback error';
+        return;
+      }
+
+      if (nome.length > MAX_NOME_ITEM) {
+        fb.textContent = `O nome do item deve ter no máximo ${MAX_NOME_ITEM} caracteres.`;
         fb.className = 'modal-feedback error';
         return;
       }

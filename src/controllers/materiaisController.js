@@ -3,6 +3,7 @@
 
 const Material = require('../models/Material');
 const { enviarAlertaEstoqueBaixo } = require('../services/emailService');
+const LIMITE_NOME_MATERIAL = 150;
 
 function calcularPrecoVenda(precoCusto, margemLucro) {
   const custo = Number(precoCusto) || 0;
@@ -599,13 +600,21 @@ class MateriaisController {
     try {
       const { codigo_barras, nome, fornecedor, unidade, quantidade_atual, quantidade_minima, preco_custo, margem_lucro, preco_manual } = req.body;
       const usuarioId = req.usuario_id;
+      const nomeNormalizado = String(nome || '').trim();
       const precoVenda = preco_manual !== undefined ? Number(preco_manual) : calcularPrecoVenda(preco_custo, margem_lucro);
       const unidadeNormalizada = normalizarUnidade(unidade);
 
-      if (!codigo_barras || !nome || !fornecedor) {
+      if (!codigo_barras || !nomeNormalizado || !fornecedor) {
         return res.status(400).json({
           success: false,
           message: 'Para cadastrar o item, informe código de barras, nome e fornecedor.'
+        });
+      }
+
+      if (nomeNormalizado.length > LIMITE_NOME_MATERIAL) {
+        return res.status(400).json({
+          success: false,
+          message: `O nome do item deve ter no máximo ${LIMITE_NOME_MATERIAL} caracteres.`
         });
       }
 
@@ -620,7 +629,7 @@ class MateriaisController {
       const novoMaterialId = await Material.create({
         usuario_id: usuarioId,
         codigo_barras,
-        nome,
+        nome: nomeNormalizado,
         fornecedor,
         unidade: unidadeNormalizada,
         quantidade_atual: quantidade_atual || 0,
@@ -635,7 +644,7 @@ class MateriaisController {
       await registrarMovimentacaoSegura({
         usuario_id: usuarioId,
         material_id: novoMaterialId,
-        material_nome_snapshot: String(novoMaterial?.nome || nome),
+        material_nome_snapshot: String(novoMaterial?.nome || nomeNormalizado),
         tipo_movimento: 'CADASTRO',
         quantidade_delta: Number(quantidade_atual || 0),
         quantidade_anterior: 0,
@@ -688,9 +697,26 @@ class MateriaisController {
         }
       }
 
+      if (nome !== undefined) {
+        const nomeNormalizado = String(nome || '').trim();
+        if (!nomeNormalizado) {
+          return res.status(400).json({
+            success: false,
+            message: 'Nome do item não pode ficar vazio.'
+          });
+        }
+
+        if (nomeNormalizado.length > LIMITE_NOME_MATERIAL) {
+          return res.status(400).json({
+            success: false,
+            message: `O nome do item deve ter no máximo ${LIMITE_NOME_MATERIAL} caracteres.`
+          });
+        }
+      }
+
       const dadosAtualizacao = {};
       if (codigo_barras !== undefined) dadosAtualizacao.codigo_barras = codigo_barras;
-      if (nome !== undefined) dadosAtualizacao.nome = nome;
+      if (nome !== undefined) dadosAtualizacao.nome = String(nome).trim();
       if (fornecedor !== undefined) dadosAtualizacao.fornecedor = fornecedor;
       if (unidade !== undefined) dadosAtualizacao.unidade = normalizarUnidade(unidade);
       if (quantidade_atual !== undefined) dadosAtualizacao.quantidade_atual = quantidade_atual;
