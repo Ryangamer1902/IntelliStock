@@ -7,20 +7,6 @@
   const TWO_FA_KEY = 'is_2fa_session';
   const REMEMBER_KEY = 'is_remember_me';
 
-  function isLocalDevHost() {
-    const host = String(window.location.hostname || '').trim().toLowerCase();
-    return host === 'localhost' || host === '127.0.0.1';
-  }
-
-  function normalizeMode(mode) {
-    // Em ambiente publicado, desativa mock para impedir mistura de dados locais.
-    if (!isLocalDevHost()) {
-      return 'api';
-    }
-
-    return mode === 'mock' ? 'mock' : 'api';
-  }
-
   const defaultMockUsers = [
     {
       id: 1,
@@ -142,20 +128,17 @@
 
   function getMode() {
     const saved = localStorage.getItem(MODE_KEY);
-    if (saved === 'mock' || saved === 'api') {
-      return normalizeMode(saved);
-    }
+      if (saved === 'mock' || saved === 'api') {
+        return saved;
+      }
 
-    return normalizeMode(DEFAULT_MODE);
+      return DEFAULT_MODE;
   }
 
   function setMode(mode) {
-    const safeMode = normalizeMode(mode);
+    const safeMode = mode === 'api' ? 'api' : 'mock';
     localStorage.setItem(MODE_KEY, safeMode);
   }
-
-  // Garante estado consistente entre recarregamentos.
-  setMode(getMode());
 
   function makeToken() {
     return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
@@ -178,17 +161,6 @@
 
   async function apiVerify(payload) {
     const response = await fetch('/api/auth/verificar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await response.json();
-    return data;
-  }
-
-  async function apiReenviarCodigo(payload) {
-    const response = await fetch('/api/auth/reenviar-codigo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -354,38 +326,6 @@
     return { success: true, usuario: pending.usuario };
   }
 
-  async function mockReenviarCodigo(payload) {
-    const tokenTemp = String(payload.token_temp || '');
-    const pendingRaw = sessionStorage.getItem('mock_2fa_pending');
-    if (!pendingRaw) {
-      return { success: false, message: 'Sessão inválida. Faça login novamente.' };
-    }
-
-    const pending = JSON.parse(pendingRaw);
-    if (pending.token_temp !== tokenTemp) {
-      return { success: false, message: 'Sessão inválida. Faça login novamente.' };
-    }
-
-    const newTokenTemp = makeToken();
-    const newCode = makeCode();
-    const expiraEm = Date.now() + 10 * 60 * 1000;
-
-    sessionStorage.setItem('mock_2fa_pending', JSON.stringify({
-      token_temp: newTokenTemp,
-      codigo: newCode,
-      expiraEm,
-      usuario: pending.usuario
-    }));
-
-    return {
-      success: true,
-      token_temp: newTokenTemp,
-      nome: pending.usuario?.nome || 'Usuário',
-      email_enviado: false,
-      codigo_demo: newCode
-    };
-  }
-
   async function mockSolicitarReset(payload) {
     const email = String(payload.email || '').trim().toLowerCase();
     if (!/\S+@\S+\.\S+/.test(email)) {
@@ -428,10 +368,6 @@
     return getMode() === 'api' ? apiVerify(payload) : mockVerify(payload);
   }
 
-  async function reenviarCodigo(payload) {
-    return getMode() === 'api' ? apiReenviarCodigo(payload) : mockReenviarCodigo(payload);
-  }
-
   async function solicitarReset(payload) {
     return getMode() === 'api' ? apiSolicitarReset(payload) : mockSolicitarReset(payload);
   }
@@ -448,7 +384,6 @@
     login,
     register,
     verify,
-    reenviarCodigo,
     solicitarReset,
     redefinirSenha,
     isRememberEnabled,

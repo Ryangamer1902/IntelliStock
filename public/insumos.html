@@ -906,6 +906,7 @@
         const precoCusto = Number(item.preco_custo_un || 0);
         const valorEstoque = quantidadeAtual * precoCusto;
         const fornecedor = item.fornecedor_nome || 'Sem fornecedor';
+        const fornecedorCurto = truncateOptionLabel(fornecedor, 32);
         const unidade = unidadeLabel(item.unidade);
         const isProd = isProductionItem(item);
         const catBadge = isProd
@@ -919,7 +920,7 @@
               <span class="material-id">ID: ${item.id || '-'}</span>
             </td>
             <td>${catBadge}</td>
-            <td>${escHtml(fornecedor)}</td>
+            <td class="cell-fornecedor" title="${escHtml(fornecedor)}">${escHtml(fornecedorCurto)}</td>
             <td>${fmtNum(quantidadeAtual)}</td>
             <td>${pontoPedido > 0 ? fmtNum(pontoPedido) : '-'}</td>
             <td>${badge(quantidadeAtual, pontoPedido)}</td>

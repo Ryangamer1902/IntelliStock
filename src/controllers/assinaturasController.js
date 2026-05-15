@@ -5,16 +5,9 @@ const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 
 // ==================== PLANOS ====================
 const PLANOS = {
-  teste:   { nome: 'Plano Teste IntelliStock',       preco: 10.00,   dias: 1   },
   semanal: { nome: 'Assinatura Semanal IntelliStock', preco: 59.00,   dias: 7   },
   mensal:  { nome: 'Assinatura Mensal IntelliStock',  preco: 179.00,  dias: 30  },
   anual:   { nome: 'Assinatura Anual IntelliStock',   preco: 1690.00, dias: 365 }
-};
-
-const PLANOS_PUBLICOS = {
-  semanal: PLANOS.semanal,
-  mensal: PLANOS.mensal,
-  anual: PLANOS.anual
 };
 
 function maskCpfCnpj(value) {
@@ -157,6 +150,14 @@ async function criarPreferenciaMp(usuarioId, email, nome, cpfCnpj, planoId) {
       unit_price: plano.preco,
       currency_id: 'BRL'
     }],
+    payer: {
+      name: nome,
+      email,
+      identification: {
+        type: cpfCnpj.length <= 11 ? 'CPF' : 'CNPJ',
+        number: cpfCnpj
+      }
+    },
     external_reference: String(usuarioId),
     metadata: {
       usuario_id: usuarioId,
@@ -165,55 +166,19 @@ async function criarPreferenciaMp(usuarioId, email, nome, cpfCnpj, planoId) {
     statement_descriptor: 'INTELLISTOCK'
   };
 
-  body.back_urls = {
-    success: `${appUrl}/checkout.html?status=success`,
-    failure: `${appUrl}/checkout.html?status=failure`,
-    pending: `${appUrl}/checkout.html?status=pending`
-  };
-
-  // O webhook só deve ser enviado quando a URL da aplicação for pública.
+  // Em localhost o Mercado Pago pode rejeitar auto_return/back_urls.
+  // Para ambiente público, enviamos o fluxo completo de retorno + webhook.
   if (isPublicHttpUrl(appUrl)) {
+    body.back_urls = {
+      success: `${appUrl}/checkout.html?status=success`,
+      failure: `${appUrl}/checkout.html?status=failure`,
+      pending: `${appUrl}/checkout.html?status=pending`
+    };
     body.auto_return = 'approved';
     body.notification_url = `${appUrl}/api/assinaturas/webhook`;
   }
 
   return prefClient.create({ body });
-}
-
-async function reconciliarUsuarioPorPagamento(db, usuarioId) {
-  if (!db || !process.env.MP_ACCESS_TOKEN || !usuarioId) {
-    return { success: false, approved: false, message: 'Reconciliação indisponível.' };
-  }
-
-  const searchUrl = new URL('https://api.mercadopago.com/v1/payments/search');
-  searchUrl.searchParams.set('external_reference', String(usuarioId));
-  searchUrl.searchParams.set('sort', 'date_created');
-  searchUrl.searchParams.set('criteria', 'desc');
-  searchUrl.searchParams.set('limit', '10');
-
-  const response = await fetch(searchUrl, {
-    headers: {
-      Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Falha ao consultar pagamentos do Mercado Pago (${response.status}).`);
-  }
-
-  const data = await response.json();
-  const pagamentos = Array.isArray(data.results) ? data.results : [];
-  const aprovado = pagamentos.find((payment) => String(payment.status || '').toLowerCase() === 'approved');
-
-  if (!aprovado?.id) {
-    return {
-      success: true,
-      approved: false,
-      message: 'Nenhum pagamento aprovado encontrado para esta conta.'
-    };
-  }
-
-  return ativarAssinaturaPorPagamento(db, String(aprovado.id));
 }
 
 class AssinaturasController {
@@ -239,9 +204,7 @@ class AssinaturasController {
     const cpfCnpj = String(req.body.cpf_cnpj || '').replace(/\D/g, '');
     const planoId = String(req.body.plano    || 'mensal');
 
-    if (!PLANOS_PUBLICOS[planoId]) {
-      return res.status(400).json({ success: false, message: 'Plano inválido.' });
-    }
+    if (!PLANOS[planoId])    return res.status(400).json({ success: false, message: 'Plano inválido.' });
     if (nome.length < 3)     return res.status(400).json({ success: false, message: 'Nome precisa ter ao menos 3 caracteres.' });
     if (!emailValido(email)) return res.status(400).json({ success: false, message: 'E-mail inválido.' });
     if (cpfCnpj.length < 11) return res.status(400).json({ success: false, message: 'CPF (11 dígitos) ou CNPJ (14 dígitos) inválido.' });
@@ -344,9 +307,7 @@ class AssinaturasController {
     const planoId = String(req.body.plano    || 'mensal');
     const cpfCnpj = String(req.body.cpf_cnpj || '').replace(/\D/g, '');
 
-    if (!PLANOS_PUBLICOS[planoId]) {
-      return res.status(400).json({ success: false, message: 'Plano inválido.' });
-    }
+    if (!PLANOS[planoId])    return res.status(400).json({ success: false, message: 'Plano inválido.' });
     if (cpfCnpj.length < 11) return res.status(400).json({ success: false, message: 'CPF ou CNPJ obrigatório para renovação.' });
 
     try {
@@ -585,4 +546,3 @@ class AssinaturasController {
 }
 
 module.exports = AssinaturasController;
-module.exports.reconciliarUsuarioPorPagamento = reconciliarUsuarioPorPagamento;

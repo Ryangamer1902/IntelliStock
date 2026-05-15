@@ -527,6 +527,13 @@
       color: var(--muted);
     }
 
+    .cell-ellipsis {
+      max-width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .cell-muted-md {
       color: var(--muted);
       font-size: 0.88rem;
@@ -773,6 +780,24 @@
     .field select:focus {
       border-color: rgba(14, 143, 131, 0.55);
       box-shadow: 0 0 0 4px rgba(14, 143, 131, 0.12);
+    }
+
+    #saleMaterialSearch {
+      margin-bottom: 8px;
+    }
+
+    #saleMaterial {
+      min-height: 220px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+
+    #saleMaterial option {
+      padding: 6px 8px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
     }
 
     .field-row {

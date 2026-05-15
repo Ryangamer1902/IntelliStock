@@ -450,6 +450,21 @@ tbody td {
   vertical-align: middle;
 }
 
+.td-fornecedor strong,
+.td-contato a,
+.td-contato span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-contato a,
+.td-contato span {
+  font-size: 0.86rem;
+}
+
 tbody tr:hover { background: rgba(14, 143, 131, 0.05); }
 tbody tr:last-child td { border-bottom: 0; }
 

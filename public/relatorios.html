@@ -111,6 +111,7 @@
           <div class="period-actions">
             <button class="period-btn period-btn-secondary" id="btnApplyPeriod" type="button">Aplicar</button>
             <button class="period-btn period-btn-secondary" id="btnClearPeriod" type="button">Limpar</button>
+            <button class="period-btn period-btn-download" id="btnDownloadPdf" type="button">Baixar PDF</button>
           </div>
         </div>
         <div class="period-hint" id="periodHint">Filtro ativo: Hoje</div>
@@ -165,6 +166,16 @@
           <div class="rank-list" id="lowStockList"></div>
         </article>
       </div>
+
+      <section class="full-panel reveal-section">
+        <h2>Valor vendido por plataforma de e-commerce</h2>
+        <p>
+          Leitura de faturamento por canal com base nas vendas registradas no hist&#243;rico. Para classificar corretamente,
+          use a plataforma na observa&#231;&#227;o da venda (ex.: "Venda Shopee" ou "Venda Mercado Livre").
+        </p>
+        <div class="kpi-sub" id="platformSalesSummary">Sem vendas registradas no período.</div>
+        <div class="rank-list" id="platformSalesList"></div>
+      </section>
 
       <section class="full-panel reveal-section">
         <h2>Diagn&#243;stico executivo do estoque</h2>
@@ -503,6 +514,114 @@
       };
     }
 
+    function normalizePlatformLabel(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+    }
+
+    function inferPlatformFromMovimentacao(mov) {
+      const text = normalizePlatformLabel(mov?.observacao || '');
+      if (!text) return 'Sem plataforma informada';
+
+      if (text.includes('mercado livre') || text.includes('mercadolivre') || text.includes('ml')) return 'Mercado Livre';
+      if (text.includes('shopee')) return 'Shopee';
+      if (text.includes('amazon')) return 'Amazon';
+      if (text.includes('magalu') || text.includes('magazine luiza')) return 'Magalu';
+      if (text.includes('ifood') || text.includes('i food')) return 'iFood';
+      if (text.includes('site') || text.includes('loja virtual') || text.includes('ecommerce') || text.includes('e-commerce')) return 'Site próprio';
+      if (text.includes('whatsapp') || text.includes('whats')) return 'WhatsApp';
+      if (text.includes('instagram') || text.includes('insta')) return 'Instagram';
+      if (text.includes('facebook')) return 'Facebook';
+      if (text.includes('balcao') || text.includes('balcao fisico') || text.includes('loja fisica') || text.includes('fisica')) return 'Loja física';
+
+      return 'Outros canais';
+    }
+
+    function buildMaterialLookupMap(materiais) {
+      const map = new Map();
+      (materiais || []).forEach((item) => {
+        const idNum = Number(item?.id || 0);
+        if (idNum > 0) map.set(`id:${idNum}`, item);
+        const nome = String(item?.nome || '').toLowerCase();
+        if (nome) map.set(`nome:${nome}`, item);
+      });
+      return map;
+    }
+
+    function buildSalesByPlatformStats(movimentacoes, materiais) {
+      const materialMap = buildMaterialLookupMap(materiais);
+      const platformMap = new Map();
+      let totalValor = 0;
+      let totalUnidades = 0;
+
+      (movimentacoes || []).forEach((mov) => {
+        if (!isVendaMovimentacao(mov)) return;
+
+        const qtd = Math.abs(Number(mov?.quantidade_delta || 0));
+        if (qtd <= 0) return;
+
+        const keyId = Number(mov?.material_id || 0) > 0 ? `id:${Number(mov.material_id)}` : null;
+        const keyNome = `nome:${String(mov?.material_nome || '').toLowerCase()}`;
+        const material = (keyId && materialMap.get(keyId)) || materialMap.get(keyNome) || null;
+        const precoVenda = Number(material?.preco_manual || 0);
+        const valor = Math.max(0, qtd * precoVenda);
+
+        const plataforma = inferPlatformFromMovimentacao(mov);
+        const atual = platformMap.get(plataforma) || {
+          plataforma,
+          valorVendido: 0,
+          unidadesVendidas: 0,
+          registros: 0
+        };
+
+        atual.valorVendido += valor;
+        atual.unidadesVendidas += qtd;
+        atual.registros += 1;
+        platformMap.set(plataforma, atual);
+
+        totalValor += valor;
+        totalUnidades += qtd;
+      });
+
+      const items = [...platformMap.values()].sort((a, b) => b.valorVendido - a.valorVendido);
+      return {
+        items,
+        totalValor,
+        totalUnidades
+      };
+    }
+
+    function renderPlatformSales(platformStats) {
+      const target = document.getElementById('platformSalesList');
+      const summary = document.getElementById('platformSalesSummary');
+
+      if (!platformStats?.items?.length) {
+        target.innerHTML = '<div class="empty-report">Nenhuma venda com valor calculável no período selecionado.</div>';
+        summary.textContent = 'Dica: registre a plataforma na observação da venda (ex.: "Venda Shopee").';
+        return;
+      }
+
+      const totalValorFmt = fmtMoney(platformStats.totalValor || 0);
+      const totalUnidadesFmt = Number(platformStats.totalUnidades || 0).toLocaleString('pt-BR');
+      summary.textContent = 'Total vendido no período: ' + totalValorFmt + ' em ' + totalUnidadesFmt + ' un.';
+
+      renderRankList(
+        'platformSalesList',
+        platformStats.items,
+        'valorVendido',
+        (value) => fmtMoney(value || 0),
+        (item) => {
+          const un = Number(item.unidadesVendidas || 0).toLocaleString('pt-BR');
+          const rg = Number(item.registros || 0).toLocaleString('pt-BR');
+          return item.plataforma + ' • ' + un + ' un. • ' + rg + ' registro(s)';
+        },
+        false
+      );
+    }
+
     function sameDay(a, b) {
       return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
     }
@@ -525,6 +644,13 @@
       return date.toLocaleDateString('pt-BR');
     }
 
+    function fmtDateFile(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return y + m + d;
+    }
+
     function buildPeriodoHint() {
       if (customPeriodRange?.start && customPeriodRange?.end) {
         return 'Filtro ativo: ' + fmtDateBr(customPeriodRange.start) + ' até ' + fmtDateBr(customPeriodRange.end);
@@ -537,6 +663,38 @@
 
     function updatePeriodHint() {
       document.getElementById('periodHint').textContent = buildPeriodoHint();
+    }
+
+    function buildReportPdfFileName() {
+      const now = new Date();
+      const base = 'relatorio-intellistock';
+
+      if (customPeriodRange?.start && customPeriodRange?.end) {
+        return base + '-' + fmtDateFile(customPeriodRange.start) + '-a-' + fmtDateFile(customPeriodRange.end);
+      }
+
+      if (selectedPeriod === '7d') return base + '-ultimos-7-dias-' + fmtDateFile(now);
+      if (selectedPeriod === '30d') return base + '-ultimos-30-dias-' + fmtDateFile(now);
+      return base + '-hoje-' + fmtDateFile(now);
+    }
+
+    function downloadReportPdf() {
+      const btn = document.getElementById('btnDownloadPdf');
+      const previousTitle = document.title;
+      const pdfFileName = buildReportPdfFileName();
+
+      btn.disabled = true;
+      btn.textContent = 'Gerando...';
+      document.body.classList.add('pdf-mode');
+      document.title = pdfFileName;
+
+      // Abre a caixa de impressão do navegador para salvar o relatório em PDF.
+      window.print();
+
+      document.title = previousTitle;
+      document.body.classList.remove('pdf-mode');
+      btn.disabled = false;
+      btn.textContent = 'Baixar PDF';
     }
 
     function setPeriodFeedback(message) {
@@ -849,6 +1007,7 @@
         const itensAtencao = await carregarItensAtencao(materiais);
         const movsPeriodo = filtrarMovimentacoesPorPeriodo(movimentacoes, selectedPeriod);
         const vendasMap = buildVendasMap(movsPeriodo);
+        const platformSalesStats = buildSalesByPlatformStats(movsPeriodo, materiais);
         const consumoInternoStats = buildConsumoInternoStats(movsPeriodo, materiais);
         const analytics = materiais.map((item) => buildAnalytics(item, vendasMap));
         updateKpis(analytics);
@@ -880,6 +1039,7 @@
         } else {
           document.getElementById('lowStockList').innerHTML = '<div class="empty-report">Nenhum item abaixo do mínimo no momento.</div>';
         }
+        renderPlatformSales(platformSalesStats);
         renderInsights(analytics, consumoInternoStats);
         renderReportTable(
           [...itensAtencao].sort((a, b) => {
@@ -896,6 +1056,8 @@
         document.getElementById('lowSoldList').innerHTML = '<div class="empty-report">Não foi possível gerar os rankings.</div>';
         document.getElementById('highStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';
         document.getElementById('lowStockList').innerHTML = '<div class="empty-report">Não foi possível gerar a leitura de estoque.</div>';
+        document.getElementById('platformSalesList').innerHTML = '<div class="empty-report">Não foi possível carregar vendas por plataforma.</div>';
+        document.getElementById('platformSalesSummary').textContent = 'Não foi possível calcular o valor vendido por plataforma.';
         document.getElementById('insightGrid').innerHTML = '<div class="empty-report">Não foi possível montar o diagnóstico executivo.</div>';
         document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="7"><div class="empty-report">Não foi possível carregar o painel de atenção de compras.</div></td></tr>';
         updatePeriodHint();
@@ -955,6 +1117,7 @@
 
     document.getElementById('btnApplyPeriod').addEventListener('click', applyCustomPeriodRange);
     document.getElementById('btnClearPeriod').addEventListener('click', clearCustomPeriodRange);
+    document.getElementById('btnDownloadPdf').addEventListener('click', downloadReportPdf);
     document.getElementById('periodStartDate').addEventListener('change', () => setPeriodFeedback(''));
     document.getElementById('periodEndDate').addEventListener('change', () => setPeriodFeedback(''));
 

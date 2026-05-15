@@ -4,15 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checkout | IntelliStock</title>
-  <link rel="icon" type="image/svg+xml" href="/images/intellistock-logo.svg">
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-511W6LFJMQ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-511W6LFJMQ');
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -62,7 +53,7 @@
     <div class="layout">
       <section class="panel reveal-section">
         <h2>Dados da assinatura</h2>
-        <p class="panel-intro">Preencha as informações do usuário e de cobrança para seguir ao checkout oficial do Mercado Pago.</p>
+        <p class="panel-intro">Preencha as informações do usuário e do cartão. Neste protótipo, a cobrança é simulada e salva localmente para você avaliar o fluxo.</p>
 
         <form id="checkoutForm" novalidate>
           <div id="checkoutFeedback" class="form-feedback"></div>
@@ -338,7 +329,9 @@
         if (data.success) {
           checkoutFeedback.textContent = 'Redirecionando para o pagamento...';
           checkoutFeedback.classList.add('success');
-          window.location.href = data.init_point;
+          const url = (location.hostname === 'localhost' && data.sandbox_init_point)
+            ? data.sandbox_init_point : data.init_point;
+          window.location.href = url;
         } else {
           checkoutFeedback.textContent = data.message || 'Erro ao processar. Tente novamente.';
           checkoutFeedback.classList.add('error');

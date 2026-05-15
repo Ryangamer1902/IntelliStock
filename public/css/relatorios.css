@@ -365,6 +365,22 @@
       color: var(--ink);
     }
 
+    .period-btn.period-btn-download {
+      background: linear-gradient(135deg, var(--brand), #0fb8a9);
+      border-color: rgba(14, 143, 131, 0.45);
+      color: #ffffff;
+    }
+
+    .period-btn.period-btn-download:hover {
+      background: linear-gradient(135deg, #0b7c72, #0ba595);
+      border-color: rgba(11, 124, 114, 0.55);
+    }
+
+    .period-btn.period-btn-download:disabled {
+      opacity: 0.72;
+      cursor: wait;
+    }
+
     .period-calendar {
       grid-area: calendar;
       justify-self: end;
@@ -519,6 +535,12 @@
       background: #17313b;
       color: #e5f2f5;
       border-color: rgba(150, 210, 220, 0.42);
+    }
+
+    body.dark-mode .period-btn.period-btn-download {
+      background: linear-gradient(135deg, #15a294, #1fc6b5);
+      color: #042329;
+      border-color: rgba(153, 235, 224, 0.6);
     }
 
     body.dark-mode .period-date input {
@@ -927,7 +949,7 @@
       border-collapse: separate;
       border-spacing: 0;
       table-layout: auto;
-      min-width: 1080px;
+      min-width: 1160px;
     }
 
     thead th {
@@ -941,6 +963,7 @@
       color: #214851;
       border-bottom: 1px solid var(--line);
       vertical-align: middle;
+      white-space: nowrap;
     }
 
     tbody td {
@@ -968,9 +991,15 @@
     thead th:nth-child(2), tbody td:nth-child(2) { width: 10%; white-space: nowrap; }
     thead th:nth-child(3), tbody td:nth-child(3) { width: 11%; white-space: nowrap; }
     thead th:nth-child(4), tbody td:nth-child(4) { width: 11%; }
-    thead th:nth-child(5), tbody td:nth-child(5) { width: 12%; }
+    thead th:nth-child(5), tbody td:nth-child(5) { width: 12%; white-space: normal; }
     thead th:nth-child(6), tbody td:nth-child(6) { width: 12%; white-space: nowrap; }
-    thead th:nth-child(7), tbody td:nth-child(7) { width: 32%; white-space: normal; word-break: break-word; }
+    thead th:nth-child(7), tbody td:nth-child(7) {
+      width: 32%;
+      min-width: 320px;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
 
     tbody tr:last-child td { border-bottom: 0; }
     tbody tr:nth-child(even) td { background: rgba(246, 251, 251, 0.76); }
@@ -1353,6 +1382,160 @@
       .period-hint,
       .period-feedback {
         margin-top: 0;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4;
+        margin: 10mm;
+      }
+
+      html,
+      body {
+        min-height: auto !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+      }
+
+      header,
+      .user-menu-panel,
+      .btn-logout,
+      .chip-greeting,
+      .period-feedback,
+      .period-actions {
+        display: none !important;
+      }
+
+      main {
+        padding: 0 !important;
+      }
+
+      .shell {
+        width: 100% !important;
+        margin: 0 !important;
+      }
+
+      .reveal-section {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+
+      .page-head,
+      .period-filters,
+      .kpi,
+      .panel,
+      .full-panel,
+      .table-wrap,
+      .insight-card {
+        background: #ffffff !important;
+        box-shadow: none !important;
+        border: 1px solid #d8d8d8 !important;
+      }
+
+      .kpi,
+      .panel,
+      .insight-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .full-panel,
+      .table-wrap,
+      .period-filters {
+        break-inside: auto;
+        page-break-inside: auto;
+      }
+
+      .kpi-row,
+      .grid,
+      .insight-grid {
+        gap: 8px !important;
+      }
+
+      .grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+
+      .table-wrap {
+        max-height: none !important;
+        overflow: visible !important;
+      }
+
+      table {
+        width: 100% !important;
+        min-width: 0 !important;
+        border-spacing: 0 !important;
+        table-layout: fixed !important;
+        font-size: 11px;
+      }
+
+      table th,
+      table td {
+        padding: 6px 7px !important;
+        vertical-align: top !important;
+        white-space: normal !important;
+      }
+
+      .table-wrap thead,
+      table thead {
+        display: table-header-group !important;
+      }
+
+      table tbody {
+        display: table-row-group !important;
+      }
+
+      table tr {
+        display: table-row !important;
+      }
+
+      table td,
+      table th {
+        display: table-cell !important;
+        width: auto !important;
+      }
+
+      table th:nth-child(1),
+      table td:nth-child(1) { width: 14% !important; }
+      table th:nth-child(2),
+      table td:nth-child(2) { width: 10% !important; text-align: center !important; white-space: nowrap !important; }
+      table th:nth-child(3),
+      table td:nth-child(3) { width: 11% !important; text-align: center !important; white-space: nowrap !important; }
+      table th:nth-child(4),
+      table td:nth-child(4) { width: 10% !important; text-align: center !important; }
+      table th:nth-child(5),
+      table td:nth-child(5) { width: 15% !important; }
+      table th:nth-child(6),
+      table td:nth-child(6) { width: 10% !important; text-align: center !important; white-space: nowrap !important; }
+      table th:nth-child(7),
+      table td:nth-child(7) {
+        width: 30% !important;
+        white-space: normal !important;
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
+      }
+
+      table tbody td::before {
+        content: none !important;
+      }
+
+      .item-name,
+      .buy-when,
+      .rec-summary {
+        white-space: normal !important;
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .rec-action,
+      .recommendation-meta {
+        display: block !important;
+        gap: 0 !important;
+      }
+
+      .badge {
+        border: 1px solid #c8c8c8 !important;
       }
     }
 

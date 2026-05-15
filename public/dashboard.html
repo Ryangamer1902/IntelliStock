@@ -257,7 +257,8 @@
       <div class="modal-feedback" id="saleFeedback"></div>
       <div class="field">
         <label>Material</label>
-        <select id="saleMaterial"></select>
+        <input type="text" id="saleMaterialSearch" placeholder="Buscar por nome ou código de barras...">
+        <select id="saleMaterial" size="8" aria-label="Lista de materiais disponíveis para venda"></select>
       </div>
       <div class="field">
         <label>Quantidade vendida</label>
@@ -708,6 +709,8 @@
       tbody.innerHTML = lista.map(m => {
         const nomeCompleto = String(m.nome || '');
         const nomeCurtoTabela = truncateOptionLabel(nomeCompleto, 48);
+        const fornecedorCompleto = String(m.fornecedor || '');
+        const fornecedorCurto = truncateOptionLabel(fornecedorCompleto, 30);
         return `
         <tr>
           <td class="td-nome">
@@ -715,7 +718,7 @@
           </td>
           <td>${categoryBadge(m.categoria)}</td>
           <td class="cell-muted-sm">${escHtml(m.codigo_barras)}</td>
-          <td class="cell-muted-sm">${escHtml(m.fornecedor || '')}</td>
+          <td class="cell-muted-sm cell-ellipsis" title="${escHtml(fornecedorCompleto)}">${escHtml(fornecedorCurto)}</td>
           <td>
             <div class="qty-wrap">
               <span class="qty-num">${fmtQty(m.quantidade_atual)}</span>
@@ -732,12 +735,23 @@
       }).join('');
     }
 
-    function fillSaleMaterialOptions(selectedId = null) {
+    function fillSaleMaterialOptions(selectedId = null, query = '') {
       const select = document.getElementById('saleMaterial');
-      const disponiveis = allMateriais.filter((item) => Number(item.quantidade_atual || 0) > 0);
+      const normalizedQuery = String(query || '').trim().toLowerCase();
+      const disponiveis = allMateriais.filter((item) => {
+        const emEstoque = Number(item.quantidade_atual || 0) > 0;
+        if (!emEstoque) return false;
+        if (!normalizedQuery) return true;
+
+        const nome = String(item.nome || '').toLowerCase();
+        const codigo = String(item.codigo_barras || '').toLowerCase();
+        return nome.includes(normalizedQuery) || codigo.includes(normalizedQuery);
+      });
 
       if (!disponiveis.length) {
-        select.innerHTML = '<option value="">Sem material disponível para venda</option>';
+        select.innerHTML = normalizedQuery
+          ? '<option value="">Nenhum material encontrado para o filtro</option>'
+          : '<option value="">Sem material disponível para venda</option>';
         select.disabled = true;
         return;
       }
@@ -746,8 +760,9 @@
         const id = Number(item.id || 0);
         const qtd = Number(item.quantidade_atual || 0);
         const isSelected = selectedId !== null && id === Number(selectedId);
-        const nomeCurto = truncateOptionLabel(item.nome || 'Material', 20);
-        return `<option value="${id}" ${isSelected ? 'selected' : ''}>${escHtml(nomeCurto)} (estoque: ${qtd})</option>`;
+        const nomeCurto = truncateOptionLabel(item.nome || 'Material', 30);
+        const codigo = String(item.codigo_barras || '-');
+        return `<option value="${id}" ${isSelected ? 'selected' : ''}>${escHtml(nomeCurto)} | cód: ${escHtml(codigo)} (estoque: ${qtd})</option>`;
       });
 
       select.innerHTML = options.join('');
@@ -893,8 +908,10 @@
     }
 
     function openSaleModal(material = null) {
+      const searchInput = document.getElementById('saleMaterialSearch');
       saleMaterialId = material ? Number(material.id || 0) : null;
-      fillSaleMaterialOptions(saleMaterialId);
+      searchInput.value = '';
+      fillSaleMaterialOptions(saleMaterialId, '');
       document.getElementById('saleQtd').value = '';
       document.getElementById('saleChannel').value = '';
       document.getElementById('saleGrossValue').value = '';
@@ -906,7 +923,7 @@
       document.getElementById('btnSaveSale').disabled = document.getElementById('saleMaterial').disabled;
       saleOverlay.classList.add('open');
       syncModalScrollLock();
-      setTimeout(() => document.getElementById('saleQtd').focus(), 80);
+      setTimeout(() => searchInput.focus(), 80);
     }
 
     function closeSaleModal() {
@@ -925,6 +942,14 @@
 
     document.getElementById('btnCancelSale').addEventListener('click', closeSaleModal);
     saleOverlay.addEventListener('click', (e) => { if (e.target === saleOverlay) closeSaleModal(); });
+    document.getElementById('saleMaterialSearch').addEventListener('input', (event) => {
+      const query = String(event.target.value || '');
+      fillSaleMaterialOptions(saleMaterialId, query);
+      document.getElementById('btnSaveSale').disabled = document.getElementById('saleMaterial').disabled;
+    });
+    document.getElementById('saleMaterial').addEventListener('change', (event) => {
+      saleMaterialId = Number(event.target.value || 0) || null;
+    });
     document.getElementById('saleGrossValue').addEventListener('input', updateSaleNetPreview);
     document.getElementById('saleFeePercent').addEventListener('input', updateSaleNetPreview);
     document.addEventListener('keydown', (event) => {
