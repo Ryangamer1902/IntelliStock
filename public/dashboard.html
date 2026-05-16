@@ -54,7 +54,10 @@
           <div class="subscription-grid">
             <div class="sub-item">
               <span>Nome completo</span>
-              <strong id="subscriptionFullName">-</strong>
+              <div class="sub-item-name-wrapper">
+                <strong id="subscriptionFullName">-</strong>
+                <button class="btn-edit-name" id="btnEditDisplayName" type="button" title="Editar nome">✏️</button>
+              </div>
             </div>
             <div class="sub-item">
               <span>CPF/CNPJ</span>
@@ -773,6 +776,23 @@
       }
     }
 
+    function resolveSaleScannerSelection(query) {
+      const normalizedQuery = String(query || '').trim().toLowerCase();
+      const onlyDigits = normalizedQuery.replace(/\D/g, '');
+      if (onlyDigits.length < 8) return null;
+
+      const disponiveis = allMateriais.filter((item) => Number(item.quantidade_atual || 0) > 0);
+      const exato = disponiveis.find((item) => String(item.codigo_barras || '').trim() === onlyDigits);
+      if (exato) return Number(exato.id || 0);
+
+      const parciais = disponiveis.filter((item) => String(item.codigo_barras || '').toLowerCase().includes(onlyDigits));
+      if (parciais.length === 1) {
+        return Number(parciais[0].id || 0);
+      }
+
+      return null;
+    }
+
     function parseDecimalInput(value) {
       const raw = String(value || '').trim().replace(',', '.');
       if (!raw) return null;
@@ -944,7 +964,19 @@
     saleOverlay.addEventListener('click', (e) => { if (e.target === saleOverlay) closeSaleModal(); });
     document.getElementById('saleMaterialSearch').addEventListener('input', (event) => {
       const query = String(event.target.value || '');
+      const scannerSelection = resolveSaleScannerSelection(query);
+      if (scannerSelection) {
+        saleMaterialId = scannerSelection;
+      }
+
       fillSaleMaterialOptions(saleMaterialId, query);
+
+      if (scannerSelection) {
+        const saleSelect = document.getElementById('saleMaterial');
+        saleSelect.value = String(scannerSelection);
+        document.getElementById('saleQtd').focus();
+      }
+
       document.getElementById('btnSaveSale').disabled = document.getElementById('saleMaterial').disabled;
     });
     document.getElementById('saleMaterial').addEventListener('change', (event) => {
@@ -1326,5 +1358,26 @@
     updateCategoryFilterButtons();
     carregarMateriais();
   </script>
+
+  <!-- Modal de Edição de Nome -->
+  <div id="editNameModal" class="modal-overlay is-hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Editar nome do cliente</h3>
+        <button class="modal-close" type="button" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="editNameInput">Nome completo</label>
+          <input type="text" id="editNameInput" placeholder="Digite o novo nome" maxlength="120">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-soft" id="btnCancelEditName" type="button">Cancelar</button>
+        <button class="btn btn-main" id="btnSaveEditName" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

@@ -52,7 +52,10 @@
           <div class="subscription-grid">
             <div class="sub-item">
               <span>Nome completo</span>
-              <strong id="subscriptionFullName">-</strong>
+              <div class="sub-item-name-wrapper">
+                <strong id="subscriptionFullName">-</strong>
+                <button class="btn-edit-name" id="btnEditDisplayName" type="button" title="Editar nome">✏️</button>
+              </div>
             </div>
             <div class="sub-item">
               <span>CPF/CNPJ</span>
@@ -1133,5 +1136,26 @@
     updatePeriodHint();
     renderReports();
   </script>
+
+  <!-- Modal de Edição de Nome -->
+  <div id="editNameModal" class="modal-overlay is-hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Editar nome do cliente</h3>
+        <button class="modal-close" type="button" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="editNameInput">Nome completo</label>
+          <input type="text" id="editNameInput" placeholder="Digite o novo nome" maxlength="120">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-soft" id="btnCancelEditName" type="button">Cancelar</button>
+        <button class="btn btn-main" id="btnSaveEditName" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

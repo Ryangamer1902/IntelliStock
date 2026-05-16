@@ -270,6 +270,32 @@
       font-size: 0.93rem;
     }
 
+    .sub-item-name-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-edit-name {
+      background: none;
+      border: none;
+      padding: 2px 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+      min-width: auto;
+      min-height: auto;
+    }
+
+    .sub-item:hover .btn-edit-name {
+      opacity: 1;
+    }
+
+    .btn-edit-name:hover {
+      filter: brightness(1.2);
+    }
+
     .subscription-actions {
       display: grid;
       grid-template-columns: 1fr;
@@ -782,6 +808,84 @@
       box-shadow: 0 0 0 4px rgba(14, 143, 131, 0.12);
     }
 
+    /* ===== MODAL OVERLAY (modal-overlay class) ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 30, 0.45);
+      z-index: 100;
+      backdrop-filter: blur(3px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .modal-overlay:not(.is-hidden) {
+      display: flex;
+    }
+
+    .modal-overlay .modal {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 28px;
+      width: 100%;
+      max-width: 480px;
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.22);
+      animation: popIn 0.25s ease;
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+
+    .modal-header h3 {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      color: var(--muted);
+      transition: color 0.2s;
+      min-width: auto;
+      min-height: auto;
+    }
+
+    .modal-close:hover {
+      color: var(--ink);
+    }
+
+    .modal-body {
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+      min-height: 42px;
+    }
+
     #saleMaterialSearch {
       margin-bottom: 8px;
     }
@@ -804,6 +908,27 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
+    }
+
+    .field-row .field label {
+      white-space: nowrap;
+      min-height: 22px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    #modalOverlay .field-row {
+      align-items: start;
+    }
+
+    #modalOverlay .field-row .field {
+      margin-bottom: 0;
+      align-content: start;
+    }
+
+    #modalOverlay .field-row .field input,
+    #modalOverlay .field-row .field select {
+      min-height: 44px;
     }
 
     .modal-actions {
@@ -871,17 +996,36 @@
     @media (max-width: 560px) {
       main { padding: 24px 0 48px; }
 
+      .shell { width: 94%; }
+
       .kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
 
       .kpi-value { font-size: 1.5rem; }
 
+      .kpi,
+      .hero,
+      .table-card {
+        border-radius: 14px;
+      }
+
       .toolbar { flex-direction: column; align-items: stretch; }
+
+      .toolbar,
+      .modal-actions {
+        gap: 8px;
+      }
 
       .search-wrap { min-width: unset; }
 
       .toolbar .btn {
         width: 100%;
         justify-content: center;
+      }
+
+      .btn,
+      .toolbar .btn,
+      .modal-actions .btn {
+        min-height: 44px;
       }
 
       .user-chip span { display: none; }
@@ -897,11 +1041,36 @@
         justify-content: center;
       }
 
+      .overlay {
+        padding: 10px;
+      }
+
       .modal { padding: 20px 16px; }
+
+      .modal input,
+      .modal select,
+      .modal textarea {
+        font-size: 16px;
+      }
+
+      #saleMaterial {
+        min-height: 180px;
+        max-height: 220px;
+      }
+
+      .table-wrap {
+        max-height: 56dvh;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
 
       .user-menu-panel {
         right: 0;
       }
+    }
+
+    @media (max-width: 520px) {
+      .kpi-row { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 380px) {

@@ -52,7 +52,10 @@
           <div class="subscription-grid">
             <div class="sub-item">
               <span>Nome completo</span>
-              <strong id="subscriptionFullName">-</strong>
+              <div class="sub-item-name-wrapper">
+                <strong id="subscriptionFullName">-</strong>
+                <button class="btn-edit-name" id="btnEditDisplayName" type="button" title="Editar nome">✏️</button>
+              </div>
             </div>
             <div class="sub-item">
               <span>CPF/CNPJ</span>
@@ -255,7 +258,7 @@
       <h2>Entradas de insumos</h2>
       <p class="sub">Tudo que entrou no estoque — compras, ajustes positivos e reposições.</p>
       <div class="entrada-search-wrap">
-        <input type="text" id="entradaBusca" placeholder="Buscar por item..." autocomplete="off">
+        <input type="text" id="entradaBusca" placeholder="Buscar por item, código de barras ou bip..." autocomplete="off">
       </div>
       <div class="entrada-table-wrap">
       <table class="entrada-historico-table">
@@ -1130,16 +1133,112 @@
       return code;
     }
 
-    function buildProductionSelectOptions({ placeholder = 'Selecione o componente' } = {}) {
-      const options = [`<option value="">${escHtml(placeholder)}</option>`];
-      allInsumos.forEach((item) => {
-        const id = Number(item.id || 0);
-        const unidade = unidadeLabel(item.unidade);
-        const stock = Number(item.qtd_atual || 0);
-        const nomeCurto = truncateOptionLabel(item.nome || 'Material', 18);
-        options.push(`<option value="${id}">${escHtml(nomeCurto)} (${unidade}) — estoque: ${fmtNum(stock)}</option>`);
+    function buildProductionComponentLabel(item, compact = false) {
+      const nome = String(item?.nome || 'Material');
+      const codigo = String(item?.codigo_barras || '').trim();
+      const unidade = unidadeLabel(item?.unidade);
+      const estoque = fmtNum(Number(item?.qtd_atual || 0));
+
+      if (compact) {
+        const nomeCurto = truncateOptionLabel(nome, 34);
+        return codigo
+          ? `${nomeCurto} (${unidade}) — cód: ${codigo}`
+          : `${nomeCurto} (${unidade})`;
+      }
+
+      return codigo
+        ? `${nome} (${unidade}) — estoque: ${estoque} — cód: ${codigo}`
+        : `${nome} (${unidade}) — estoque: ${estoque}`;
+    }
+
+    function filterProductionComponents(rawQuery) {
+      const term = String(rawQuery || '').trim().toLowerCase();
+      if (!term) return allInsumos;
+
+      const onlyDigits = term.replace(/\D/g, '');
+      const isBarcodeSearch = onlyDigits.length >= 8;
+
+      return allInsumos.filter((item) => {
+        const nome = String(item.nome || '').toLowerCase();
+        const codigo = String(item.codigo_barras || '').toLowerCase();
+
+        if (isBarcodeSearch) {
+          return codigo.includes(onlyDigits);
+        }
+
+        return nome.includes(term) || codigo.includes(term);
       });
-      return options.join('');
+    }
+
+    function closeProductionComponentDropdown(row) {
+      if (!row) return;
+      const dropdown = row.querySelector('.prod-comp-dropdown');
+      if (!dropdown) return;
+      dropdown.classList.add('is-hidden');
+      row.classList.remove('is-picker-open');
+    }
+
+    function closeAllProductionComponentDropdowns(exceptRow = null) {
+      getProductionRows().forEach((row) => {
+        if (exceptRow && row === exceptRow) return;
+        closeProductionComponentDropdown(row);
+      });
+    }
+
+    function renderProductionComponentDropdown(row, rawQuery) {
+      const dropdown = row.querySelector('.prod-comp-dropdown');
+      if (!dropdown) return;
+
+      const filteredItems = filterProductionComponents(rawQuery);
+      if (!filteredItems.length) {
+        dropdown.innerHTML = '<li class="prod-comp-option-empty">Nenhum componente encontrado.</li>';
+        return [];
+      }
+
+      dropdown.innerHTML = filteredItems.map((item) => {
+        const id = Number(item.id || 0);
+        const label = buildProductionComponentLabel(item, false);
+        return `<li class="prod-comp-option" data-material-id="${id}" title="${escHtml(label)}">${escHtml(label)}</li>`;
+      }).join('');
+
+      return filteredItems;
+    }
+
+    function resolveProductionScannerSelection(rawQuery) {
+      const normalized = String(rawQuery || '').trim().toLowerCase();
+      const onlyDigits = normalized.replace(/\D/g, '');
+      if (onlyDigits.length < 8) return null;
+
+      const exactItem = allInsumos.find((item) => String(item.codigo_barras || '').trim() === onlyDigits);
+      if (exactItem) return Number(exactItem.id || 0);
+
+      const parcial = allInsumos.filter((item) => String(item.codigo_barras || '').toLowerCase().includes(onlyDigits));
+      if (parcial.length === 1) {
+        return Number(parcial[0].id || 0);
+      }
+
+      return null;
+    }
+
+    function setProductionComponentSelection(row, materialId) {
+      const selectEl = row.querySelector('.prod-comp-select');
+      const searchEl = row.querySelector('.prod-comp-search');
+      const numericId = Number(materialId || 0);
+      const selectedItem = allInsumos.find((item) => Number(item.id) === numericId);
+
+      if (!selectedItem) {
+        selectEl.value = '';
+        searchEl.value = '';
+        searchEl.title = '';
+        return;
+      }
+
+      const compactLabel = buildProductionComponentLabel(selectedItem, true);
+      const fullLabel = buildProductionComponentLabel(selectedItem, false);
+
+      selectEl.value = String(numericId);
+      searchEl.value = compactLabel;
+      searchEl.title = fullLabel;
     }
 
     function getProductionRows() {
@@ -1161,7 +1260,11 @@
       row.innerHTML = `
         <div class="prod-row-main">
           <div class="prod-row-inputs">
-            <select class="prod-comp-select" aria-label="Componente"></select>
+            <div class="prod-comp-picker">
+              <input type="text" class="prod-comp-search" placeholder="Buscar por nome ou código de barras" aria-label="Buscar componente" autocomplete="off">
+              <input type="hidden" class="prod-comp-select" value="">
+              <ul class="prod-comp-dropdown is-hidden"></ul>
+            </div>
             <input type="number" class="prod-comp-qty" min="0.001" step="0.001" placeholder="Qtde total do lote" aria-label="Quantidade total do lote">
           </div>
           <button type="button" class="btn btn-soft prod-comp-remove" title="Remover componente">Remover</button>
@@ -1173,11 +1276,14 @@
         </div>
       `;
 
+      const searchEl = row.querySelector('.prod-comp-search');
       const selectEl = row.querySelector('.prod-comp-select');
-      selectEl.innerHTML = buildProductionSelectOptions({ placeholder: 'Selecione o componente' });
-
       if (defaultData?.materialId) {
-        selectEl.value = String(defaultData.materialId);
+        setProductionComponentSelection(row, defaultData.materialId);
+      } else {
+        selectEl.value = '';
+        searchEl.value = '';
+        searchEl.title = '';
       }
 
       const qtyEl = row.querySelector('.prod-comp-qty');
@@ -1778,6 +1884,15 @@
       return '<span class="entrada-tipo-desconhecido">-</span>';
     }
 
+    function getEntradaCodigoBarras(item) {
+      const direto = String(item?.material_codigo_barras || item?.codigo_barras || '').trim();
+      if (direto) return direto;
+
+      const byId = allInsumos.find((m) => Number(m.id) === Number(item?.material_id));
+      const byNome = byId || allInsumos.find((m) => String(m.nome || '').trim().toLowerCase() === String(item?.material_nome || '').trim().toLowerCase());
+      return String(byNome?.codigo_barras || '').trim();
+    }
+
     function renderEntradas(lista) {
       const tbody = document.getElementById('entradaHistoricoBody');
       if (!lista.length) {
@@ -1801,7 +1916,20 @@
     document.getElementById('entradaBusca').addEventListener('input', () => {
       const q = document.getElementById('entradaBusca').value.trim().toLowerCase();
       if (!q) { renderEntradas(todasEntradas); return; }
-      renderEntradas(todasEntradas.filter((r) => String(r.material_nome || '').toLowerCase().includes(q)));
+
+      const onlyDigits = q.replace(/\D/g, '');
+      const isBarcodeSearch = onlyDigits.length >= 8;
+
+      renderEntradas(todasEntradas.filter((r) => {
+        const nome = String(r.material_nome || '').toLowerCase();
+        const codigo = getEntradaCodigoBarras(r).toLowerCase();
+
+        if (isBarcodeSearch) {
+          return codigo.includes(onlyDigits);
+        }
+
+        return nome.includes(q) || codigo.includes(q);
+      }));
     });
 
     function openEntradaModal() {
@@ -1872,7 +2000,32 @@
     document.getElementById('prodComponentsList').addEventListener('input', (event) => {
       const row = event.target.closest('.prod-component-row');
       if (!row) return;
-      if (event.target.classList.contains('prod-comp-select') || event.target.classList.contains('prod-comp-qty')) {
+
+      if (event.target.classList.contains('prod-comp-search')) {
+        row.querySelector('.prod-comp-select').value = '';
+        row.querySelector('.prod-comp-search').title = '';
+        closeAllProductionComponentDropdowns(row);
+        const foundItems = renderProductionComponentDropdown(row, event.target.value);
+        const scannerSelection = resolveProductionScannerSelection(event.target.value);
+
+        if (scannerSelection) {
+          setProductionComponentSelection(row, scannerSelection);
+          closeProductionComponentDropdown(row);
+          row.querySelector('.prod-comp-qty').focus();
+        } else {
+          row.querySelector('.prod-comp-dropdown').classList.remove('is-hidden');
+          row.classList.add('is-picker-open');
+          if (Array.isArray(foundItems) && foundItems.length === 1) {
+            row.querySelector('.prod-comp-dropdown .prod-comp-option')?.scrollIntoView({ block: 'nearest' });
+          }
+        }
+
+        updateProductionRowPrice(row);
+        updateProductionSummary();
+        return;
+      }
+
+      if (event.target.classList.contains('prod-comp-qty')) {
         updateProductionRowPrice(row);
         updateProductionSummary();
       }
@@ -1888,7 +2041,7 @@
     document.getElementById('prodComponentsList').addEventListener('change', (event) => {
       const row = event.target.closest('.prod-component-row');
       if (!row) return;
-      if (event.target.classList.contains('prod-comp-select') || event.target.classList.contains('prod-comp-qty')) {
+      if (event.target.classList.contains('prod-comp-qty')) {
         updateProductionRowPrice(row);
         updateProductionSummary();
       }
@@ -1902,6 +2055,32 @@
       }
     });
     document.getElementById('prodComponentsList').addEventListener('click', (event) => {
+      const optionEl = event.target.closest('.prod-comp-option');
+      if (optionEl) {
+        const row = optionEl.closest('.prod-component-row');
+        if (!row) return;
+        if (row.querySelector('.prod-comp-search').disabled) return;
+
+        const selectedId = Number(optionEl.dataset.materialId || 0);
+        setProductionComponentSelection(row, selectedId);
+        closeProductionComponentDropdown(row);
+        updateProductionRowPrice(row);
+        updateProductionSummary();
+        return;
+      }
+
+      const searchInput = event.target.closest('.prod-comp-search');
+      if (searchInput) {
+        const row = searchInput.closest('.prod-component-row');
+        if (!row) return;
+
+        closeAllProductionComponentDropdowns(row);
+        renderProductionComponentDropdown(row, searchInput.value);
+        row.querySelector('.prod-comp-dropdown').classList.remove('is-hidden');
+        row.classList.add('is-picker-open');
+        return;
+      }
+
       const removeBtn = event.target.closest('.prod-comp-remove');
       if (!removeBtn) return;
 
@@ -1910,6 +2089,22 @@
 
       row.remove();
       updateProductionSummary();
+    });
+    document.getElementById('prodComponentsList').addEventListener('focusin', (event) => {
+      const searchInput = event.target.closest('.prod-comp-search');
+      if (!searchInput) return;
+
+      const row = searchInput.closest('.prod-component-row');
+      if (!row) return;
+
+      closeAllProductionComponentDropdowns(row);
+      renderProductionComponentDropdown(row, searchInput.value);
+      row.querySelector('.prod-comp-dropdown').classList.remove('is-hidden');
+      row.classList.add('is-picker-open');
+    });
+    document.addEventListener('mousedown', (event) => {
+      if (event.target.closest('#prodComponentsList .prod-comp-picker')) return;
+      closeAllProductionComponentDropdowns();
     });
     document.getElementById('prodExtraCostsList').addEventListener('click', (event) => {
       const removeBtn = event.target.closest('.prod-extra-cost-remove');
@@ -2708,5 +2903,26 @@
     }, { threshold: 0.08 });
     revealEls.forEach((el) => revealObserver.observe(el));
   </script>
+
+  <!-- Modal de Edição de Nome -->
+  <div id="editNameModal" class="modal-overlay is-hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Editar nome do cliente</h3>
+        <button class="modal-close" type="button" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="editNameInput">Nome completo</label>
+          <input type="text" id="editNameInput" placeholder="Digite o novo nome" maxlength="120">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-soft" id="btnCancelEditName" type="button">Cancelar</button>
+        <button class="btn btn-main" id="btnSaveEditName" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

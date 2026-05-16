@@ -116,6 +116,19 @@
     clear2FASession();
   }
 
+  function updateStoredUserName(nome) {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return null;
+
+    const updatedUser = { ...currentUser, nome };
+    sessionStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    if (localStorage.getItem(USER_KEY)) {
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    }
+
+    return updatedUser;
+  }
+
   function clearAuthState() {
     sessionStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
@@ -376,6 +389,156 @@
     return getMode() === 'api' ? apiRedefinirSenha(payload) : mockRedefinirSenha(payload);
   }
 
+  async function updateCurrentUserName(nome) {
+    const nomeNormalizado = String(nome || '').trim().replace(/\s+/g, ' ');
+    if (nomeNormalizado.length < 2) {
+      throw new Error('Informe um nome válido.');
+    }
+    if (nomeNormalizado.length > 120) {
+      throw new Error('O nome deve ter no máximo 120 caracteres.');
+    }
+
+    if (getMode() !== 'api') {
+      updateStoredUserName(nomeNormalizado);
+      return { success: true, usuario: getCurrentUser() };
+    }
+
+    const token = getSessionToken();
+    if (!token) {
+      throw new Error('Sessão expirada. Faça login novamente.');
+    }
+
+    const response = await fetch('/api/auth/perfil', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ nome: nomeNormalizado })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Não foi possível atualizar o nome.');
+    }
+
+    updateStoredUserName(data.usuario?.nome || nomeNormalizado);
+    return data;
+  }
+
+  function setupEditNameButton() {
+    function openEditNameModal() {
+      const currentUser = getCurrentUser();
+      const nomeAtual = currentUser?.nome || '';
+      const modal = document.getElementById('editNameModal');
+      const input = document.getElementById('editNameInput');
+
+      if (!modal || !input) return;
+
+      input.value = nomeAtual;
+      modal.classList.remove('is-hidden');
+      input.focus();
+    }
+
+    function closeEditNameModal() {
+      const modal = document.getElementById('editNameModal');
+      if (modal) {
+        modal.classList.add('is-hidden');
+      }
+    }
+
+    async function saveEditName() {
+      const input = document.getElementById('editNameInput');
+      const btn = document.getElementById('btnSaveEditName');
+
+      if (!input || !btn) return;
+
+      const novoNome = String(input.value || '').trim();
+      if (!novoNome) {
+        window.alert('Informe um nome válido.');
+        return;
+      }
+
+      const previousText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        await updateCurrentUserName(novoNome);
+        closeEditNameModal();
+        window.location.reload();
+      } catch (error) {
+        window.alert(error.message || 'Não foi possível atualizar o nome.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = previousText;
+      }
+    }
+
+    // Abrir modal ao clicar na caneta
+    const editButtons = document.querySelectorAll('#btnEditDisplayName');
+    editButtons.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openEditNameModal();
+      });
+    });
+
+    // Fechar modal ao clicar no botão fechar
+    const closeButton = document.querySelector('#editNameModal .modal-close');
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        closeEditNameModal();
+      });
+    }
+
+    // Fechar modal ao clicar no botão cancelar
+    const cancelButton = document.getElementById('btnCancelEditName');
+    if (cancelButton) {
+      cancelButton.addEventListener('click', () => {
+        closeEditNameModal();
+      });
+    }
+
+    // Salvar ao clicar no botão salvar
+    const saveButton = document.getElementById('btnSaveEditName');
+    if (saveButton) {
+      saveButton.addEventListener('click', saveEditName);
+    }
+
+    // Fechar modal ao clicar fora dele
+    const modal = document.getElementById('editNameModal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeEditNameModal();
+        }
+      });
+    }
+
+    // Salvar ao pressionar Enter
+    const input = document.getElementById('editNameInput');
+    if (input) {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          saveEditName();
+        }
+      });
+    }
+  }
+
+  function initAuthService() {
+    hydrateAuthState();
+    setupEditNameButton();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAuthService);
+  } else {
+    initAuthService();
+  }
+
   hydrateAuthState();
 
   window.AuthService = {
@@ -386,6 +549,7 @@
     verify,
     solicitarReset,
     redefinirSenha,
+    updateCurrentUserName,
     isRememberEnabled,
     getCurrentUser,
     getSessionToken,
@@ -394,6 +558,7 @@
     clear2FASession,
     saveAuthSession,
     clearAuthState,
-    hydrateAuthState
+    hydrateAuthState,
+    setupEditNameButton
   };
 })();

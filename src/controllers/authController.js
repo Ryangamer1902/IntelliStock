@@ -351,6 +351,37 @@ class AuthController {
     }
   }
 
+  static async atualizarPerfil(req, res) {
+    const db = global.db;
+    if (!db) {
+      return res.status(503).json({ success: false, message: 'Banco de dados não configurado.' });
+    }
+
+    const nome = String(req.body?.nome || '').trim().replace(/\s+/g, ' ');
+    if (nome.length < 2) {
+      return res.status(400).json({ success: false, message: 'Informe um nome válido.' });
+    }
+    if (nome.length > 120) {
+      return res.status(400).json({ success: false, message: 'O nome deve ter no máximo 120 caracteres.' });
+    }
+
+    try {
+      await db.query('UPDATE usuarios SET nome = ? WHERE id = ?', [nome, req.usuario_id]);
+      const [rows] = await db.query(
+        'SELECT id, nome, email FROM usuarios WHERE id = ? LIMIT 1',
+        [req.usuario_id]
+      );
+
+      return res.json({
+        success: true,
+        usuario: rows[0] || { id: req.usuario_id, nome }
+      });
+    } catch (err) {
+      console.error('Erro ao atualizar nome do usuário:', err);
+      return res.status(500).json({ success: false, message: 'Não foi possível atualizar o nome.' });
+    }
+  }
+
   static async logout(req, res) {
     const db = global.db;
     const authHeader = req.headers['authorization'] || '';
