@@ -262,6 +262,7 @@
         <label>Material</label>
         <input type="text" id="saleMaterialSearch" placeholder="Buscar por nome ou código de barras...">
         <select id="saleMaterial" size="8" aria-label="Lista de materiais disponíveis para venda"></select>
+        <div class="sale-material-preview is-empty" id="saleMaterialPreview">Selecione um material para ver nome, código e estoque.</div>
       </div>
       <div class="field">
         <label>Quantidade vendida</label>
@@ -756,16 +757,18 @@
           ? '<option value="">Nenhum material encontrado para o filtro</option>'
           : '<option value="">Sem material disponível para venda</option>';
         select.disabled = true;
+        const previewEl = document.getElementById('saleMaterialPreview');
+        previewEl.className = 'sale-material-preview is-empty';
+        previewEl.textContent = normalizedQuery
+          ? 'Nenhum material encontrado para este filtro.'
+          : 'Nenhum material disponível para venda no momento.';
         return;
       }
 
       const options = disponiveis.map((item) => {
         const id = Number(item.id || 0);
-        const qtd = Number(item.quantidade_atual || 0);
         const isSelected = selectedId !== null && id === Number(selectedId);
-        const nomeCurto = truncateOptionLabel(item.nome || 'Material', 30);
-        const codigo = String(item.codigo_barras || '-');
-        return `<option value="${id}" ${isSelected ? 'selected' : ''}>${escHtml(nomeCurto)} | cód: ${escHtml(codigo)} (estoque: ${qtd})</option>`;
+        return `<option value="${id}" ${isSelected ? 'selected' : ''}>${escHtml(buildSaleOptionLabel(item))}</option>`;
       });
 
       select.innerHTML = options.join('');
@@ -774,6 +777,52 @@
       if (selectedId === null || !disponiveis.some((item) => Number(item.id) === Number(selectedId))) {
         select.value = String(disponiveis[0].id);
       }
+
+      updateSaleMaterialPreview(select.value);
+    }
+
+    function updateSaleMaterialPreview(selectedId = null) {
+      const previewEl = document.getElementById('saleMaterialPreview');
+      if (!previewEl) return;
+
+      const currentId = Number(selectedId || document.getElementById('saleMaterial').value || 0);
+      const item = allMateriais.find((row) => Number(row.id || 0) === currentId);
+      if (!item) {
+        previewEl.className = 'sale-material-preview is-empty';
+        previewEl.textContent = 'Selecione um material para ver nome, código e estoque.';
+        return;
+      }
+
+      const nome = String(item.nome || 'Material');
+      const codigo = String(item.codigo_barras || '-');
+      const qtd = fmtQty(item.quantidade_atual || 0);
+      const unidade = item.unidade && item.unidade !== 'un' ? ` ${String(item.unidade)}` : '';
+      const estoqueAtual = Number(item.quantidade_atual || 0);
+      const estoqueMinimo = Number(item.quantidade_minima || 0);
+      const stockClass = estoqueAtual <= estoqueMinimo ? 'sale-chip-stock low' : 'sale-chip-stock';
+
+      previewEl.className = 'sale-material-preview';
+      previewEl.innerHTML = `
+        <div class="sale-preview-head">Material selecionado</div>
+        <div class="sale-preview-name">${escHtml(nome)}</div>
+        <div class="sale-preview-meta">
+          <span class="sale-chip">Cód: ${escHtml(codigo)}</span>
+          <span class="sale-chip ${stockClass}">Estoque: ${escHtml(qtd + unidade)}</span>
+        </div>
+      `;
+    }
+
+    function syncSaleSearchFieldWithSelection(selectedId = null) {
+      const inputEl = document.getElementById('saleMaterialSearch');
+      if (!inputEl) return;
+
+      const currentId = Number(selectedId || document.getElementById('saleMaterial').value || 0);
+      const item = allMateriais.find((row) => Number(row.id || 0) === currentId);
+      if (!item) return;
+
+      const nome = String(item.nome || 'Material');
+      const codigo = String(item.codigo_barras || '-');
+      inputEl.value = `${nome} | Cód: ${codigo}`;
     }
 
     function resolveSaleScannerSelection(query) {
@@ -827,6 +876,22 @@
       const text = String(value || '').trim();
       if (text.length <= maxLen) return text;
       return `${text.slice(0, Math.max(1, maxLen - 3)).trim()}...`;
+    }
+
+    function compactMiddleText(value, maxLen = 18) {
+      const text = String(value || '').trim();
+      if (text.length <= maxLen) return text;
+      const safeLen = Math.max(9, maxLen);
+      const keepStart = Math.max(4, Math.floor((safeLen - 3) / 2));
+      const keepEnd = Math.max(3, safeLen - 3 - keepStart);
+      return `${text.slice(0, keepStart)}...${text.slice(-keepEnd)}`;
+    }
+
+    function buildSaleOptionLabel(item) {
+      const nomeCurto = truncateOptionLabel(item.nome || 'Material', 24);
+      const codigoCurto = compactMiddleText(item.codigo_barras || '-', 18);
+      const qtd = fmtQty(item.quantidade_atual || 0);
+      return `Estoque: ${qtd} | Cód: ${codigoCurto} | ${nomeCurto}`;
     }
 
     // ===== UPDATE KPIs =====
@@ -932,6 +997,7 @@
       saleMaterialId = material ? Number(material.id || 0) : null;
       searchInput.value = '';
       fillSaleMaterialOptions(saleMaterialId, '');
+      syncSaleSearchFieldWithSelection();
       document.getElementById('saleQtd').value = '';
       document.getElementById('saleChannel').value = '';
       document.getElementById('saleGrossValue').value = '';
@@ -974,6 +1040,7 @@
       if (scannerSelection) {
         const saleSelect = document.getElementById('saleMaterial');
         saleSelect.value = String(scannerSelection);
+        syncSaleSearchFieldWithSelection(scannerSelection);
         document.getElementById('saleQtd').focus();
       }
 
@@ -981,6 +1048,8 @@
     });
     document.getElementById('saleMaterial').addEventListener('change', (event) => {
       saleMaterialId = Number(event.target.value || 0) || null;
+      syncSaleSearchFieldWithSelection(saleMaterialId);
+      updateSaleMaterialPreview(saleMaterialId);
     });
     document.getElementById('saleGrossValue').addEventListener('input', updateSaleNetPreview);
     document.getElementById('saleFeePercent').addEventListener('input', updateSaleNetPreview);
