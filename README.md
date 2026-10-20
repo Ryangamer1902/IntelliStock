@@ -19,7 +19,47 @@ O sistema e composto por:
 
 ---
 
-## Pre-requisitos
+## Rodar localmente com Docker
+
+Este e o caminho recomendado para iniciar o IntelliStock no computador. O Docker Desktop inicia a aplicacao e o MySQL juntos; nao e necessario instalar Node.js ou MySQL separadamente.
+
+### Pre-requisitos
+
+- Instale o [Docker Desktop](https://www.docker.com/products/docker-desktop/) no Windows/macOS ou Docker Engine com Docker Compose no Linux.
+- Abra o Docker Desktop e aguarde o status indicar que esta em execucao.
+- Clone ou baixe este repositorio.
+
+### Passo a passo
+
+1. Abra um terminal na pasta `IntelliStock` (a pasta que contem `docker-compose.yml`). No VS Code, use **Terminal > Novo Terminal**.
+2. Inicie a aplicacao e o banco com um unico comando:
+
+```bash
+docker compose up --build -d
+```
+
+3. Na primeira execucao, aguarde o Docker baixar as imagens, criar o banco e iniciar a aplicacao. Isso pode levar alguns minutos.
+4. Acesse **http://localhost:3001**. Para conferir a API, abra **http://localhost:3001/api/health**; a resposta `{"status":"OK"}` indica que o servidor esta ativo.
+
+O banco e criado automaticamente e `src/database/schema.sql` e carregado na primeira inicializacao. Para uso local sem SMTP, o codigo de verificacao do login aparece na tela. Na primeira inicializacao com o banco vazio, a conta `admin@intellistock.com` e criada com uma senha aleatoria; consulte o log inicial com `docker compose logs app`. Tambem e possivel definir `ADMIN_SEED_PASSWORD` no `.env` antes de criar a conta. Guarde a senha em local seguro.
+
+Para parar os containers sem apagar os dados, execute na mesma pasta:
+
+```bash
+docker compose down
+```
+
+Para iniciar novamente, repita `docker compose up --build -d`. Mantenha o Docker Desktop aberto enquanto usa o sistema.
+
+Se a porta `3001` ja estiver em uso, feche o outro servidor local antes de iniciar. Para acompanhar os logs, execute `docker compose logs -f app` e pressione `Ctrl+C` para sair da visualizacao sem parar o sistema.
+
+> As credenciais padrao do Compose sao somente para desenvolvimento local. Nao publique este ambiente na internet sem configurar senhas fortes, e-mail e variaveis de producao.
+
+---
+
+## Instalacao manual (sem Docker)
+
+### Pre-requisitos
 
 - [Node.js v14+](https://nodejs.org/) (baixe a versao LTS)
 - [MySQL Community Server](https://dev.mysql.com/downloads/mysql/) (versao 5.7 ou 8.x) + [MySQL Workbench](https://dev.mysql.com/downloads/workbench/)

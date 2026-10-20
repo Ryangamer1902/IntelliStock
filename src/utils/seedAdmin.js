@@ -1,19 +1,21 @@
 // src/utils/seedAdmin.js
 // Cria o usuário administrador padrão se não existir nenhum usuário no banco
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 async function seedAdmin(db) {
   try {
     const [rows] = await db.query('SELECT COUNT(*) AS total FROM usuarios');
     if (rows[0].total === 0) {
-      const hash = await bcrypt.hash('Admin123', 10);
+      const adminPassword = process.env.ADMIN_SEED_PASSWORD || crypto.randomBytes(12).toString('base64url');
+      const hash = await bcrypt.hash(adminPassword, 10);
       await db.query(
         'INSERT INTO usuarios (nome, email, senha_hash, is_admin) VALUES (?, ?, ?, 1)',
         ['Administrador', 'admin@intellistock.com', hash]
       );
       console.log('✓ Usuário admin criado automaticamente');
       console.log('  E-mail: admin@intellistock.com');
-      console.log('  Senha:  Admin123\n');
+      console.log(`  Senha inicial: ${adminPassword}\n`);
     } else {
       // Garante is_admin = 1 para o admin fixo em bancos existentes
       await db.query(

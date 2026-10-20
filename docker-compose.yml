@@ -1,0 +1,65 @@
+name: intellistock
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      APP_URL: ${APP_URL:-http://localhost:3001}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-intellistock}
+      DB_PASSWORD: ${DB_PASSWORD:-intellistock_local_password}
+      DB_NAME: ${DB_NAME:-estoque_db}
+      DB_SSL: "false"
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-}
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_SECURE: ${MAIL_SECURE:-false}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASS: ${MAIL_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-IntelliStock <no-reply@localhost>}
+      ALERT_EMAILS: ${ALERT_EMAILS:-}
+      DEV_ACCESS_EMAILS: ${DEV_ACCESS_EMAILS:-}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-intellistock_local_root_password}
+      MYSQL_DATABASE: ${DB_NAME:-estoque_db}
+      MYSQL_USER: ${DB_USER:-intellistock}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-intellistock_local_password}
+    ports:
+      - "${MYSQL_HOST_PORT:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  mysql_data:
